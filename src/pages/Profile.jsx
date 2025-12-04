@@ -133,7 +133,9 @@ export default function Profile() {
       <Button 
         variant="outline" 
         className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100"
-        onClick={() => base44.auth.logout(window.location.origin + createPageUrl('Landing'))}
+        onClick={async () => {
+            await base44.auth.logout(createPageUrl('Home'));
+        }}
       >
         <LogOut className="w-4 h-4 mr-2" /> Log Out
       </Button>
