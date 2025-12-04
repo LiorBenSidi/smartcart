@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { generateMockReceipt } from "@/components/mockData";
+// import { generateMockReceipt } from "@/components/mockData";
 import { UploadCloud, CheckCircle2, ScanLine, Receipt, Loader2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
@@ -29,25 +29,83 @@ export default function Upload() {
     }
   };
 
-  const processReceipt = () => {
+  const processReceipt = async () => {
+    if (!file) return;
     setIsProcessing(true);
     
-    // Simulate AI delay
-    setTimeout(() => {
-      const mockResult = generateMockReceipt();
-      setParsedData(mockResult);
+    try {
+      // 1. Upload the file first
+      const uploadRes = await base44.integrations.Core.UploadFile({
+        file: file
+      });
+      const fileUrl = uploadRes.file_url;
+
+      // 2. Process with AI
+      const prompt = `
+        Analyze this grocery receipt image and extract the data into the following JSON format:
+        - storeName: Name of the store
+        - date: Date of purchase (YYYY-MM-DD). If missing, use today's date.
+        - totalAmount: Total amount paid
+        - items: List of items purchased with name, category (Produce, Dairy, Meat, Snacks, etc), quantity (default 1), price (unit price), and total.
+        - insights: Array of insights. 'type' can be "warning" (e.g. unhealthy), "saving" (e.g. bought on sale), or "info". 'message' is the text.
+      `;
+
+      const llmRes = await base44.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        file_urls: [fileUrl],
+        response_json_schema: {
+            type: "object",
+            properties: {
+                storeName: { type: "string" },
+                date: { type: "string" },
+                totalAmount: { type: "number" },
+                items: { 
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            name: { type: "string" },
+                            category: { type: "string" },
+                            quantity: { type: "number" },
+                            price: { type: "number" },
+                            total: { type: "number" }
+                        }
+                    }
+                },
+                insights: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            type: { type: "string", enum: ["warning", "saving", "info"] },
+                            message: { type: "string" }
+                        }
+                    }
+                }
+            },
+            required: ["storeName", "totalAmount", "date", "items"]
+        }
+      });
+
+      setParsedData({
+          ...llmRes,
+          imageUrl: fileUrl
+      });
+
+    } catch (error) {
+      console.error("Error analyzing receipt", error);
+      // Fallback for demo if AI fails
+      // setParsedData(generateMockReceipt()); 
+    } finally {
       setIsProcessing(false);
-    }, 2500);
+    }
   };
 
   const saveReceipt = async () => {
     if (!parsedData) return;
     
     try {
-      await base44.entities.Receipt.create({
-        ...parsedData,
-        imageUrl: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=600&auto=format&fit=crop" // mock image url since we don't actually upload in prototype
-      });
+      await base44.entities.Receipt.create(parsedData);
       setIsSaved(true);
       // In a real app, we'd redirect or show a toast
       setTimeout(() => {
