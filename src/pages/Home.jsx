@@ -25,23 +25,29 @@ export default function Home() {
         }
 
         const user = await base44.auth.me();
+        console.log('Current User Email:', user.email); // Check if this is the correct email
         let isAdmin = false;
         try {
             const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+            console.log('User Profile for Admin Check:', profiles); // Inspect this object
             if (profiles.length > 0 && profiles[0].isAdmin) {
                 isAdmin = true;
             }
         } catch(e) {
             console.error("Error checking admin status", e);
         }
+        console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users
+
         
         // Fetch recent receipts based on permissions
         let data;
         if (isAdmin) {
             data = await base44.entities.Receipt.list('-date', 5);
         } else {
+            // For non-admin users, check what this filter actually returns
             data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 5);
         }
+        console.log('Receipts fetched by filter:', data); // CRITICAL: Inspect this array
         setReceipts(data);
       } catch (error) {
         console.error("Error fetching dashboard data", error);
