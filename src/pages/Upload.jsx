@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { generateMockReceipt } from "@/utils/mockData";
+import { generateMockReceipt } from "@/components/mockData";
 import { UploadCloud, CheckCircle2, ScanLine, Receipt, Loader2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 

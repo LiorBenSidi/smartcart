@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { NAV_ITEMS } from '@/utils/mockData';
+import { NAV_ITEMS } from '@/components/mockData';
 import { ShieldCheck, LogIn } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
