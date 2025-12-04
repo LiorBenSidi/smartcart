@@ -67,7 +67,13 @@ export default function Recommendations() {
       </div>
 
       <div className="space-y-4">
-        {recommendations.map(rec => (
+        {recommendations
+            .filter(rec => {
+                if (filter === 'all') return true;
+                if (filter === 'savings') return rec.type === 'saving' || rec.type === 'brand';
+                return rec.type === filter;
+            })
+            .map(rec => (
             <Card key={rec.id} className="border-none shadow-sm hover:shadow-md transition-all duration-300">
                 <CardContent className="p-5 flex gap-4">
                     <div className={`w-12 h-12 rounded-xl ${rec.bg} ${rec.color} flex items-center justify-center flex-shrink-0`}>
