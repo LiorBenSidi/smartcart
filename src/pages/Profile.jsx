@@ -19,13 +19,19 @@ export default function Profile() {
 
   useEffect(() => {
     const loadProfile = async () => {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-        
-        // Try to fetch existing profile
-        const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
-        if (existing.length > 0) {
-            setProfile(existing[0]);
+        try {
+            const currentUser = await base44.auth.me();
+            setUser(currentUser);
+            
+            if (currentUser) {
+                // Try to fetch existing profile
+                const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
+                if (existing.length > 0) {
+                    setProfile(existing[0]);
+                }
+            }
+        } catch (err) {
+            console.error("Error loading profile:", err);
         }
     };
     loadProfile();
