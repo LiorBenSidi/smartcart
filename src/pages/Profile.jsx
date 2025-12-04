@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -126,7 +127,7 @@ export default function Profile() {
       <Button 
         variant="outline" 
         className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100"
-        onClick={() => base44.auth.logout()}
+        onClick={() => base44.auth.logout(window.location.origin + createPageUrl('Landing'))}
       >
         <LogOut className="w-4 h-4 mr-2" /> Log Out
       </Button>
