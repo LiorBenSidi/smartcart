@@ -7,8 +7,7 @@ import { motion } from "framer-motion";
 
 export default function Landing() {
   const handleLogin = () => {
-    // Navigate to Home to allow the user to trigger login from there if needed
-    window.location.href = createPageUrl('Home');
+    base44.auth.redirectToLogin(createPageUrl('Home'));
   };
 
   return (
@@ -59,8 +58,16 @@ export default function Landing() {
             Get Started
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
+
+          <Button 
+            onClick={handleLogin}
+            variant="ghost"
+            className="w-full text-indigo-600 font-semibold hover:bg-indigo-50"
+          >
+            Already have an account? Log in
+          </Button>
           
-          <p className="text-xs text-gray-400 mt-6">
+          <p className="text-xs text-gray-400 mt-4">
             Step 1 Prototype • Powered by Gemini Pro 3
           </p>
         </motion.div>
