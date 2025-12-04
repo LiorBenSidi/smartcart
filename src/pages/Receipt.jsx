@@ -15,7 +15,24 @@ export default function Receipt() {
       const id = urlParams.get('id');
       if (id) {
         try {
-            const data = await base44.entities.Receipt.filter({ id });
+            const user = await base44.auth.me();
+            let isAdmin = false;
+            try {
+                const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+                if (profiles.length > 0 && profiles[0].isAdmin) {
+                    isAdmin = true;
+                }
+            } catch(e) {
+                console.error("Error checking admin status", e);
+            }
+
+            let data;
+            if (isAdmin) {
+                data = await base44.entities.Receipt.filter({ id });
+            } else {
+                data = await base44.entities.Receipt.filter({ id, created_by: user.email });
+            }
+
             if (data.length > 0) setReceipt(data[0]);
         } catch (e) {
             console.error("Error loading receipt", e);

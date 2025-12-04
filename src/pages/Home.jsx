@@ -23,10 +23,25 @@ export default function Home() {
             setIsLoading(false);
             return;
         }
+
+        const user = await base44.auth.me();
+        let isAdmin = false;
+        try {
+            const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+            if (profiles.length > 0 && profiles[0].isAdmin) {
+                isAdmin = true;
+            }
+        } catch(e) {
+            console.error("Error checking admin status", e);
+        }
         
-        // Fetch recent receipts
-        // list takes (sort, limit) as arguments, not an object
-        const data = await base44.entities.Receipt.list('-date', 5);
+        // Fetch recent receipts based on permissions
+        let data;
+        if (isAdmin) {
+            data = await base44.entities.Receipt.list('-date', 5);
+        } else {
+            data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 5);
+        }
         setReceipts(data);
       } catch (error) {
         console.error("Error fetching dashboard data", error);
