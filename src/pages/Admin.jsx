@@ -11,21 +11,35 @@ export default function Admin() {
 
   useEffect(() => {
     const fetchAdminData = async () => {
-        // Mock Admin Check - in real app this would be secured by backend rules
         try {
-            // Fetch all receipts (mocking "all users" view by just listing what we have access to)
-            // In a real admin panel we'd use base44.asServiceRole... but for this prototype we mock it
+            const user = await base44.auth.me();
+            
+            // Check admin status via UserProfile
+            const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+            const isAdmin = profiles.length > 0 && profiles[0].isAdmin;
+
+            if (!isAdmin) {
+                window.location.href = '/'; // Redirect if not admin
+                return;
+            }
+
+            // Fetch real data
             const allReceipts = await base44.entities.Receipt.list();
             setReceipts(allReceipts);
 
-            // Mock user list
-            setUsers([
-                { id: 1, email: 'user@example.com', role: 'user', receipts: 5 },
-                { id: 2, email: 'admin@example.com', role: 'admin', receipts: 12 },
-                { id: 3, email: 'newbie@test.com', role: 'user', receipts: 0 },
-            ]);
+            // Fetch real users (admin only operation)
+            const allUsers = await base44.entities.User.list();
+            
+            // Calculate stats
+            const usersWithStats = allUsers.map(u => ({
+                ...u,
+                receipts: allReceipts.filter(r => r.created_by === u.email).length
+            }));
+            setUsers(usersWithStats);
+
         } catch (e) {
-            console.error(e);
+            console.error("Admin access denied or error", e);
+            setIsLoading(false);
         } finally {
             setIsLoading(false);
         }

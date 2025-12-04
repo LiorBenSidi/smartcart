@@ -54,17 +54,30 @@ export default function Home() {
 
   // Calculate stats
   const totalSpent = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
-  const monthlyAverage = totalSpent / (receipts.length || 1); // simplified mock logic
-
-  // Mock chart data based on categories
-  const chartData = [
-    { name: 'Prod', value: 120 },
-    { name: 'Meat', value: 85 },
-    { name: 'Dairy', value: 45 },
-    { name: 'Snack', value: 30 },
-  ];
   
-  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981'];
+  // Dynamic chart data calculation
+  const categoryTotals = receipts.reduce((acc, receipt) => {
+    if (receipt.items) {
+        receipt.items.forEach(item => {
+            // Use first 4 chars of category for label
+            const cat = (item.category || 'Other').substring(0, 4);
+            acc[cat] = (acc[cat] || 0) + (item.total || 0);
+        });
+    }
+    return acc;
+  }, {});
+
+  const chartData = Object.entries(categoryTotals)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5); // Top 5 categories
+
+  // Default empty state for chart if no data
+  if (chartData.length === 0) {
+    chartData.push({ name: 'No Data', value: 0 });
+  }
+  
+  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
   if (isLoading) {
     return (
