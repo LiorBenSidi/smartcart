@@ -1,19 +1,12 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ScanLine, TrendingUp, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
-  const handleLogin = async () => {
-    const isAuthenticated = await base44.auth.isAuthenticated();
-    if (isAuthenticated) {
-      window.location.href = createPageUrl('Home');
-    } else {
-      // Passing no arguments lets the platform handle the default redirect behavior
-      await base44.auth.redirectToLogin();
-    }
+  const handleLogin = () => {
+    base44.auth.redirectToLogin();
   };
 
   return (
