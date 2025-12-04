@@ -11,13 +11,16 @@ import { format } from 'date-fns';
 export default function Home() {
   const [receipts, setReceipts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const isAuthenticated = await base44.auth.isAuthenticated();
-        if (!isAuthenticated) {
-            base44.auth.redirectToLogin();
+        const auth = await base44.auth.isAuthenticated();
+        setIsAuthenticated(auth);
+        
+        if (!auth) {
+            setIsLoading(false);
             return;
         }
         
@@ -55,6 +58,26 @@ export default function Home() {
         <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+        <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-6 text-indigo-600">
+          <ShoppingBag className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+        <p className="text-gray-500 mb-8 max-w-xs">
+          Please sign in to view your dashboard and grocery insights.
+        </p>
+        <Button 
+          onClick={() => base44.auth.redirectToLogin()}
+          className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700 shadow-lg"
+        >
+          Sign In to Continue
+        </Button>
+      </div>
     );
   }
 

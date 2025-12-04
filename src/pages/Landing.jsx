@@ -6,7 +6,8 @@ import { motion } from "framer-motion";
 
 export default function Landing() {
   const handleLogin = () => {
-    base44.auth.redirectToLogin();
+    // Navigate to Home to allow the user to trigger login from there if needed
+    window.location.href = createPageUrl('Home');
   };
 
   return (
