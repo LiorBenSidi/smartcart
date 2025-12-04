@@ -1,13 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ScanLine, TrendingUp, Leaf } from "lucide-react";
+import { ArrowRight, ScanLine, TrendingUp, Leaf, LogIn, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
-  const handleLogin = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const auth = await base44.auth.isAuthenticated();
+        setIsAuthenticated(auth);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleAuth = () => {
     base44.auth.redirectToLogin(createPageUrl('Home'));
+  };
+
+  const handleNavigation = () => {
+    window.location.href = createPageUrl('Home');
   };
 
   return (
@@ -51,23 +72,37 @@ export default function Landing() {
           transition={{ delay: 0.4, duration: 0.6 }}
           className="w-full space-y-4"
         >
-          <Button 
-            onClick={handleLogin}
-            className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all"
-          >
-            Get Started
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-
-          <Button 
-            onClick={handleLogin}
-            variant="ghost"
-            className="w-full text-indigo-600 font-semibold hover:bg-indigo-50"
-          >
-            Already have an account? Log in
-          </Button>
+          {!isLoading && (
+            <>
+              {isAuthenticated ? (
+                <Button 
+                  onClick={handleNavigation}
+                  className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                   <Button 
+                    onClick={handleAuth}
+                    className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all"
+                  >
+                    <UserPlus className="mr-2 w-5 h-5" /> Sign Up
+                  </Button>
+                  <Button 
+                    onClick={handleAuth}
+                    variant="outline"
+                    className="w-full h-12 text-base border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  >
+                    <LogIn className="mr-2 w-4 h-4" /> Log In
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
           
-          <p className="text-xs text-gray-400 mt-4">
+          <p className="text-xs text-gray-400 mt-6">
             Step 1 Prototype • Powered by Gemini Pro 3
           </p>
         </motion.div>
