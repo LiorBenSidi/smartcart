@@ -25,10 +25,8 @@ export default function Home() {
         }
         
         // Fetch recent receipts
-        const data = await base44.entities.Receipt.list({
-            sort: { date: -1 },
-            limit: 5
-        });
+        // list takes (sort, limit) as arguments, not an object
+        const data = await base44.entities.Receipt.list('-date', 5);
         setReceipts(data);
       } catch (error) {
         console.error("Error fetching dashboard data", error);
