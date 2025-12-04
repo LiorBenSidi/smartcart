@@ -25,15 +25,10 @@ export default function Home() {
         }
 
         const user = await base44.auth.me();
-        
-        // Check admin status more robustly by checking specific profile for current user
         let isAdmin = false;
         try {
-            // Filter specifically for this user's profile
             const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-            // Ensure we found a profile created by THIS user that has isAdmin=true
-            const userProfile = profiles.find(p => p.created_by === user.email);
-            if (userProfile && userProfile.isAdmin) {
+            if (profiles.length > 0 && profiles[0].isAdmin) {
                 isAdmin = true;
             }
         } catch(e) {
@@ -45,7 +40,6 @@ export default function Home() {
         if (isAdmin) {
             data = await base44.entities.Receipt.list('-date', 5);
         } else {
-            // Explicitly filter by created_by to ensure data isolation
             data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 5);
         }
         setReceipts(data);
