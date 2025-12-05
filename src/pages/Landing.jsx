@@ -35,75 +35,75 @@ export default function Landing() {
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto w-full">
         
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8 relative"
-        >
+          className="mb-8 relative">
+
           <div className="w-24 h-24 bg-indigo-600 rounded-3xl rotate-3 absolute -top-2 -left-2 opacity-20 blur-xl"></div>
           <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl relative z-10 mx-auto rotate-12">
             <ScanLine className="w-10 h-10 text-white" />
           </div>
         </motion.div>
 
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight"
-        >
-          Smart Grocery <br/>
+          className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
+
+          Smart Grocery <br />
           <span className="text-indigo-600">Assistant</span>
         </motion.h1>
 
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
-          className="text-gray-500 text-lg mb-10 leading-relaxed"
-        >
+          className="text-gray-500 text-lg mb-10 leading-relaxed">
+
           Scan receipts, track spending, and get AI-powered insights to save money and eat healthier.
         </motion.p>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
-          className="w-full space-y-4"
-        >
-          {!isLoading && (
-            <>
-              {isAuthenticated ? (
-                <Button 
-                  onClick={handleNavigation}
-                  className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all"
-                >
+          className="w-full space-y-4">
+
+          {!isLoading &&
+          <>
+              {isAuthenticated ?
+            <Button
+              onClick={handleNavigation}
+              className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all">
+
                   Get Started
                   <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              ) : (
-                <div className="space-y-3">
-                   <Button 
-                    onClick={handleAuth}
-                    className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all"
-                  >
+                </Button> :
+
+            <div className="space-y-3">
+                   <Button
+                onClick={handleAuth}
+                className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all">
+
                     <UserPlus className="mr-2 w-5 h-5" /> Sign Up
                   </Button>
-                  <Button 
-                    onClick={handleAuth}
-                    variant="outline"
-                    className="w-full h-12 text-base border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                  >
+                  <Button
+                onClick={handleAuth}
+                variant="outline"
+                className="w-full h-12 text-base border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+
                     <LogIn className="mr-2 w-4 h-4" /> Log In
                   </Button>
                 </div>
-              )}
+            }
             </>
-          )}
+          }
           
-          <p className="text-xs text-gray-400 mt-6">
-            Step 1 Prototype • Powered by Gemini Pro 3
+          <p className="text-xs text-gray-400 mt-6">Step 1 Prototype • Powered by Gemini Pro 3
+Created by: Lior Ben Sidi & Yarin Katan
           </p>
         </motion.div>
 
@@ -120,6 +120,6 @@ export default function Landing() {
             </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
