@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -229,7 +229,6 @@ export default function Home() {
                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
                     formatter={(value, name) => [`$${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
                   />
-                  <Legend iconType="circle" formatter={(value) => <span className="text-gray-500 text-xs ml-1">{value === 'thisMonth' ? 'This Month' : 'Last Month'}</span>} />
                   <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
