@@ -10,18 +10,12 @@ function parseNumber(value) {
 }
 
 Deno.serve(async (req) => {
-  console.log("[uploadCatalog] Function invoked");
-  
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    console.log("[uploadCatalog] User:", user?.email);
     
     if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" }
-      });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check admin
@@ -32,102 +26,49 @@ Deno.serve(async (req) => {
     }
 
     if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" }
-      });
+      return Response.json({ error: "Admin access required" }, { status: 403 });
     }
 
-    // Parse multipart form data
-    const contentType = req.headers.get("content-type") || "";
-    console.log("[uploadCatalog] Content-Type:", contentType);
-    
-    if (!contentType.startsWith("multipart/form-data")) {
-      return new Response(JSON.stringify({ error: "Expected multipart/form-data" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    console.log("[uploadCatalog] Parsing form data");
+    // Get file from form
     const form = await req.formData();
     const file = form.get("xmlFile");
-    console.log("[uploadCatalog] File:", file?.name, file?.size);
 
     if (!file) {
-      return new Response(JSON.stringify({ error: "Missing xmlFile field" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return Response.json({ error: "Missing xmlFile" }, { status: 400 });
     }
 
-    // Read and decompress
-    console.log("[uploadCatalog] Reading file buffer");
+    // Decompress .gz
     const buffer = await file.arrayBuffer();
-    const compressedData = new Uint8Array(buffer);
-    
-    console.log("[uploadCatalog] Decompressing .gz file");
-    let xmlText;
-    try {
-      xmlText = new TextDecoder().decode(gunzipSync(compressedData));
-      console.log("[uploadCatalog] Decompressed XML length:", xmlText.length);
-    } catch (e) {
-      console.error("[uploadCatalog] Decompression error:", e.message);
-      return new Response(JSON.stringify({ 
-        error: "Failed to decompress .gz file", 
-        details: e.message 
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
+    const xmlText = new TextDecoder().decode(gunzipSync(new Uint8Array(buffer)));
 
     // Parse XML
-    console.log("[uploadCatalog] Parsing XML");
     const parser = new XMLParser({
       ignoreAttributes: false,
       trimValues: true,
       parseTagValue: false
     });
 
-    let root;
-    try {
-      root = parser.parse(xmlText).root;
-      console.log("[uploadCatalog] XML parsed successfully");
-    } catch (e) {
-      console.error("[uploadCatalog] XML parse error:", e.message);
-      return new Response(JSON.stringify({ 
-        error: "Invalid XML format", 
-        details: e.message 
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
+    const root = parser.parse(xmlText).root;
 
     const chainId = root.ChainId || "";
-    const subChainId = root.SubChainId || "";
     const storeId = root.StoreId || "";
-    console.log("[uploadCatalog] Chain:", chainId, "Store:", storeId);
+    const subChainId = root.SubChainId || "";
 
     let items = root?.Items?.Item || [];
     if (!Array.isArray(items)) items = [items];
-    console.log("[uploadCatalog] Items count:", items.length);
 
     const svc = base44.asServiceRole;
 
-    // Upsert chain
-    console.log("[uploadCatalog] Upserting chain");
+    // Get or create chain
     let chain = (await svc.entities.Chain.filter({ external_chain_id: chainId }))[0];
     if (!chain) {
       chain = await svc.entities.Chain.create({
-        name: chainId || "Unknown Chain",
+        name: chainId,
         external_chain_id: chainId
       });
     }
 
-    // Upsert store
-    console.log("[uploadCatalog] Upserting store");
+    // Get or create store
     let store = (await svc.entities.Store.filter({
       chain_id: chain.id,
       external_store_id: storeId
@@ -138,28 +79,29 @@ Deno.serve(async (req) => {
         chain_id: chain.id,
         external_store_id: storeId,
         sub_chain_id: subChainId,
-        name: `${chain.name} Store ${storeId}`
+        name: `Store ${storeId}`
       });
     }
 
-    // Load existing data
-    console.log("[uploadCatalog] Loading existing products and prices");
+    // Load existing products and prices
     const existingProducts = await svc.entities.Product.filter({ chain_id: chain.id });
     const existingPrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
 
     const productMap = new Map(existingProducts.map(p => [p.external_item_code, p]));
     const priceMap = new Map(existingPrices.map(p => [p.product_id, p]));
 
-    console.log("[uploadCatalog] Processing items");
     let processed = 0;
     let failed = 0;
 
+    // Process items
     for (const it of items) {
       try {
         const code = it.ItemCode?.toString().trim();
         if (!code) continue;
 
-        const productPayload = {
+        // Upsert product
+        let product = productMap.get(code);
+        const productData = {
           chain_id: chain.id,
           external_item_code: code,
           name: it.ItemName || "",
@@ -173,15 +115,16 @@ Deno.serve(async (req) => {
           status: it.ItemStatus || ""
         };
 
-        let product = productMap.get(code);
         if (!product) {
-          product = await svc.entities.Product.create(productPayload);
+          product = await svc.entities.Product.create(productData);
           productMap.set(code, product);
         } else {
-          await svc.entities.Product.update(product.id, productPayload);
+          await svc.entities.Product.update(product.id, productData);
         }
 
-        const pricePayload = {
+        // Upsert price
+        let price = priceMap.get(product.id);
+        const priceData = {
           product_id: product.id,
           store_id: store.id,
           price: parseNumber(it.ItemPrice),
@@ -190,44 +133,31 @@ Deno.serve(async (req) => {
           price_update_at: it.PriceUpdateDate || new Date().toISOString()
         };
 
-        let price = priceMap.get(product.id);
         if (!price) {
-          price = await svc.entities.ProductPrice.create(pricePayload);
+          await svc.entities.ProductPrice.create(priceData);
           priceMap.set(product.id, price);
         } else {
-          await svc.entities.ProductPrice.update(price.id, pricePayload);
+          await svc.entities.ProductPrice.update(price.id, priceData);
         }
 
         processed++;
       } catch (err) {
-        console.error("[uploadCatalog] Item processing error:", err.message);
         failed++;
       }
     }
 
-    console.log("[uploadCatalog] Processing complete:", processed, "processed,", failed, "failed");
-
-    return new Response(JSON.stringify({
+    return Response.json({
       success: true,
       chainId,
       storeId,
       totalItems: items.length,
       processed,
       failed
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
     });
 
   } catch (err) {
-    console.error("[uploadCatalog] Fatal error:", err.message);
-    console.error("[uploadCatalog] Error stack:", err.stack);
-    return new Response(JSON.stringify({
-      error: err.message || String(err),
-      stack: err.stack
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    return Response.json({
+      error: err.message || String(err)
+    }, { status: 500 });
   }
 });
