@@ -97,12 +97,17 @@ export default function Landing() {
                 <a 
                   href={(() => {
                       const urlStr = base44.agents.getWhatsAppConnectURL('grocery_bot');
-                      if (!user?.email || !urlStr) return urlStr;
+                      if (!user?.email || !urlStr) return urlStr || '#';
                       try {
                           const url = new URL(urlStr);
                           const text = url.searchParams.get('text');
                           if (text) {
-                              url.searchParams.set('text', `👋 Hello, ${user.email}\n\n${text}`);
+                              // Ensure we decode first to avoid double encoding issues, though searchParams handles it
+                              // We replace the start of the text if it doesn't have the greeting
+                              const decodedText = decodeURIComponent(text); 
+                              if (!decodedText.startsWith('👋 Hello')) {
+                                  url.searchParams.set('text', `👋 Hello, ${user.email}\n\n${text}`);
+                              }
                               return url.toString();
                           }
                           return urlStr;
