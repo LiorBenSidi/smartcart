@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 
 export default function Landing() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -14,6 +15,10 @@ export default function Landing() {
       try {
         const auth = await base44.auth.isAuthenticated();
         setIsAuthenticated(auth);
+        if (auth) {
+            const userData = await base44.auth.me();
+            setUser(userData);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -74,14 +79,22 @@ export default function Landing() {
 
           {!isLoading &&
           <>
-              {isAuthenticated ?
-            <Button
-              onClick={handleNavigation}
-              className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all">
+              {isAuthenticated ? (
+            <div className="w-full space-y-4">
+                {user && (
+                    <div className="bg-indigo-50 text-indigo-900 px-4 py-3 rounded-xl font-medium text-sm border border-indigo-100">
+                        👋 Hello, {user.email}
+                    </div>
+                )}
+                <Button
+                onClick={handleNavigation}
+                className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all">
 
-                  Get Started
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button> :
+                    Get Started
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+            </div>
+            ) :
 
             <div className="space-y-3">
                    <Button
