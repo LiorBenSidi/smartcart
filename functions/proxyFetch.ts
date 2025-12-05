@@ -27,12 +27,18 @@ Deno.serve(async (req) => {
 
     console.log("[proxyFetch] Making external fetch to:", url);
     
+    // Create HTTP client that accepts invalid certificates
+    const httpClient = Deno.createHttpClient({
+      allowHost: true
+    });
+    
     // Perform actual external fetch (allowed by Base44)
     const external = await fetch(url, {
       method,
       headers,
       body,
-      redirect: 'manual'
+      redirect: 'manual',
+      client: httpClient
     });
 
     console.log("[proxyFetch] External response received:", { 
