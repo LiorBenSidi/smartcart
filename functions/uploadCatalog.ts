@@ -18,11 +18,13 @@ function parseNumber(value) {
 }
 
 Deno.serve(async (req) => {
+  console.log("[uploadCatalog] Function invoked");
   try {
     const base44 = createClientFromRequest(req);
 
     // Must be admin
     const user = await base44.auth.me();
+    console.log("[uploadCatalog] User:", user?.email);
     if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 
     let isAdmin = user.email === "liorben@base44.com";
@@ -39,12 +41,15 @@ Deno.serve(async (req) => {
 
     // Expect multipart with XML file
     const contentType = req.headers.get("content-type") || "";
+    console.log("[uploadCatalog] Content-Type:", contentType);
     if (!contentType.startsWith("multipart/form-data")) {
       return jsonResponse({ error: "Expected multipart/form-data with xmlFile" }, 400);
     }
 
+    console.log("[uploadCatalog] Parsing form data");
     const form = await req.formData();
     const file = form.get("xmlFile");
+    console.log("[uploadCatalog] File received:", file?.name, file?.size);
 
     if (!file) {
       return jsonResponse({ error: "Missing xmlFile field" }, 400);
@@ -188,8 +193,11 @@ Deno.serve(async (req) => {
     });
 
   } catch (err) {
+    console.error("[uploadCatalog] Fatal error:", err.message);
+    console.error("[uploadCatalog] Error stack:", err.stack);
     return jsonResponse({
-      error: err.message || String(err)
+      error: err.message || String(err),
+      stack: err.stack
     }, 500);
   }
 });
