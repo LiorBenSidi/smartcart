@@ -114,11 +114,14 @@ export default function Upload() {
         processingStatus: 'pending'
       });
 
-      // 3. Redirect user immediately
-      window.location.href = createPageUrl('Home');
-
-      // 4. Trigger background processing (this continues even after redirect)
+      // 3. Start background processing BEFORE redirect
+      // Use a non-blocking approach - don't await, but also don't redirect until we've started
       processReceiptInBackground(pendingReceipt.id, fileUrl);
+
+      // 4. Small delay to ensure the request is initiated, then redirect
+      setTimeout(() => {
+        window.location.href = createPageUrl('Home');
+      }, 100);
 
     } catch (error) {
       console.error("Error uploading receipt", error);
