@@ -58,15 +58,14 @@ export default function Home() {
         console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users
 
         
-        // Fetch recent receipts based on permissions
+        // Fetch receipts for stats and list
+        // Fetching up to 100 receipts to calculate monthly stats accurately
         let data;
         if (isAdmin) {
-            data = await base44.entities.Receipt.list('-date', 5);
+            data = await base44.entities.Receipt.list('-date', 100);
         } else {
-            // For non-admin users, check what this filter actually returns
-            data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 5);
+            data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 100);
         }
-        console.log('Receipts fetched by filter:', data); // CRITICAL: Inspect this array
         setReceipts(data);
       } catch (error) {
         console.error("Error fetching dashboard data", error);
@@ -78,9 +77,36 @@ export default function Home() {
   }, []);
 
   // Calculate stats
-  const totalSpent = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
   
-  // Dynamic chart data calculation
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
+
+  const thisMonthReceipts = receipts.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const lastMonthReceipts = receipts.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+  });
+
+  const thisMonthTotal = thisMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const lastMonthTotal = lastMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+
+  let percentChange = 0;
+  let showTrend = false;
+
+  if (lastMonthTotal > 0) {
+      percentChange = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+      showTrend = true;
+  }
+  
+  // Dynamic chart data calculation (using all fetched receipts for better category distribution)
   const categoryTotals = receipts.reduce((acc, receipt) => {
     if (receipt.items) {
         receipt.items.forEach(item => {
@@ -95,6 +121,9 @@ export default function Home() {
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, displayCount);
+    
+  // We only want to show the top 5 recent receipts in the list, but we fetched 100 for stats
+  const recentReceipts = receipts.slice(0, 5);
 
 
   
@@ -135,22 +164,24 @@ export default function Home() {
       <section className="grid grid-cols-2 gap-4 lg:gap-8">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
-            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Total Spent</p>
-            <h2 className="text-2xl font-bold mt-1">${totalSpent.toFixed(2)}</h2>
-            <div className="flex items-center mt-2 text-indigo-200 text-xs">
-              <ArrowUpRight className="w-3 h-3 mr-1" />
-              <span>+12% this month</span>
-            </div>
+            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
+            <h2 className="text-2xl font-bold mt-1">${thisMonthTotal.toFixed(2)}</h2>
+            {showTrend && (
+                <div className="flex items-center mt-2 text-indigo-200 text-xs">
+                <ArrowUpRight className={`w-3 h-3 mr-1 ${percentChange < 0 ? 'rotate-180' : ''}`} />
+                <span>{percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month</span>
+                </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="bg-white border-none shadow-sm">
           <CardContent className="p-5">
             <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Receipts</p>
-            <h2 className="text-2xl font-bold text-gray-900 mt-1">{receipts.length}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mt-1">{thisMonthReceipts.length}</h2>
             <div className="flex items-center mt-2 text-gray-400 text-xs">
               <Calendar className="w-3 h-3 mr-1" />
-              <span>Last 30 days</span>
+              <span>This month</span>
             </div>
           </CardContent>
         </Card>
@@ -205,13 +236,13 @@ export default function Home() {
           </div>
           
           <div className="space-y-3">
-            {receipts.length === 0 ? (
+            {recentReceipts.length === 0 ? (
                <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
                   <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500 text-sm">No receipts scanned yet.</p>
                </div>
             ) : (
-              receipts.map((receipt) => (
+              recentReceipts.map((receipt) => (
                   <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
                       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99]">
                           <div className="flex items-center gap-4">
