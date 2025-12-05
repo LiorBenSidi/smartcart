@@ -106,7 +106,7 @@ export default function Upload() {
     }
   };
 
-  const PRESET_STORES = ["שופרסל", "רמי לוי שיווק השקמה", "אושר עד", "יינות ביתן", "טיב טעם", "am:pm"];
+  const PRESET_STORES = ["שופרסל", "רמי לוי", "אושר עד", "יינות ביתן", "טיב טעם", "am:pm"];
 
   const handleItemChange = (index, field, value) => {
     if (!parsedData) return;
