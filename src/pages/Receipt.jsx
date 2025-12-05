@@ -27,7 +27,7 @@ export default function Receipt() {
         - time: Time of purchase (HH:MM) if available.
         - address: Address of the store if available.
         - totalAmount: Total amount paid
-        - items: List of items purchased with product code (if available), name, category (Produce, Dairy, Meat, Snacks, etc), quantity (default 1), price (unit price), and total.
+        - items: List of items purchased with product code (if available), name, category (Produce, Dairy, Meat, Snacks, etc), quantity, price (unit price), and total. IMPORTANT: If the receipt shows a price for multiple units of an item, calculate the unit price by dividing that price by the quantity. Ensure 'total' is the line item total (quantity * unit price).
         - insights: Array of insights. 'type' can be "warning" (e.g. unhealthy), "saving" (e.g. bought on sale), or "info". 'message' is the text.
       `;
 
