@@ -1,276 +1,314 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import { gunzipSync } from 'npm:fflate@0.8.2';
+import { XMLParser } from 'npm:fast-xml-parser@4.5.0';
+
+// -----------------------------------------------------------------------------
+// CONFIG
+// -----------------------------------------------------------------------------
 
 const LOGIN_URL = 'https://url.publishedprices.co.il/login';
 const FILE_LIST_URL = 'https://url.publishedprices.co.il/file';
 const FILE_DOWNLOAD_URL = 'https://url.publishedprices.co.il/file/d';
 
+const LOGIN_USERNAME_FIELD = 'username';  // change if needed
+const LOGIN_PASSWORD_FIELD = 'password';  // change if needed
+
+// -----------------------------------------------------------------------------
+// HELPERS
+// -----------------------------------------------------------------------------
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+  });
+}
+
+function parseNumber(value) {
+  if (!value) return 0;
+  const cleaned = value
+    .toString()
+    .replace(/\s+/g, '')
+    .replace(',', '.')
+    .replace(/[^\d.\-]/g, '');
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function buildCookieHeader(setCookieHeader) {
+  if (!setCookieHeader) return '';
+  return setCookieHeader
+    .split(',')
+    .map(c => c.trim().split(';')[0])
+    .filter(Boolean)
+    .join('; ');
+}
+
+function extractTimestampFromFilename(name) {
+  const m = name.match(/(\d{14}|\d{12})/);
+  return m ? m[1] : '';
+}
+
+// -----------------------------------------------------------------------------
+// MAIN HANDLER
+// -----------------------------------------------------------------------------
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
+    if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
 
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
+    // Admin check
     let isAdmin = user.email === 'liorben@base44.com';
-    if (!isAdmin) {
-      const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-      isAdmin = profiles.length > 0 && profiles[0].isAdmin;
-    }
+    try {
+      if (!isAdmin) {
+        const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+        isAdmin = profiles.length > 0 && !!profiles[0].isAdmin;
+      }
+    } catch {}
 
-    if (!isAdmin) {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
-    }
+    if (!isAdmin) return jsonResponse({ error: 'Admin access required' }, 403);
 
-    const body = await req.json().catch(() => ({}));
+    // Parse body
+    let body = {};
+    try { body = await req.json(); } catch {}
+
     const username = body.username;
     const password = body.password || '';
     const filePattern = body.filePattern || 'PriceFull';
 
-    if (!username) {
-      return Response.json({ error: 'Username is required' }, { status: 400 });
-    }
+    if (!username) return jsonResponse({ error: 'Username is required' }, 400);
 
-    // Step 1: Login to get session cookies
-    console.log(`Logging in as ${username}...`);
-    const loginFormData = new URLSearchParams();
-    loginFormData.append('username', username);
-    loginFormData.append('password', password);
+    // -------------------------------------------------------------------------
+    // STEP 1: LOGIN
+    // -------------------------------------------------------------------------
 
-    const loginResponse = await fetch(LOGIN_URL, {
+    const form = new URLSearchParams();
+    form.append(LOGIN_USERNAME_FIELD, username);
+    form.append(LOGIN_PASSWORD_FIELD, password);
+
+    const loginResp = await fetch(LOGIN_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: loginFormData,
-      redirect: 'manual',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+      redirect: 'manual'
     });
 
-    // Extract cookies from login response
-    const cookies = loginResponse.headers.getSetCookie();
-    if (!cookies || cookies.length === 0) {
-      return Response.json({ error: 'Login failed - no session cookies received' }, { status: 401 });
+    if (!loginResp.ok && loginResp.status !== 302) {
+      return jsonResponse({ error: 'Login failed' }, 401);
     }
 
-    const cookieHeader = cookies.map(c => c.split(';')[0]).join('; ');
-    console.log('Login successful, got cookies');
+    const setCookie = loginResp.headers.get('set-cookie');
+    const cookieHeader = buildCookieHeader(setCookie);
+    if (!cookieHeader) return jsonResponse({ error: 'No session cookies received' }, 401);
 
-    // Step 2: Fetch file list
-    console.log('Fetching file list...');
-    const fileListResponse = await fetch(FILE_LIST_URL + '/json', {
-      headers: {
-        'Cookie': cookieHeader,
-      },
+    // -------------------------------------------------------------------------
+    // STEP 2: FETCH FILE LIST (HTML)
+    // -------------------------------------------------------------------------
+
+    const listResp = await fetch(FILE_LIST_URL, {
+      headers: { Cookie: cookieHeader }
     });
 
-    if (!fileListResponse.ok) {
-      return Response.json({ error: 'Failed to fetch file list' }, { status: 500 });
+    if (!listResp.ok) return jsonResponse({ error: 'Failed to fetch file list' }, 500);
+
+    const html = await listResp.text();
+
+    // extract all *.gz filenames from HTML
+    const gzSet = new Set();
+    const regex = />([^<]+\.gz)</g;
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const name = match[1].trim();
+      if (name.toLowerCase().endsWith('.gz')) gzSet.add(name);
     }
 
-    const fileListData = await fileListResponse.json();
-    
-    // Step 3: Find the latest matching file
-    const files = fileListData.files || fileListData || [];
-    const matchingFiles = files.filter(f => {
-      const name = f.name || f.fname || f;
-      return typeof name === 'string' && name.includes(filePattern) && name.endsWith('.gz');
-    });
+    const files = Array.from(gzSet);
+    if (files.length === 0) return jsonResponse({ error: 'No .gz files found' }, 404);
 
-    if (matchingFiles.length === 0) {
-      return Response.json({ error: `No ${filePattern}*.gz files found` }, { status: 404 });
+    const candidates = files.filter(name => name.includes(filePattern));
+    if (candidates.length === 0) {
+      return jsonResponse({ error: `No files matching "${filePattern}" found` }, 404);
     }
 
-    // Sort by timestamp in filename (descending) and pick the latest
-    matchingFiles.sort((a, b) => {
-      const nameA = a.name || a.fname || a;
-      const nameB = b.name || b.fname || b;
-      return nameB.localeCompare(nameA);
+    candidates.sort((a, b) => {
+      const ta = extractTimestampFromFilename(a);
+      const tb = extractTimestampFromFilename(b);
+      return tb.localeCompare(ta); // descending
     });
 
-    const latestFile = matchingFiles[0];
-    const fileName = latestFile.name || latestFile.fname || latestFile;
-    console.log(`Selected file: ${fileName}`);
+    const fileName = candidates[0];
 
-    // Step 4: Download the file
-    console.log('Downloading file...');
-    const downloadResponse = await fetch(`${FILE_DOWNLOAD_URL}/${encodeURIComponent(fileName)}`, {
-      headers: {
-        'Cookie': cookieHeader,
-      },
-    });
+    // -------------------------------------------------------------------------
+    // STEP 3: DOWNLOAD FILE
+    // -------------------------------------------------------------------------
 
-    if (!downloadResponse.ok) {
-      return Response.json({ error: 'Failed to download file' }, { status: 500 });
+    const downloadUrl = `${FILE_DOWNLOAD_URL}?fname=${encodeURIComponent(fileName)}`;
+    const downloadResp = await fetch(downloadUrl, { headers: { Cookie: cookieHeader } });
+
+    if (!downloadResp.ok) return jsonResponse({ error: 'Failed to download file' }, 500);
+
+    const compressed = new Uint8Array(await downloadResp.arrayBuffer());
+
+    // -------------------------------------------------------------------------
+    // STEP 4: DECOMPRESS
+    // -------------------------------------------------------------------------
+
+    let xmlString;
+    try {
+      const decompressed = gunzipSync(compressed);
+      xmlString = new TextDecoder().decode(decompressed);
+    } catch (e) {
+      return jsonResponse({ error: 'Failed to decompress file' }, 500);
     }
 
-    const compressedData = new Uint8Array(await downloadResponse.arrayBuffer());
-    console.log(`Downloaded ${compressedData.length} bytes`);
+    // -------------------------------------------------------------------------
+    // STEP 5: PARSE XML SAFELY
+    // -------------------------------------------------------------------------
 
-    // Step 5: Decompress
-    console.log('Decompressing...');
-    const decompressedData = gunzipSync(compressedData);
-    const xmlString = new TextDecoder().decode(decompressedData);
-    console.log(`Decompressed to ${xmlString.length} characters`);
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      trimValues: true,
+      parseTagValue: false
+    });
 
-    // Step 6: Parse XML manually (simple extraction)
-    const getXmlValue = (xml, tag) => {
-      const match = xml.match(new RegExp(`<${tag}>([^<]*)</${tag}>`));
-      return match ? match[1].trim() : '';
-    };
+    let root;
+    try {
+      root = parser.parse(xmlString).root;
+    } catch (e) {
+      return jsonResponse({ error: 'Invalid XML format' }, 500);
+    }
 
-    const chainId = getXmlValue(xmlString, 'ChainId');
-    const subChainId = getXmlValue(xmlString, 'SubChainId');
-    const storeId = getXmlValue(xmlString, 'StoreId');
+    const chainId = root.ChainId || '';
+    const subChainId = root.SubChainId || '';
+    const storeId = root.StoreId || '';
 
-    console.log(`Chain: ${chainId}, SubChain: ${subChainId}, Store: ${storeId}`);
+    let itemsXml = root?.Items?.Item || [];
+    if (!Array.isArray(itemsXml)) itemsXml = [itemsXml];
 
-    // Step 7: Find or create chain
-    let chains = await base44.asServiceRole.entities.Chain.filter({ external_chain_id: chainId });
-    let chain;
-    if (chains.length === 0) {
-      chain = await base44.asServiceRole.entities.Chain.create({
+    const svc = base44.asServiceRole;
+
+    // -------------------------------------------------------------------------
+    // CHAIN + STORE UPSERT
+    // -------------------------------------------------------------------------
+
+    let chainList = await svc.entities.Chain.filter({ external_chain_id: chainId });
+    let chain = chainList[0];
+    if (!chain) {
+      chain = await svc.entities.Chain.create({
         name: username,
         external_chain_id: chainId
       });
-    } else {
-      chain = chains[0];
     }
 
-    // Step 8: Find or create store
-    let stores = await base44.asServiceRole.entities.Store.filter({ 
-      chain_id: chain.id, 
-      external_store_id: storeId 
+    let storeList = await svc.entities.Store.filter({
+      chain_id: chain.id,
+      external_store_id: storeId
     });
-    let store;
-    if (stores.length === 0) {
-      store = await base44.asServiceRole.entities.Store.create({
+    let store = storeList[0];
+    if (!store) {
+      store = await svc.entities.Store.create({
         chain_id: chain.id,
         external_store_id: storeId,
         sub_chain_id: subChainId,
         name: `${username} - Store ${storeId}`
       });
-    } else {
-      store = stores[0];
     }
 
-    // Step 9: Parse items
-    const itemMatches = xmlString.matchAll(/<Item>([\s\S]*?)<\/Item>/g);
-    const items = [];
-    
-    for (const match of itemMatches) {
-      const itemXml = match[1];
-      items.push({
-        itemCode: getXmlValue(itemXml, 'ItemCode'),
-        itemName: getXmlValue(itemXml, 'ItemName'),
-        manufacturerName: getXmlValue(itemXml, 'ManufacturerName'),
-        description: getXmlValue(itemXml, 'ManufacturerItemDescription'),
-        unitQty: parseFloat(getXmlValue(itemXml, 'UnitQty')) || 0,
-        unitOfMeasure: getXmlValue(itemXml, 'UnitOfMeasure'),
-        qtyInPackage: parseFloat(getXmlValue(itemXml, 'QtyInPackage')) || 0,
-        isWeighted: getXmlValue(itemXml, 'bIsWeighted') === '1',
-        itemType: getXmlValue(itemXml, 'ItemType'),
-        itemStatus: getXmlValue(itemXml, 'ItemStatus'),
-        itemPrice: parseFloat(getXmlValue(itemXml, 'ItemPrice')) || 0,
-        unitOfMeasurePrice: parseFloat(getXmlValue(itemXml, 'UnitOfMeasurePrice')) || 0,
-        allowDiscount: getXmlValue(itemXml, 'AllowDiscount') === '1',
-        priceUpdateDate: getXmlValue(itemXml, 'PriceUpdateDate')
-      });
+    // -------------------------------------------------------------------------
+    // PRELOAD EXISTING PRODUCTS + PRICES TO AVOID THOUSANDS OF DB CALLS
+    // -------------------------------------------------------------------------
+
+    const existingProducts = await svc.entities.Product.filter({ chain_id: chain.id });
+    const existingPrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
+
+    const productByCode = new Map();
+    for (const p of existingProducts) {
+      productByCode.set(p.external_item_code, p);
     }
 
-    console.log(`Found ${items.length} items`);
+    const priceByProductId = new Map();
+    for (const pr of existingPrices) {
+      priceByProductId.set(pr.product_id, pr);
+    }
 
-    // Step 10: Process items in batches
+    // -------------------------------------------------------------------------
+    // NORMALIZE AND UPSERT ITEMS
+    // -------------------------------------------------------------------------
+
     let processedCount = 0;
     let errorCount = 0;
-    const batchSize = 50;
 
-    for (let i = 0; i < items.length; i += batchSize) {
-      const batch = items.slice(i, i + batchSize);
-      
-      for (const item of batch) {
-        try {
-          // Find or create product
-          let products = await base44.asServiceRole.entities.Product.filter({
-            chain_id: chain.id,
-            external_item_code: item.itemCode
-          });
+    for (const raw of itemsXml) {
+      try {
+        const itemCode = raw.ItemCode?.toString().trim();
+        if (!itemCode) continue;
 
-          let product;
-          const productData = {
-            chain_id: chain.id,
-            external_item_code: item.itemCode,
-            name: item.itemName,
-            brand: item.manufacturerName,
-            description: item.description,
-            unit_of_measure: item.unitOfMeasure,
-            unit_qty: item.unitQty,
-            qty_in_package: item.qtyInPackage,
-            is_weighted: item.isWeighted,
-            item_type: item.itemType,
-            status: item.itemStatus
-          };
+        const productPayload = {
+          chain_id: chain.id,
+          external_item_code: itemCode,
+          name: raw.ItemName || '',
+          brand: raw.ManufacturerName || '',
+          description: raw.ManufacturerItemDescription || '',
+          unit_of_measure: raw.UnitOfMeasure || '',
+          unit_qty: raw.UnitQty || '',
+          qty_in_package: parseNumber(raw.QtyInPackage),
+          is_weighted: String(raw.bIsWeighted || '') === '1',
+          item_type: raw.ItemType || '',
+          status: raw.ItemStatus || ''
+        };
 
-          if (products.length === 0) {
-            product = await base44.asServiceRole.entities.Product.create(productData);
-          } else {
-            product = products[0];
-            await base44.asServiceRole.entities.Product.update(product.id, productData);
-          }
-
-          // Find or create price record
-          let prices = await base44.asServiceRole.entities.ProductPrice.filter({
-            product_id: product.id,
-            store_id: store.id
-          });
-
-          const priceData = {
-            product_id: product.id,
-            store_id: store.id,
-            price: item.itemPrice,
-            unit_price: item.unitOfMeasurePrice,
-            allow_discount: item.allowDiscount,
-            price_update_at: item.priceUpdateDate || new Date().toISOString()
-          };
-
-          if (prices.length === 0) {
-            await base44.asServiceRole.entities.ProductPrice.create(priceData);
-          } else {
-            await base44.asServiceRole.entities.ProductPrice.update(prices[0].id, priceData);
-          }
-
-          processedCount++;
-        } catch (err) {
-          console.error(`Error processing item ${item.itemCode}:`, err.message);
-          errorCount++;
+        let product = productByCode.get(itemCode);
+        if (!product) {
+          product = await svc.entities.Product.create(productPayload);
+          productByCode.set(itemCode, product);
+        } else {
+          await svc.entities.Product.update(product.id, productPayload);
         }
-      }
 
-      console.log(`Processed ${Math.min(i + batchSize, items.length)}/${items.length} items`);
+        const pricePayload = {
+          product_id: product.id,
+          store_id: store.id,
+          price: parseNumber(raw.ItemPrice),
+          unit_price: parseNumber(raw.UnitOfMeasurePrice),
+          allow_discount: String(raw.AllowDiscount || '') === '1',
+          price_update_at: raw.PriceUpdateDate || new Date().toISOString()
+        };
+
+        let priceRecord = priceByProductId.get(product.id);
+        if (!priceRecord) {
+          priceRecord = await svc.entities.ProductPrice.create(pricePayload);
+          priceByProductId.set(product.id, priceRecord);
+        } else {
+          await svc.entities.ProductPrice.update(priceRecord.id, pricePayload);
+        }
+
+        processedCount++;
+      } catch (e) {
+        console.error('Item processing error:', e);
+        errorCount++;
+      }
     }
 
-    return Response.json({
+    // -------------------------------------------------------------------------
+    // DONE
+    // -------------------------------------------------------------------------
+
+    return jsonResponse({
       success: true,
-      summary: {
-        file: fileName,
-        chain: username,
-        chainId,
-        storeId,
-        totalItems: items.length,
-        processedCount,
-        errorCount
-      }
+      file: fileName,
+      chainId,
+      storeId,
+      totalItems: itemsXml.length,
+      processedCount,
+      errorCount
     });
 
-  } catch (error) {
-    console.error('Catalog update error:', error);
-    const errorMessage = error.message || String(error);
-    const errorStack = error.stack || '';
-    return Response.json({ 
-      error: errorMessage,
-      details: errorStack.substring(0, 500) 
-    }, { status: 500 });
+  } catch (e) {
+    return jsonResponse(
+      { error: e?.message || String(e), stack: String(e?.stack || '').slice(0, 300) },
+      500
+    );
   }
 });
