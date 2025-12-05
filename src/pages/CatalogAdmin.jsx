@@ -57,16 +57,25 @@ export default function CatalogAdmin() {
       const formData = new FormData();
       formData.append('xmlFile', xmlFile);
 
-      const response = await base44.functions.invoke('uploadCatalog', formData);
+      // Get the function URL and make direct fetch call for file upload
+      const functionUrl = `${window.location.origin}/api/functions/uploadCatalog`;
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
 
-      if (response.data.error) {
-        setUploadError(response.data.error);
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        setUploadError(data.error || 'Upload failed');
       } else {
-        setUploadResult(response.data);
+        setUploadResult(data);
         setXmlFile(null);
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.error || err.message || 'Failed to upload file';
+      const errorMsg = err.message || 'Failed to upload file';
       setUploadError(errorMsg);
     } finally {
       setIsUploading(false);
