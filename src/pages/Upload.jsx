@@ -320,7 +320,7 @@ export default function Upload() {
                                         <Input 
                                             value={item.code || ''} 
                                             onChange={(e) => handleItemChange(i, 'code', e.target.value)}
-                                            className="h-6 w-20 text-[10px] text-gray-500 border-gray-100 bg-gray-50"
+                                            className="h-6 w-100 text-[10px] text-gray-500 border-gray-100 bg-gray-50"
                                             placeholder="Code"
                                         />
                                         <Input 
