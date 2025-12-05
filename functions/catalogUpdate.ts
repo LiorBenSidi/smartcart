@@ -1,62 +1,29 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import { gunzipSync } from 'npm:fflate@0.8.2';
-import { XMLParser } from 'npm:fast-xml-parser@4.5.0';
-import https from "node:https";
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.4";
+import { gunzipSync } from "npm:fflate@0.8.2";
+import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 
-// -----------------------------------------------------------------------------
-// CONFIG
-// -----------------------------------------------------------------------------
+// CONFIG:
+const LOGIN_URL = "https://url.publishedprices.co.il/login";
+const FILE_LIST_URL = "https://url.publishedprices.co.il/file";
+const FILE_DOWNLOAD_URL = "https://url.publishedprices.co.il/file/d";
 
-const LOGIN_URL = 'https://url.publishedprices.co.il/login';
-const FILE_LIST_URL = 'https://url.publishedprices.co.il/file';
-const FILE_DOWNLOAD_URL = 'https://url.publishedprices.co.il/file/d';
+const LOGIN_USERNAME_FIELD = "username";
+const LOGIN_PASSWORD_FIELD = "password";
 
-const LOGIN_USERNAME_FIELD = 'username';  
-const LOGIN_PASSWORD_FIELD = 'password';  
+// !!! CHANGE THIS to your actual deployed proxyFetch URL:
+const PROXY_URL = "https://69330b1ba1b4842cb79a70d6.functions.base44.com/proxyFetch";
 
-// -----------------------------------------------------------------------------
-// HTTPS WRAPPER (TLS BYPASS)
-// -----------------------------------------------------------------------------
-
-function insecureFetch(url, options = {}) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(
-      url,
-      {
-        method: options.method || "GET",
-        headers: options.headers || {},
-        rejectUnauthorized: false, // <-- BYPASS CERT VALIDATION
-      },
-      (res) => {
-        const chunks = [];
-        res.on("data", (c) => chunks.push(c));
-        res.on("end", () => {
-          const body = Buffer.concat(chunks);
-          const headers = new Headers();
-          for (const [key, value] of Object.entries(res.headers)) {
-            headers.append(key, value);
-          }
-          resolve(new Response(body, { status: res.statusCode, headers }));
-        });
-      }
-    );
-
-    req.on("error", reject);
-
-    if (options.body) req.write(options.body);
-
-    req.end();
-  });
+// Helper: Proxy wrapper
+async function proxyFetch(url, options = {}) {
+  const encoded = `${PROXY_URL}?url=${encodeURIComponent(url)}`;
+  return await fetch(encoded, options);
 }
 
-// -----------------------------------------------------------------------------
-// HELPERS
-// -----------------------------------------------------------------------------
-
+// Helpers
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8" }
+    headers: { "Content-Type": "application/json" }
   });
 }
 
@@ -67,34 +34,32 @@ function parseNumber(value) {
     .replace(/\s+/g, "")
     .replace(",", ".")
     .replace(/[^\d.\-]/g, "");
-  const n = parseFloat(cleaned);
-  return Number.isFinite(n) ? n : 0;
+  const num = parseFloat(cleaned);
+  return Number.isFinite(num) ? num : 0;
 }
 
-function buildCookieHeader(setCookieHeader) {
-  if (!setCookieHeader) return "";
-  return setCookieHeader
+function buildCookieHeader(header) {
+  if (!header) return "";
+  return header
     .split(",")
     .map((c) => c.trim().split(";")[0])
-    .filter(Boolean)
     .join("; ");
 }
 
-function extractTimestampFromFilename(name) {
-  const m = name.match(/(\d{14}|\d{12})/);
+function extractTimestamp(filename) {
+  const m = filename.match(/(\d{14}|\d{12})/);
   return m ? m[1] : "";
 }
 
-// -----------------------------------------------------------------------------
 // MAIN HANDLER
-// -----------------------------------------------------------------------------
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
+
     if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 
+    // Check admin
     let isAdmin = user.email === "liorben@base44.com";
     try {
       if (!isAdmin) {
@@ -109,6 +74,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Admin access required" }, 403);
     }
 
+    // Parse request body
     let body = {};
     try { body = await req.json(); } catch {}
 
@@ -116,98 +82,67 @@ Deno.serve(async (req) => {
     const password = body.password || "";
     const filePattern = body.filePattern || "PriceFull";
 
-    if (!username) return jsonResponse({ error: "Username is required" }, 400);
+    if (!username) return jsonResponse({ error: "username is required" }, 400);
 
-    // -------------------------------------------------------------------------
-    // STEP 1 — LOGIN (with TLS bypass)
-    // -------------------------------------------------------------------------
-
+    // STEP 1 — LOGIN via proxy
     const form = new URLSearchParams();
     form.append(LOGIN_USERNAME_FIELD, username);
     form.append(LOGIN_PASSWORD_FIELD, password);
 
-    const loginResp = await insecureFetch(LOGIN_URL, {
+    const loginResp = await proxyFetch(LOGIN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: form.toString(),
-      redirect: "manual"
+      body: form.toString()
     });
 
     const setCookie = loginResp.headers.get("set-cookie");
     const cookieHeader = buildCookieHeader(setCookie);
 
     if (!cookieHeader) {
-      return jsonResponse({ error: "Login failed - no session cookies" }, 401);
+      return jsonResponse({ error: "Login failed: no cookies" }, 401);
     }
 
-    // -------------------------------------------------------------------------
-    // STEP 2 — FETCH FILE LIST (HTML)
-    // -------------------------------------------------------------------------
-
-    const listResp = await insecureFetch(FILE_LIST_URL, {
+    // STEP 2 — FETCH FILE LIST via proxy
+    const listResp = await proxyFetch(FILE_LIST_URL, {
       headers: { Cookie: cookieHeader }
     });
 
     const html = await listResp.text();
 
-    const gzFiles = new Set();
+    // Extract .gz filenames
+    const files = new Set();
     const regex = />([^<]+\.gz)</g;
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-      gzFiles.add(match[1].trim());
+    let m;
+    while ((m = regex.exec(html)) !== null) {
+      files.add(m[1].trim());
     }
 
-    const files = Array.from(gzFiles);
-    if (files.length === 0) {
-      return jsonResponse({ error: "No .gz files found" }, 404);
+    const fileList = Array.from(files).filter((f) => f.includes(filePattern));
+    if (fileList.length === 0) {
+      return jsonResponse({ error: "No matching .gz files found" }, 404);
     }
 
-    const candidates = files.filter((f) => f.includes(filePattern));
-    if (candidates.length === 0) {
-      return jsonResponse(
-        { error: `No files matching ${filePattern}` },
-        404
-      );
-    }
+    fileList.sort((a, b) => extractTimestamp(b).localeCompare(extractTimestamp(a)));
 
-    candidates.sort((a, b) => {
-      const ta = extractTimestampFromFilename(a);
-      const tb = extractTimestampFromFilename(b);
-      return tb.localeCompare(ta);
-    });
+    const fileName = fileList[0];
 
-    const fileName = candidates[0];
-
-    // -------------------------------------------------------------------------
-    // STEP 3 — DOWNLOAD FILE
-    // -------------------------------------------------------------------------
-
-    const downloadUrl = `${FILE_DOWNLOAD_URL}?fname=${encodeURIComponent(
-      fileName
-    )}`;
-
-    const downloadResp = await insecureFetch(downloadUrl, {
+    // STEP 3 — DOWNLOAD FILE via proxy
+    const dlUrl = `${FILE_DOWNLOAD_URL}?fname=${encodeURIComponent(fileName)}`;
+    const dlResp = await proxyFetch(dlUrl, {
       headers: { Cookie: cookieHeader }
     });
 
-    const compressed = new Uint8Array(await downloadResp.arrayBuffer());
+    const compressed = new Uint8Array(await dlResp.arrayBuffer());
 
-    // -------------------------------------------------------------------------
     // STEP 4 — DECOMPRESS
-    // -------------------------------------------------------------------------
-
-    let xmlString = "";
+    let xmlString;
     try {
-      const decompressed = gunzipSync(compressed);
-      xmlString = new TextDecoder().decode(decompressed);
-    } catch (e) {
+      xmlString = new TextDecoder().decode(gunzipSync(compressed));
+    } catch (err) {
       return jsonResponse({ error: "Decompression failed" }, 500);
     }
 
-    // -------------------------------------------------------------------------
-    // STEP 5 — XML PARSE
-    // -------------------------------------------------------------------------
-
+    // STEP 5 — PARSE XML
     const parser = new XMLParser({
       ignoreAttributes: false,
       trimValues: true,
@@ -217,27 +152,21 @@ Deno.serve(async (req) => {
     let root;
     try {
       root = parser.parse(xmlString).root;
-    } catch (e) {
-      return jsonResponse({ error: "Invalid XML" }, 500);
+    } catch {
+      return jsonResponse({ error: "Invalid XML format" }, 500);
     }
 
     const chainId = root.ChainId || "";
     const subChainId = root.SubChainId || "";
     const storeId = root.StoreId || "";
 
-    let itemsXml = root.Items?.Item || [];
-    if (!Array.isArray(itemsXml)) itemsXml = [itemsXml];
+    let items = root?.Items?.Item || [];
+    if (!Array.isArray(items)) items = [items];
 
     const svc = base44.asServiceRole;
 
-    // -------------------------------------------------------------------------
-    // UPSERT CHAIN AND STORE
-    // -------------------------------------------------------------------------
-
-    let chain = (await svc.entities.Chain.filter({
-      external_chain_id: chainId
-    }))[0];
-
+    // UPSERT CHAIN + STORE
+    let chain = (await svc.entities.Chain.filter({ external_chain_id: chainId }))[0];
     if (!chain) {
       chain = await svc.entities.Chain.create({
         name: username,
@@ -259,43 +188,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // -------------------------------------------------------------------------
-    // PRELOAD EXISTING PRODUCTS + PRICES
-    // -------------------------------------------------------------------------
+    // PRELOAD products + prices
+    const existingProducts = await svc.entities.Product.filter({ chain_id: chain.id });
+    const existingPrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
 
-    const existingProducts = await svc.entities.Product.filter({
-      chain_id: chain.id
-    });
+    const productMap = new Map(existingProducts.map(p => [p.external_item_code, p]));
+    const priceMap = new Map(existingPrices.map(pr => [pr.product_id, pr]));
 
-    const existingPrices = await svc.entities.ProductPrice.filter({
-      store_id: store.id
-    });
-
-    const productByCode = new Map();
-    for (const p of existingProducts) {
-      productByCode.set(p.external_item_code, p);
-    }
-
-    const priceByProductId = new Map();
-    for (const pr of existingPrices) {
-      priceByProductId.set(pr.product_id, pr);
-    }
-
-    // -------------------------------------------------------------------------
     // PROCESS ITEMS
-    // -------------------------------------------------------------------------
+    let processed = 0;
+    let failed = 0;
 
-    let processedCount = 0;
-    let errorCount = 0;
-
-    for (const raw of itemsXml) {
+    for (const raw of items) {
       try {
-        const itemCode = raw.ItemCode?.toString().trim();
-        if (!itemCode) continue;
+        const code = raw.ItemCode?.toString().trim();
+        if (!code) continue;
 
         const productPayload = {
           chain_id: chain.id,
-          external_item_code: itemCode,
+          external_item_code: code,
           name: raw.ItemName || "",
           brand: raw.ManufacturerName || "",
           description: raw.ManufacturerItemDescription || "",
@@ -307,11 +218,10 @@ Deno.serve(async (req) => {
           status: raw.ItemStatus || ""
         };
 
-        let product = productByCode.get(itemCode);
-
+        let product = productMap.get(code);
         if (!product) {
           product = await svc.entities.Product.create(productPayload);
-          productByCode.set(itemCode, product);
+          productMap.set(code, product);
         } else {
           await svc.entities.Product.update(product.id, productPayload);
         }
@@ -325,42 +235,33 @@ Deno.serve(async (req) => {
           price_update_at: raw.PriceUpdateDate || new Date().toISOString()
         };
 
-        let priceRecord = priceByProductId.get(product.id);
-
-        if (!priceRecord) {
-          priceRecord = await svc.entities.ProductPrice.create(pricePayload);
-          priceByProductId.set(product.id, priceRecord);
+        let priceRec = priceMap.get(product.id);
+        if (!priceRec) {
+          priceRec = await svc.entities.ProductPrice.create(pricePayload);
+          priceMap.set(product.id, priceRec);
         } else {
-          await svc.entities.ProductPrice.update(priceRecord.id, pricePayload);
+          await svc.entities.ProductPrice.update(priceRec.id, pricePayload);
         }
 
-        processedCount++;
-      } catch (e) {
-        console.error("Item error:", e);
-        errorCount++;
+        processed++;
+      } catch (err) {
+        failed++;
       }
     }
-
-    // -------------------------------------------------------------------------
-    // DONE
-    // -------------------------------------------------------------------------
 
     return jsonResponse({
       success: true,
       file: fileName,
       chainId,
       storeId,
-      totalItems: itemsXml.length,
-      processedCount,
-      errorCount
+      processed,
+      failed,
+      total: items.length
     });
 
-  } catch (e) {
+  } catch (err) {
     return jsonResponse(
-      {
-        error: e?.message || String(e),
-        stack: String(e?.stack || "").slice(0, 300)
-      },
+      { error: err.message || String(err) },
       500
     );
   }
