@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -12,6 +12,21 @@ export default function Home() {
   const [receipts, setReceipts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [displayCount, setDisplayCount] = useState(5);
+
+  useEffect(() => {
+    const handleResize = () => {
+        if (window.innerWidth < 640) {
+            setDisplayCount(3);
+        } else {
+            setDisplayCount(5); // Keep 5 or more for larger screens
+        }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,8 +84,7 @@ export default function Home() {
   const categoryTotals = receipts.reduce((acc, receipt) => {
     if (receipt.items) {
         receipt.items.forEach(item => {
-            // Use first 4 chars of category for label
-            const cat = (item.category || 'Other').substring(0, 4);
+            const cat = item.category || 'Other';
             acc[cat] = (acc[cat] || 0) + (item.total || 0);
         });
     }
@@ -80,7 +94,7 @@ export default function Home() {
   const chartData = Object.entries(categoryTotals)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 5); // Top 5 categories
+    .slice(0, displayCount);
 
   // Default empty state for chart if no data
   if (chartData.length === 0) {
@@ -161,6 +175,11 @@ export default function Home() {
                     tickLine={false} 
                     tick={{fontSize: 12, fill: '#9ca3af'}} 
                     dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 12, fill: '#9ca3af'}} 
                   />
                   <Tooltip 
                     cursor={{fill: 'transparent'}}
