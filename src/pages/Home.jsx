@@ -212,6 +212,7 @@ export default function Home() {
             <CardContent className="p-4 pt-8 h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} barGap={8}>
+                  <CartesianGrid vertical={true} horizontal={false} stroke="#c4b5fd" />
                   <XAxis 
                     dataKey="name" 
                     axisLine={false} 
