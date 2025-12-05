@@ -40,8 +40,6 @@ export default function Home() {
                 console.error("Error checking admin status", e);
             }
         }
-            console.error("Error checking admin status", e);
-        }
         console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users
 
         

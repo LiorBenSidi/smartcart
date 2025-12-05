@@ -27,8 +27,6 @@ export default function Receipt() {
                     console.error("Error checking admin status", e);
                 }
             }
-                console.error("Error checking admin status", e);
-            }
 
             let data;
             if (isAdmin) {
