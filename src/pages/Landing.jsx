@@ -103,7 +103,7 @@ export default function Landing() {
           }
           
           <p className="text-xs text-gray-400 mt-6">Step 1 Prototype • Powered by Gemini Pro 3
-Created by: Lior Ben Sidi & Yarin Katan
+
           </p>
         </motion.div>
 
