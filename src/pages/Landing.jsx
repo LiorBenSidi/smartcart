@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ScanLine, TrendingUp, Leaf, LogIn, UserPlus } from "lucide-react";
+import { ArrowRight, ScanLine, TrendingUp, Leaf, LogIn, UserPlus, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
@@ -93,6 +93,21 @@ export default function Landing() {
                     Get Started
                     <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
+
+                <a 
+                  href={base44.agents.getWhatsAppConnectURL('grocery_bot')} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block w-full"
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full h-14 text-lg border-green-500 text-green-600 hover:bg-green-50 rounded-xl border-2"
+                  >
+                    <MessageCircle className="mr-2 w-5 h-5" /> 
+                    Chat on WhatsApp
+                  </Button>
+                </a>
             </div>
             ) :
 
