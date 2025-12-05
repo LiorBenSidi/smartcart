@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 // import { generateMockReceipt } from "@/components/mockData";
-import { UploadCloud, CheckCircle2, ScanLine, Receipt, Loader2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ScanLine, Receipt, Loader2, Trash2, Plus } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 export default function Upload() {
@@ -101,6 +101,48 @@ export default function Upload() {
     }
   };
 
+  const handleItemChange = (index, field, value) => {
+    if (!parsedData) return;
+    const newItems = [...parsedData.items];
+    
+    // Handle numeric fields
+    if (field === 'quantity' || field === 'total') {
+        newItems[index] = { ...newItems[index], [field]: parseFloat(value) || 0 };
+    } else {
+        newItems[index] = { ...newItems[index], [field]: value };
+    }
+
+    // Recalculate total amount from items
+    const newTotalAmount = newItems.reduce((sum, item) => sum + (item.total || 0), 0);
+
+    setParsedData({
+        ...parsedData,
+        items: newItems,
+        totalAmount: newTotalAmount
+    });
+  };
+
+  const handleDeleteItem = (index) => {
+    if (!parsedData) return;
+    const newItems = parsedData.items.filter((_, i) => i !== index);
+    const newTotalAmount = newItems.reduce((sum, item) => sum + (item.total || 0), 0);
+    
+    setParsedData({
+        ...parsedData,
+        items: newItems,
+        totalAmount: newTotalAmount
+    });
+  };
+
+  const handleAddItem = () => {
+      if (!parsedData) return;
+      const newItem = { name: "New Item", category: "Other", quantity: 1, price: 0, total: 0 };
+      setParsedData({
+          ...parsedData,
+          items: [...parsedData.items, newItem]
+      });
+  };
+
   const saveReceipt = async () => {
     if (!parsedData) return;
     
@@ -192,28 +234,71 @@ export default function Upload() {
                 </div>
               </div>
               
-              <div className="p-4 max-h-60 overflow-y-auto">
+              <div className="p-4 max-h-96 overflow-y-auto">
                 <table className="w-full text-sm">
                     <thead className="text-gray-400 border-b border-gray-100">
                         <tr>
-                            <th className="text-left font-medium pb-2 pl-2">Item</th>
-                            <th className="text-right font-medium pb-2">Qty</th>
-                            <th className="text-right font-medium pb-2 pr-2">Price</th>
+                            <th className="text-left font-medium pb-2 pl-2">Item & Category</th>
+                            <th className="text-center font-medium pb-2 w-16">Qty</th>
+                            <th className="text-center font-medium pb-2 w-20">Total</th>
+                            <th className="w-8"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                         {parsedData.items.map((item, i) => (
-                            <tr key={i}>
-                                <td className="py-3 pl-2 font-medium text-gray-800">
-                                    {item.name}
-                                    <div className="text-[10px] text-gray-400 font-normal">{item.category}</div>
+                            <tr key={i} className="group">
+                                <td className="py-3 pl-2 align-top">
+                                    <Input 
+                                        value={item.name} 
+                                        onChange={(e) => handleItemChange(i, 'name', e.target.value)}
+                                        className="h-8 text-sm mb-1 border-gray-200 focus:border-indigo-300"
+                                        placeholder="Item name"
+                                    />
+                                    <Input 
+                                        value={item.category} 
+                                        onChange={(e) => handleItemChange(i, 'category', e.target.value)}
+                                        className="h-6 text-[10px] text-gray-500 border-transparent bg-gray-50 hover:bg-white hover:border-gray-200 focus:border-indigo-300 transition-all"
+                                        placeholder="Category"
+                                    />
                                 </td>
-                                <td className="py-3 text-right text-gray-500">{item.quantity}</td>
-                                <td className="py-3 pr-2 text-right font-medium">${item.total.toFixed(2)}</td>
+                                <td className="py-3 px-1 align-top">
+                                     <Input 
+                                        type="number"
+                                        value={item.quantity} 
+                                        onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
+                                        className="h-8 text-sm text-center px-1 border-gray-200 focus:border-indigo-300"
+                                    />
+                                </td>
+                                <td className="py-3 px-1 align-top">
+                                     <Input 
+                                        type="number"
+                                        value={item.total} 
+                                        onChange={(e) => handleItemChange(i, 'total', e.target.value)}
+                                        className="h-8 text-sm text-right px-1 font-medium border-gray-200 focus:border-indigo-300"
+                                    />
+                                </td>
+                                <td className="py-3 pr-1 align-top text-right">
+                                    <button 
+                                        onClick={() => handleDeleteItem(i)}
+                                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                <div className="mt-4">
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleAddItem}
+                        className="w-full text-gray-500 border-dashed border-gray-300 hover:border-indigo-300 hover:text-indigo-600"
+                    >
+                        <Plus className="w-4 h-4 mr-1" /> Add Missing Item
+                    </Button>
+                </div>
               </div>
             </div>
 
