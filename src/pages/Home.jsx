@@ -27,13 +27,19 @@ export default function Home() {
         const user = await base44.auth.me();
         console.log('Current User Email:', user.email); // Check if this is the correct email
         let isAdmin = false;
-        try {
-            const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-            console.log('User Profile for Admin Check:', profiles); // Inspect this object
-            if (profiles.length > 0 && profiles[0].isAdmin) {
-                isAdmin = true;
+        if (user.email === 'liorben@base44.com') {
+            isAdmin = true;
+        } else {
+            try {
+                const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+                console.log('User Profile for Admin Check:', profiles); // Inspect this object
+                if (profiles.length > 0 && profiles[0].isAdmin) {
+                    isAdmin = true;
+                }
+            } catch(e) {
+                console.error("Error checking admin status", e);
             }
-        } catch(e) {
+        }
             console.error("Error checking admin status", e);
         }
         console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users

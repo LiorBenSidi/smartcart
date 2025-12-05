@@ -15,8 +15,11 @@ export default function Admin() {
             const user = await base44.auth.me();
             
             // Check admin status via UserProfile
-            const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-            const isAdmin = profiles.length > 0 && profiles[0].isAdmin;
+            let isAdmin = user.email === 'liorben@base44.com';
+            if (!isAdmin) {
+                const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+                isAdmin = profiles.length > 0 && profiles[0].isAdmin;
+            }
 
             if (!isAdmin) {
                 window.location.href = '/'; // Redirect if not admin

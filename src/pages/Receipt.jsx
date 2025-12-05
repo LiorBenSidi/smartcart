@@ -16,13 +16,17 @@ export default function Receipt() {
       if (id) {
         try {
             const user = await base44.auth.me();
-            let isAdmin = false;
-            try {
-                const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-                if (profiles.length > 0 && profiles[0].isAdmin) {
-                    isAdmin = true;
+            let isAdmin = user.email === 'liorben@base44.com';
+            if (!isAdmin) {
+                try {
+                    const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+                    if (profiles.length > 0 && profiles[0].isAdmin) {
+                        isAdmin = true;
+                    }
+                } catch(e) {
+                    console.error("Error checking admin status", e);
                 }
-            } catch(e) {
+            }
                 console.error("Error checking admin status", e);
             }
 
