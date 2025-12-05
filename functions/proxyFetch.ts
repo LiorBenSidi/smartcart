@@ -18,7 +18,8 @@ Deno.serve(async (req) => {
     const external = await fetch(url, {
       method,
       headers,
-      body
+      body,
+      redirect: 'manual'
     });
 
     const buffer = new Uint8Array(await external.arrayBuffer());
