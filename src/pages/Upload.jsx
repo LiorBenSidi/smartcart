@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, CheckCircle2, ScanLine, Loader2 } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 export default function Upload() {
@@ -21,74 +21,6 @@ export default function Upload() {
         setPreview(reader.result);
       };
       reader.readAsDataURL(selectedFile);
-    }
-  };
-
-  const processReceiptInBackground = async (receiptId, fileUrl) => {
-    try {
-      const prompt = `
-        Analyze this grocery receipt image and extract the data into the following JSON format:
-        - storeName: Name of the store
-        - date: Date of purchase (YYYY-MM-DD). If missing, use today's date.
-        - time: Time of purchase (HH:MM) if available.
-        - address: Address of the store if available.
-        - totalAmount: Total amount paid
-        - items: List of items purchased with product code (if available), name, category (Produce, Dairy, Meat, Snacks, etc), quantity (default 1), price (unit price), and total.
-        - insights: Array of insights. 'type' can be "warning" (e.g. unhealthy), "saving" (e.g. bought on sale), or "info". 'message' is the text.
-      `;
-
-      const llmRes = await base44.integrations.Core.InvokeLLM({
-        prompt: prompt,
-        file_urls: [fileUrl],
-        response_json_schema: {
-            type: "object",
-            properties: {
-                storeName: { type: "string" },
-                date: { type: "string" },
-                time: { type: "string" },
-                address: { type: "string" },
-                totalAmount: { type: "number" },
-                items: { 
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            code: { type: "string" },
-                            name: { type: "string" },
-                            category: { type: "string" },
-                            quantity: { type: "number" },
-                            price: { type: "number" },
-                            total: { type: "number" }
-                        }
-                    }
-                },
-                insights: {
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            type: { type: "string", enum: ["warning", "saving", "info"] },
-                            message: { type: "string" }
-                        }
-                    }
-                }
-            },
-            required: ["storeName", "totalAmount", "date", "items"]
-        }
-      });
-
-      // Update receipt with extracted data
-      await base44.entities.Receipt.update(receiptId, {
-        ...llmRes,
-        processingStatus: 'processed'
-      });
-
-    } catch (error) {
-      console.error("Error analyzing receipt", error);
-      // Mark as failed
-      await base44.entities.Receipt.update(receiptId, {
-        processingStatus: 'failed'
-      });
     }
   };
 
@@ -114,14 +46,8 @@ export default function Upload() {
         processingStatus: 'pending'
       });
 
-      // 3. Start background processing BEFORE redirect
-      // Use a non-blocking approach - don't await, but also don't redirect until we've started
-      processReceiptInBackground(pendingReceipt.id, fileUrl);
-
-      // 4. Small delay to ensure the request is initiated, then redirect
-      setTimeout(() => {
-        window.location.href = createPageUrl('Home');
-      }, 100);
+      // 3. Redirect to the Receipt page - processing will happen there
+      window.location.href = `${createPageUrl('Receipt')}?id=${pendingReceipt.id}`;
 
     } catch (error) {
       console.error("Error uploading receipt", error);
