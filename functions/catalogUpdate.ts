@@ -266,6 +266,11 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Catalog update error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const errorMessage = error.message || String(error);
+    const errorStack = error.stack || '';
+    return Response.json({ 
+      error: errorMessage,
+      details: errorStack.substring(0, 500) 
+    }, { status: 500 });
   }
 });
