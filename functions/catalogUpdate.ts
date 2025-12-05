@@ -49,7 +49,7 @@ async function callProxy(base44, url, options = {}) {
   const resp = await base44.functions.invoke("proxyFetch", payload);
   
   // resp is axios response: { data, status, headers }
-  // Return an object that mimics Response API
+  // data should be a Uint8Array from proxyFetch
   return {
     status: resp.status,
     headers: {
@@ -57,14 +57,25 @@ async function callProxy(base44, url, options = {}) {
     },
     text: async () => {
       if (typeof resp.data === 'string') return resp.data;
-      if (resp.data instanceof ArrayBuffer) return new TextDecoder().decode(resp.data);
+      if (resp.data instanceof Uint8Array) {
+        return new TextDecoder().decode(resp.data);
+      }
+      if (resp.data instanceof ArrayBuffer) {
+        return new TextDecoder().decode(resp.data);
+      }
       return JSON.stringify(resp.data);
     },
     arrayBuffer: async () => {
-      if (resp.data instanceof ArrayBuffer) return resp.data;
-      if (typeof resp.data === 'string') return new TextEncoder().encode(resp.data).buffer;
-      // If data is binary returned as array/object, convert it
-      return resp.data;
+      if (resp.data instanceof Uint8Array) {
+        return resp.data.buffer;
+      }
+      if (resp.data instanceof ArrayBuffer) {
+        return resp.data;
+      }
+      if (typeof resp.data === 'string') {
+        return new TextEncoder().encode(resp.data).buffer;
+      }
+      return new TextEncoder().encode(JSON.stringify(resp.data)).buffer;
     }
   };
 }
