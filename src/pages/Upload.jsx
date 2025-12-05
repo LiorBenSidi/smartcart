@@ -379,9 +379,37 @@ export default function Upload() {
               </div>
             </div>
 
+            {hasMismatch && (
+                <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="font-bold text-amber-800 text-sm">Total Mismatch Detected</h4>
+                        <p className="text-xs text-amber-700 mt-1">
+                            Sum of items (${calculatedSum.toFixed(2)}) does not match the receipt total (${parsedData.totalAmount.toFixed(2)}).
+                            Please review your items or update the total amount.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {!isSaved ? (
-                <Button onClick={saveReceipt} className="w-full h-12 bg-green-600 hover:bg-green-700 shadow-md text-white">
-                    <CheckCircle2 className="mr-2 w-5 h-5" /> Save & Continue
+                <Button 
+                    onClick={saveReceipt} 
+                    className={`w-full h-12 shadow-md text-white transition-all ${
+                        hasMismatch 
+                        ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-200 ring-offset-2" 
+                        : "bg-green-600 hover:bg-green-700"
+                    }`}
+                >
+                    {hasMismatch ? (
+                        <>
+                            <AlertTriangle className="mr-2 w-5 h-5" /> Confirm Mismatch & Save
+                        </>
+                    ) : (
+                        <>
+                            <CheckCircle2 className="mr-2 w-5 h-5" /> Save & Continue
+                        </>
+                    )}
                 </Button>
             ) : (
                 <Button disabled className="w-full h-12 bg-green-100 text-green-700 border-green-200">
