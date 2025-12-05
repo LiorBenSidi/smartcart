@@ -1,37 +1,46 @@
 Deno.serve(async (req) => {
   try {
-    const url = new URL(req.url).searchParams.get("url");
+    const input = await req.json().catch(() => ({}));
+
+    const url = input.url;
+    const method = input.method || "GET";
+    const headers = input.headers || {};
+    const body = input.body || null;
 
     if (!url) {
-      return new Response(
-        JSON.stringify({ error: "Missing ?url= parameter" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "url is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
-    const method = req.method;
-    const headers = {};
-    req.headers.forEach((v, k) => { if (k !== "host") headers[k] = v; });
-
-    let body = null;
-    if (method !== "GET" && method !== "HEAD") {
-      body = await req.arrayBuffer();
-    }
-
-    const out = await fetch(url, { method, headers, body });
-
-    const responseBody = new Uint8Array(await out.arrayBuffer());
-    const proxyHeaders = new Headers();
-    out.headers.forEach((v, k) => proxyHeaders.set(k, v));
-
-    return new Response(responseBody, {
-      status: out.status,
-      headers: proxyHeaders
+    // Perform actual external fetch (allowed by Base44)
+    const external = await fetch(url, {
+      method,
+      headers,
+      body
     });
+
+    const buffer = new Uint8Array(await external.arrayBuffer());
+
+    // Copy external headers to response
+    const outputHeaders = {};
+    external.headers.forEach((value, key) => {
+      outputHeaders[key] = value;
+    });
+
+    return new Response(buffer, {
+      status: external.status,
+      headers: outputHeaders
+    });
+
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: err.message || String(err) }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
     );
   }
 });
