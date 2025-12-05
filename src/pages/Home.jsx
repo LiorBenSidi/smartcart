@@ -114,10 +114,10 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 p-1 md:p-0">
       
       {/* Overview Cards */}
-      <section className="grid grid-cols-2 gap-4">
+      <section className="grid grid-cols-2 gap-4 lg:gap-8">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
             <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Total Spent</p>
@@ -141,14 +141,14 @@ export default function Home() {
         </Card>
       </section>
 
-      {/* Spending Chart */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-900 text-lg">Spending by Category</h3>
-        </div>
-        <Card className="border-none shadow-sm bg-white overflow-hidden">
-          <CardContent className="p-4 pt-8">
-            <div className="h-[180px] w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Spending Chart */}
+        <section className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-gray-900 text-lg">Spending by Category</h3>
+          </div>
+          <Card className="border-none shadow-sm bg-white overflow-hidden h-[300px] lg:h-[400px]">
+            <CardContent className="p-4 pt-8 h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <XAxis 
@@ -169,49 +169,49 @@ export default function Home() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+            </CardContent>
+          </Card>
+        </section>
 
-      {/* Recent Receipts */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-900 text-lg">Recent Receipts</h3>
-          <Link to={createPageUrl('upload')} className="text-xs text-indigo-600 font-semibold hover:underline flex items-center">
-            <Plus className="w-3 h-3 mr-1" /> Scan New
-          </Link>
-        </div>
-        
-        <div className="space-y-3">
-          {receipts.length === 0 ? (
-             <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
-                <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No receipts scanned yet.</p>
-             </div>
-          ) : (
-            receipts.map((receipt) => (
-                <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99]">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
-                                <ShoppingBag className="w-5 h-5 text-gray-500" />
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-900 text-sm">{receipt.storeName}</h4>
-                                <p className="text-gray-500 text-xs">{format(new Date(receipt.date), 'MMM d, yyyy')}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="font-bold text-gray-900">${receipt.totalAmount?.toFixed(2)}</span>
-                            <ChevronRight className="w-4 h-4 text-gray-300" />
-                        </div>
-                    </div>
-                </Link>
-            ))
-          )}
-        </div>
-      </section>
+        {/* Recent Receipts */}
+        <section className="lg:col-span-1 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-gray-900 text-lg">Recent Receipts</h3>
+            <Link to={createPageUrl('upload')} className="text-xs text-indigo-600 font-semibold hover:underline flex items-center">
+              <Plus className="w-3 h-3 mr-1" /> Scan New
+            </Link>
+          </div>
+          
+          <div className="space-y-3">
+            {receipts.length === 0 ? (
+               <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
+                  <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">No receipts scanned yet.</p>
+               </div>
+            ) : (
+              receipts.map((receipt) => (
+                  <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
+                      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99]">
+                          <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
+                                  <ShoppingBag className="w-5 h-5 text-gray-500" />
+                              </div>
+                              <div>
+                                  <h4 className="font-semibold text-gray-900 text-sm">{receipt.storeName}</h4>
+                                  <p className="text-gray-500 text-xs">{format(new Date(receipt.date), 'MMM d, yyyy')}</p>
+                              </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                              <span className="font-bold text-gray-900">${receipt.totalAmount?.toFixed(2)}</span>
+                              <ChevronRight className="w-4 h-4 text-gray-300" />
+                          </div>
+                      </div>
+                  </Link>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
