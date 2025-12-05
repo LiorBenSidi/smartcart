@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -107,20 +107,31 @@ export default function Home() {
       showTrend = true;
   }
   
-  // Dynamic chart data calculation (using all fetched receipts for better category distribution)
-  const categoryTotals = receipts.reduce((acc, receipt) => {
-    if (receipt.items) {
-        receipt.items.forEach(item => {
-            const cat = item.category || 'Other';
-            acc[cat] = (acc[cat] || 0) + (item.total || 0);
-        });
-    }
-    return acc;
-  }, {});
+  // Calculate category stats for this month and last month
+  const getCategoryTotals = (receiptList) => {
+      return receiptList.reduce((acc, receipt) => {
+          if (receipt.items) {
+              receipt.items.forEach(item => {
+                  const cat = item.category || 'Other';
+                  acc[cat] = (acc[cat] || 0) + (item.total || 0);
+              });
+          }
+          return acc;
+      }, {});
+  };
 
-  const chartData = Object.entries(categoryTotals)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
+  const thisMonthCats = getCategoryTotals(thisMonthReceipts);
+  const lastMonthCats = getCategoryTotals(lastMonthReceipts);
+
+  const allCategories = Array.from(new Set([...Object.keys(thisMonthCats), ...Object.keys(lastMonthCats)]));
+
+  const chartData = allCategories
+    .map(cat => ({
+      name: cat,
+      thisMonth: thisMonthCats[cat] || 0,
+      lastMonth: lastMonthCats[cat] || 0
+    }))
+    .sort((a, b) => b.thisMonth - a.thisMonth)
     .slice(0, displayCount);
     
   // We only want to show the top 5 recent receipts in the list, but we fetched 100 for stats
@@ -200,7 +211,7 @@ export default function Home() {
           <Card className="border-none shadow-sm bg-white overflow-hidden h-[300px] lg:h-[400px]">
             <CardContent className="p-4 pt-8 h-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
+                <BarChart data={chartData} barGap={8}>
                   <XAxis 
                     dataKey="name" 
                     axisLine={false} 
@@ -216,12 +227,11 @@ export default function Home() {
                   <Tooltip 
                     cursor={{fill: 'transparent'}}
                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                    formatter={(value, name) => [`$${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
                   />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
+                  <Legend iconType="circle" formatter={(value) => <span className="text-gray-500 text-xs ml-1">{value === 'thisMonth' ? 'This Month' : 'Last Month'}</span>} />
+                  <Bar dataKey="thisMonth" fill="#6366f1" radius={[4, 4, 0, 0]} name="thisMonth" />
+                  <Bar dataKey="lastMonth" fill="#e2e8f0" radius={[4, 4, 0, 0]} name="lastMonth" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
