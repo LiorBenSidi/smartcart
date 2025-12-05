@@ -106,7 +106,7 @@ export default function Upload() {
     }
   };
 
-  const PRESET_STORES = ["Walmart", "Costco", "Target", "Whole Foods", "Trader Joe's", "Kroger", "Safeway", "Aldi"];
+  const PRESET_STORES = ["שופרסל", "רמי לוי שיווק השקמה", "אושר עד", "יינות ביתן", "טיב טעם", "am:pm"];
 
   const handleItemChange = (index, field, value) => {
     if (!parsedData) return;
