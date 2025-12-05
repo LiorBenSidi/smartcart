@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { NAV_ITEMS } from '@/components/mockData';
-import { ShieldCheck, LogIn } from 'lucide-react';
+import { ShieldCheck, LogIn, Monitor, Smartphone } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isWebView, setIsWebView] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -37,9 +38,19 @@ export default function Layout({ children, currentPageName }) {
   const isLanding = currentPageName === 'Landing';
   
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased pb-20 md:pb-0">
-      {/* Mobile-first content wrapper */}
-      <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased pb-20 md:pb-0 relative">
+      <div className="fixed bottom-24 right-6 z-[60]">
+        <button
+          onClick={() => setIsWebView(!isWebView)}
+          className="bg-gray-900 text-white p-3 rounded-full shadow-xl hover:bg-gray-800 transition-all hover:scale-105"
+          title={isWebView ? "Switch to Mobile View" : "Switch to Web View"}
+        >
+          {isWebView ? <Smartphone className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Content wrapper */}
+      <div className={`${isWebView ? 'max-w-5xl' : 'max-w-md'} mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden transition-all duration-300 ease-in-out`}>
         
         {/* Header - only show on authenticated pages */}
         {!isLanding && user && (
@@ -59,7 +70,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Bottom Navigation - only for authenticated users */}
         {!isLanding && user && (
-          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 z-50 md:max-w-md md:mx-auto">
+          <nav className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 z-50 mx-auto transition-all duration-300 ease-in-out ${isWebView ? 'max-w-5xl' : 'max-w-md'}`}>
             <div className="flex justify-between items-center">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
