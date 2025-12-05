@@ -90,7 +90,10 @@ export default function Receipt() {
                                       </div>
                                       <div>
                                           <span className="font-medium text-gray-800">{item.name}</span>
-                                          <div className="text-xs text-gray-400">{item.category}</div>
+                                          <div className="text-xs text-gray-400">
+                                              <span className="font-mono mr-1 opacity-75">{item.code || 'null'}</span>
+                                              • {item.category}
+                                          </div>
                                       </div>
                                   </div>
                                   <span className="font-semibold text-gray-900">${item.total.toFixed(2)}</span>
