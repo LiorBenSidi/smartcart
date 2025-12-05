@@ -97,6 +97,7 @@ export default function Home() {
 
   const thisMonthTotal = thisMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
   const lastMonthTotal = lastMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const totalSpent = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
 
   let percentChange = 0;
   let showTrend = false;
@@ -164,24 +165,22 @@ export default function Home() {
       <section className="grid grid-cols-2 gap-4 lg:gap-8">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
-            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
-            <h2 className="text-2xl font-bold mt-1">${thisMonthTotal.toFixed(2)}</h2>
-            {showTrend && (
-                <div className="flex items-center mt-2 text-indigo-200 text-xs">
-                <ArrowUpRight className={`w-3 h-3 mr-1 ${percentChange < 0 ? 'rotate-180' : ''}`} />
-                <span>{percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month</span>
-                </div>
-            )}
+            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Total Spent</p>
+            <h2 className="text-2xl font-bold mt-1">${totalSpent.toFixed(2)}</h2>
+            <div className="flex items-center mt-2 text-indigo-200 text-xs">
+              <Calendar className="w-3 h-3 mr-1" />
+              <span>${thisMonthTotal.toFixed(2)} this month</span>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white border-none shadow-sm">
           <CardContent className="p-5">
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Receipts</p>
-            <h2 className="text-2xl font-bold text-gray-900 mt-1">{thisMonthReceipts.length}</h2>
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total Receipts</p>
+            <h2 className="text-2xl font-bold text-gray-900 mt-1">{receipts.length}</h2>
             <div className="flex items-center mt-2 text-gray-400 text-xs">
-              <Calendar className="w-3 h-3 mr-1" />
-              <span>This month</span>
+              <Plus className="w-3 h-3 mr-1" />
+              <span>{thisMonthReceipts.length} new this month</span>
             </div>
           </CardContent>
         </Card>
