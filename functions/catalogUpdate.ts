@@ -3,7 +3,7 @@ import { gunzipSync } from "npm:fflate@0.8.2";
 import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 
 // CONFIG:
-const LOGIN_URL = "http://url.publishedprices.co.il/login";
+const LOGIN_URL = "https://url.publishedprices.co.il/login";
 const FILE_LIST_URL = "https://url.publishedprices.co.il/file";
 const FILE_DOWNLOAD_URL = "https://url.publishedprices.co.il/file/d";
 
