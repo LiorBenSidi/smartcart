@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -12,6 +12,21 @@ export default function Home() {
   const [receipts, setReceipts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [displayCount, setDisplayCount] = useState(5);
+
+  useEffect(() => {
+    const handleResize = () => {
+        if (window.innerWidth < 640) {
+            setDisplayCount(3);
+        } else {
+            setDisplayCount(5); // Keep 5 or more for larger screens
+        }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,15 +58,14 @@ export default function Home() {
         console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users
 
         
-        // Fetch recent receipts based on permissions
+        // Fetch receipts for stats and list
+        // Fetching up to 100 receipts to calculate monthly stats accurately
         let data;
         if (isAdmin) {
-            data = await base44.entities.Receipt.list('-date', 5);
+            data = await base44.entities.Receipt.list('-date', 100);
         } else {
-            // For non-admin users, check what this filter actually returns
-            data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 5);
+            data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 100);
         }
-        console.log('Receipts fetched by filter:', data); // CRITICAL: Inspect this array
         setReceipts(data);
       } catch (error) {
         console.error("Error fetching dashboard data", error);
@@ -63,29 +77,69 @@ export default function Home() {
   }, []);
 
   // Calculate stats
-  const totalSpent = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
   
-  // Dynamic chart data calculation
-  const categoryTotals = receipts.reduce((acc, receipt) => {
-    if (receipt.items) {
-        receipt.items.forEach(item => {
-            // Use first 4 chars of category for label
-            const cat = (item.category || 'Other').substring(0, 4);
-            acc[cat] = (acc[cat] || 0) + (item.total || 0);
-        });
-    }
-    return acc;
-  }, {});
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
 
-  const chartData = Object.entries(categoryTotals)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5); // Top 5 categories
+  const thisMonthReceipts = receipts.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
 
-  // Default empty state for chart if no data
-  if (chartData.length === 0) {
-    chartData.push({ name: 'No Data', value: 0 });
+  const lastMonthReceipts = receipts.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+  });
+
+  const thisMonthTotal = thisMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const lastMonthTotal = lastMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const totalSpent = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+
+  let percentChange = 0;
+  let showTrend = false;
+
+  if (lastMonthTotal > 0) {
+      percentChange = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+      showTrend = true;
   }
+  
+  // Calculate category stats for this month and last month
+  const getCategoryTotals = (receiptList) => {
+      return receiptList.reduce((acc, receipt) => {
+          if (receipt.items) {
+              receipt.items.forEach(item => {
+                  const cat = item.category || 'Other';
+                  acc[cat] = (acc[cat] || 0) + (item.total || 0);
+              });
+          }
+          return acc;
+      }, {});
+  };
+
+  const thisMonthCats = getCategoryTotals(thisMonthReceipts);
+  const lastMonthCats = getCategoryTotals(lastMonthReceipts);
+
+  const allCategories = Array.from(new Set([...Object.keys(thisMonthCats), ...Object.keys(lastMonthCats)]));
+
+  const chartData = allCategories
+    .map(cat => ({
+      name: cat,
+      thisMonth: thisMonthCats[cat] || 0,
+      lastMonth: lastMonthCats[cat] || 0,
+      thisMonthLabel: format(now, 'MM/yyyy'),
+      lastMonthLabel: format(lastMonthDate, 'MM/yyyy')
+    }))
+    .sort((a, b) => b.thisMonth - a.thisMonth)
+    .slice(0, displayCount);
+    
+  // We only want to show the top 5 recent receipts in the list, but we fetched 100 for stats
+  const recentReceipts = receipts.slice(0, 5);
+
+
   
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
@@ -124,29 +178,34 @@ export default function Home() {
       <section className="grid grid-cols-2 gap-4 lg:gap-8">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
-            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Total Spent</p>
-            <h2 className="text-2xl font-bold mt-1">${totalSpent.toFixed(2)}</h2>
-            <div className="flex items-center mt-2 text-indigo-200 text-xs">
-              <ArrowUpRight className="w-3 h-3 mr-1" />
-              <span>+12% this month</span>
-            </div>
+            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
+            <h2 className="text-2xl font-bold mt-1">${thisMonthTotal.toFixed(2)}</h2>
+            {showTrend ? (
+              <div className="flex items-center mt-2 text-indigo-200 text-xs">
+                <ArrowUpRight className={`w-3 h-3 mr-1 ${percentChange < 0 ? 'rotate-180' : ''}`} />
+                <span>{percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month</span>
+              </div>
+            ) : (
+              <div className="h-6"></div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="bg-white border-none shadow-sm">
           <CardContent className="p-5">
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Receipts</p>
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total Receipts</p>
             <h2 className="text-2xl font-bold text-gray-900 mt-1">{receipts.length}</h2>
             <div className="flex items-center mt-2 text-gray-400 text-xs">
-              <Calendar className="w-3 h-3 mr-1" />
-              <span>Last 30 days</span>
+              <Plus className="w-3 h-3 mr-1" />
+              <span>{thisMonthReceipts.length} new this month</span>
             </div>
           </CardContent>
         </Card>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={`grid grid-cols-1 gap-8 ${chartData.length > 0 ? 'lg:grid-cols-3' : ''}`}>
         {/* Spending Chart */}
+        {chartData.length > 0 && (
         <section className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-gray-900 text-lg">Spending by Category</h3>
@@ -154,28 +213,39 @@ export default function Home() {
           <Card className="border-none shadow-sm bg-white overflow-hidden h-[300px] lg:h-[400px]">
             <CardContent className="p-4 pt-8 h-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis 
+                <BarChart data={chartData} barGap={8}>
+                  <XAxis
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
                     tick={{fontSize: 12, fill: '#9ca3af'}} 
                     dy={10}
                   />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 12, fill: '#9ca3af'}} 
+                  />
                   <Tooltip 
                     cursor={{fill: 'transparent'}}
                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                    formatter={(value, name) => [`$${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
                   />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
                     ))}
+                    <LabelList dataKey="thisMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
+                  </Bar>
+                  <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth">
+                    <LabelList dataKey="lastMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </section>
+        )}
 
         {/* Recent Receipts */}
         <section className="lg:col-span-1 space-y-4">
@@ -187,13 +257,13 @@ export default function Home() {
           </div>
           
           <div className="space-y-3">
-            {receipts.length === 0 ? (
+            {recentReceipts.length === 0 ? (
                <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
                   <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500 text-sm">No receipts scanned yet.</p>
                </div>
             ) : (
-              receipts.map((receipt) => (
+              recentReceipts.map((receipt) => (
                   <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
                       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99]">
                           <div className="flex items-center gap-4">
