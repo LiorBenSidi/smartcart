@@ -46,38 +46,53 @@ async function callProxy(base44, url, options = {}) {
     body: options.body || null
   };
 
-  const resp = await base44.functions.invoke("proxyFetch", payload);
-  
-  // resp is axios response: { data, status, headers }
-  // data should be a Uint8Array from proxyFetch
-  return {
-    status: resp.status,
-    headers: {
-      get: (key) => resp.headers?.[key.toLowerCase()] || resp.headers?.[key] || null
-    },
-    text: async () => {
-      if (typeof resp.data === 'string') return resp.data;
-      if (resp.data instanceof Uint8Array) {
-        return new TextDecoder().decode(resp.data);
+  console.log("[catalogUpdate] Calling proxyFetch with payload:", JSON.stringify(payload));
+
+  try {
+    const resp = await base44.functions.invoke("proxyFetch", payload);
+    
+    console.log("[catalogUpdate] proxyFetch returned:", {
+      status: resp.status,
+      dataType: typeof resp.data,
+      dataLength: resp.data?.length
+    });
+
+    // resp is axios response: { data, status, headers }
+    // data should be a Uint8Array from proxyFetch
+    return {
+      status: resp.status,
+      headers: {
+        get: (key) => resp.headers?.[key.toLowerCase()] || resp.headers?.[key] || null
+      },
+      text: async () => {
+        if (typeof resp.data === 'string') return resp.data;
+        if (resp.data instanceof Uint8Array) {
+          return new TextDecoder().decode(resp.data);
+        }
+        if (resp.data instanceof ArrayBuffer) {
+          return new TextDecoder().decode(resp.data);
+        }
+        return JSON.stringify(resp.data);
+      },
+      arrayBuffer: async () => {
+        if (resp.data instanceof Uint8Array) {
+          return resp.data.buffer;
+        }
+        if (resp.data instanceof ArrayBuffer) {
+          return resp.data;
+        }
+        if (typeof resp.data === 'string') {
+          return new TextEncoder().encode(resp.data).buffer;
+        }
+        return new TextEncoder().encode(JSON.stringify(resp.data)).buffer;
       }
-      if (resp.data instanceof ArrayBuffer) {
-        return new TextDecoder().decode(resp.data);
-      }
-      return JSON.stringify(resp.data);
-    },
-    arrayBuffer: async () => {
-      if (resp.data instanceof Uint8Array) {
-        return resp.data.buffer;
-      }
-      if (resp.data instanceof ArrayBuffer) {
-        return resp.data;
-      }
-      if (typeof resp.data === 'string') {
-        return new TextEncoder().encode(resp.data).buffer;
-      }
-      return new TextEncoder().encode(JSON.stringify(resp.data)).buffer;
-    }
-  };
+    };
+  } catch (err) {
+    console.error("[catalogUpdate] proxyFetch call failed:", err.message);
+    console.error("[catalogUpdate] Error response data:", err.response?.data);
+    console.error("[catalogUpdate] Error stack:", err.stack);
+    throw err;
+  }
 }
 
 // MAIN HANDLER
