@@ -96,10 +96,7 @@ export default function Home() {
     .sort((a, b) => b.value - a.value)
     .slice(0, displayCount);
 
-  // Default empty state for chart if no data
-  if (chartData.length === 0) {
-    chartData.push({ name: 'No Data', value: 0 });
-  }
+
   
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
@@ -159,8 +156,9 @@ export default function Home() {
         </Card>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={`grid grid-cols-1 gap-8 ${chartData.length > 0 ? 'lg:grid-cols-3' : ''}`}>
         {/* Spending Chart */}
+        {chartData.length > 0 && (
         <section className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-gray-900 text-lg">Spending by Category</h3>
@@ -195,6 +193,7 @@ export default function Home() {
             </CardContent>
           </Card>
         </section>
+        )}
 
         {/* Recent Receipts */}
         <section className="lg:col-span-1 space-y-4">
