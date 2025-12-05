@@ -93,12 +93,12 @@ export default function CatalogAdmin() {
         <CardContent className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-2">
-              Select XML File from Your Computer
+              Select .gz File from Your Computer
             </label>
             <div className="flex items-center gap-3">
               <Input
                 type="file"
-                accept=".xml"
+                accept=".gz"
                 onChange={(e) => setXmlFile(e.target.files[0])}
                 className="flex-1"
               />
@@ -119,7 +119,7 @@ export default function CatalogAdmin() {
             {isUploading ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading...</>
             ) : (
-              <><Upload className="w-4 h-4 mr-2" /> Upload & Process XML</>
+              <><Upload className="w-4 h-4 mr-2" /> Upload & Process .gz File</>
             )}
           </Button>
         </CardContent>

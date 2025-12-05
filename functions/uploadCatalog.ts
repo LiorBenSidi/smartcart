@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.4";
+import { gunzipSync } from "npm:fflate@0.8.2";
 import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 
 // Helpers
@@ -49,7 +50,17 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Missing xmlFile field" }, 400);
     }
 
-    const xmlText = await file.text();
+    // Read file as buffer
+    const buffer = await file.arrayBuffer();
+    const compressedData = new Uint8Array(buffer);
+
+    // Decompress .gz file
+    let xmlText;
+    try {
+      xmlText = new TextDecoder().decode(gunzipSync(compressedData));
+    } catch (e) {
+      return jsonResponse({ error: "Failed to decompress .gz file", details: e.message }, 400);
+    }
 
     // Parse XML
     const parser = new XMLParser({
