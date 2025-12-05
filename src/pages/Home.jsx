@@ -130,8 +130,8 @@ export default function Home() {
       name: cat,
       thisMonth: thisMonthCats[cat] || 0,
       lastMonth: lastMonthCats[cat] || 0,
-      thisMonthLabel: format(now, 'MM/yyyy'),
-      lastMonthLabel: format(lastMonthDate, 'MM/yyyy')
+      thisMonthLabel: format(now, 'MM/yy'),
+      lastMonthLabel: format(lastMonthDate, 'MM/yy')
     }))
     .sort((a, b) => b.thisMonth - a.thisMonth)
     .slice(0, displayCount);
