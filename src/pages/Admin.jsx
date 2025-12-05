@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShieldCheck } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { ShieldCheck, Database } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -76,6 +79,12 @@ export default function Admin() {
                 </CardContent>
             </Card>
         </div>
+
+        <Link to={createPageUrl('CatalogAdmin')}>
+            <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+                <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
+            </Button>
+        </Link>
 
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
