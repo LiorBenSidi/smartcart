@@ -4,8 +4,8 @@ import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 
 // CONFIG:
 const LOGIN_URL = "http://url.publishedprices.co.il/login";
-const FILE_LIST_URL = "http://url.publishedprices.co.il/file";
-const FILE_DOWNLOAD_URL = "http://url.publishedprices.co.il/file/d";
+const FILE_LIST_URL = "https://url.publishedprices.co.il/file";
+const FILE_DOWNLOAD_URL = "https://url.publishedprices.co.il/file/d";
 
 const LOGIN_USERNAME_FIELD = "username";
 const LOGIN_PASSWORD_FIELD = "password";
