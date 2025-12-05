@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function Receipt() {
   const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Process pending receipt
   const processReceipt = async (r) => {
@@ -72,7 +76,11 @@ export default function Receipt() {
         processingStatus: 'processed'
       });
 
-      setReceipt({ ...r, ...llmRes, processingStatus: 'processed' });
+      const processedReceipt = { ...r, ...llmRes, processingStatus: 'processed' };
+      // Don't save yet - show edit mode first
+      setReceipt(processedReceipt);
+      setEditData(processedReceipt);
+      setEditMode(true);
     } catch (error) {
       console.error("Processing failed", error);
       await base44.entities.Receipt.update(r.id, { processingStatus: 'failed' });
@@ -81,6 +89,62 @@ export default function Receipt() {
       setIsProcessing(false);
     }
   };
+
+  const handleItemChange = (index, field, value) => {
+    if (!editData) return;
+    const newItems = [...editData.items];
+    let newItem = { ...newItems[index] };
+
+    if (field === 'quantity' || field === 'price') {
+      const numValue = parseFloat(value) || 0;
+      newItem[field] = numValue;
+      newItem.total = Number((newItem.quantity * newItem.price).toFixed(2));
+    } else if (field === 'total') {
+      newItem.total = parseFloat(value) || 0;
+    } else {
+      newItem[field] = value;
+    }
+    
+    newItems[index] = newItem;
+    setEditData({ ...editData, items: newItems });
+  };
+
+  const handleDeleteItem = (index) => {
+    if (!editData) return;
+    const newItems = editData.items.filter((_, i) => i !== index);
+    setEditData({ ...editData, items: newItems });
+  };
+
+  const handleAddItem = () => {
+    if (!editData) return;
+    const newItem = { code: "", name: "New Item", category: "Other", quantity: 1, price: 0, total: 0 };
+    setEditData({ ...editData, items: [...editData.items, newItem] });
+  };
+
+  const calculateSum = () => {
+    if (!editData || !editData.items) return 0;
+    return editData.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  };
+
+  const saveReceipt = async () => {
+    if (!editData) return;
+    setIsSaving(true);
+    
+    try {
+      await base44.entities.Receipt.update(receipt.id, {
+        ...editData,
+        processingStatus: 'processed'
+      });
+      setReceipt(editData);
+      setEditMode(false);
+    } catch (error) {
+      console.error("Failed to save", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const PRESET_STORES = ["שופרסל", "רמי לוי", "אושר עד", "יינות ביתן", "טיב טעם", "am:pm"];
 
   const handleExportCSV = () => {
     if (!receipt) return;
@@ -179,8 +243,199 @@ export default function Receipt() {
     processReceipt(updatedReceipt);
   };
 
+  const calculatedSum = calculateSum();
+  const hasMismatch = editData ? Math.abs(calculatedSum - editData.totalAmount) > 0.05 : false;
+
   if (loading) return <div className="p-10 text-center text-gray-500">Loading receipt...</div>;
   if (!receipt) return <div className="p-10 text-center text-gray-500">Receipt not found.</div>;
+
+  // Show edit mode after processing
+  if (editMode && editData) {
+    return (
+      <div className="space-y-6 pb-20 max-w-2xl mx-auto">
+        <div className="flex items-center gap-2 mb-4">
+          <Link to={createPageUrl('Home')}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </Button>
+          </Link>
+          <h2 className="font-bold text-lg text-gray-900">Review Receipt</h2>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-indigo-600 px-6 py-6 text-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-indigo-200 text-xs block mb-1">Store</label>
+                <Input 
+                  list="store-options"
+                  value={editData.storeName}
+                  onChange={(e) => setEditData({...editData, storeName: e.target.value})}
+                  className="bg-white/10 border-indigo-400/30 text-white placeholder:text-indigo-300 focus:bg-white/20"
+                />
+                <datalist id="store-options">
+                  {PRESET_STORES.map(store => <option key={store} value={store} />)}
+                </datalist>
+              </div>
+              <div>
+                <label className="text-indigo-200 text-xs block mb-1">Total Amount</label>
+                <Input 
+                  type="number"
+                  value={editData.totalAmount}
+                  onChange={(e) => setEditData({...editData, totalAmount: parseFloat(e.target.value) || 0})}
+                  className="bg-white/10 border-indigo-400/30 text-white font-bold text-lg focus:bg-white/20"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-indigo-200 text-xs block mb-1 flex items-center gap-1"><Calendar className="w-3 h-3"/> Date</label>
+                <Input 
+                  type="date"
+                  value={editData.date}
+                  onChange={(e) => setEditData({...editData, date: e.target.value})}
+                  className="bg-white/10 border-indigo-400/30 text-white text-xs h-8 focus:bg-white/20"
+                />
+              </div>
+              <div>
+                <label className="text-indigo-200 text-xs block mb-1 flex items-center gap-1"><Clock className="w-3 h-3"/> Time</label>
+                <Input 
+                  type="time"
+                  value={editData.time || ''}
+                  onChange={(e) => setEditData({...editData, time: e.target.value})}
+                  className="bg-white/10 border-indigo-400/30 text-white text-xs h-8 focus:bg-white/20"
+                />
+              </div>
+              <div>
+                <label className="text-indigo-200 text-xs block mb-1 flex items-center gap-1"><MapPin className="w-3 h-3"/> Address</label>
+                <Input 
+                  value={editData.address || ''}
+                  onChange={(e) => setEditData({...editData, address: e.target.value})}
+                  className="bg-white/10 border-indigo-400/30 text-white text-xs h-8 focus:bg-white/20"
+                  placeholder="Store Address"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 max-h-96 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="text-gray-400 border-b border-gray-100">
+                <tr>
+                  <th className="text-left font-medium pb-2 pl-2">Code & Item</th>
+                  <th className="text-center font-medium pb-2 w-16">Qty</th>
+                  <th className="text-center font-medium pb-2 w-20">Price</th>
+                  <th className="text-right font-medium pb-2 w-20">Total</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {editData.items.map((item, i) => (
+                  <tr key={i} className="group">
+                    <td className="py-3 pl-2 align-top">
+                      <Input 
+                        value={item.name} 
+                        onChange={(e) => handleItemChange(i, 'name', e.target.value)}
+                        className="h-8 text-sm mb-1 border-gray-200 focus:border-indigo-300"
+                        placeholder="Item name"
+                      />
+                      <div className="flex gap-1">
+                        <Input 
+                          value={item.code || ''} 
+                          onChange={(e) => handleItemChange(i, 'code', e.target.value)}
+                          className="h-6 w-28 text-[10px] text-gray-500 border-gray-100 bg-gray-50"
+                          placeholder="Code"
+                        />
+                        <Input 
+                          value={item.category} 
+                          onChange={(e) => handleItemChange(i, 'category', e.target.value)}
+                          className="h-6 flex-1 text-[10px] text-gray-500 border-transparent bg-gray-50 hover:bg-white hover:border-gray-200 focus:border-indigo-300 transition-all"
+                          placeholder="Category"
+                        />
+                      </div>
+                    </td>
+                    <td className="py-3 px-1 align-top">
+                      <Input 
+                        type="number"
+                        value={item.quantity} 
+                        onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
+                        className="h-8 text-sm text-center px-1 border-gray-200 focus:border-indigo-300"
+                        placeholder="Qty"
+                      />
+                    </td>
+                    <td className="py-3 px-1 align-top">
+                      <Input 
+                        type="number"
+                        value={item.price} 
+                        onChange={(e) => handleItemChange(i, 'price', e.target.value)}
+                        className="h-8 text-sm text-right px-1 border-gray-200 focus:border-indigo-300"
+                        placeholder="Price"
+                      />
+                    </td>
+                    <td className="py-3 px-1 align-top">
+                      <div className="h-8 flex items-center justify-end px-1 text-sm font-bold text-gray-700">
+                        ${(item.total || 0).toFixed(2)}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-1 align-top text-right">
+                      <button 
+                        onClick={() => handleDeleteItem(i)}
+                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleAddItem}
+                className="w-full text-gray-500 border-dashed border-gray-300 hover:border-indigo-300 hover:text-indigo-600"
+              >
+                <Plus className="w-4 h-4 mr-1" /> Add Missing Item
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {hasMismatch && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-bold text-amber-800 text-sm">Total Mismatch Detected</h4>
+              <p className="text-xs text-amber-700 mt-1">
+                Sum of items (${calculatedSum.toFixed(2)}) does not match the receipt total (${editData.totalAmount.toFixed(2)}).
+                Please review your items or update the total amount.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <Button 
+          onClick={saveReceipt} 
+          disabled={isSaving}
+          className={`w-full h-12 shadow-md text-white transition-all ${
+            hasMismatch 
+              ? "bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-200 ring-offset-2" 
+              : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          {isSaving ? (
+            <><Loader2 className="mr-2 w-5 h-5 animate-spin" /> Saving...</>
+          ) : hasMismatch ? (
+            <><AlertTriangle className="mr-2 w-5 h-5" /> Confirm Mismatch & Save</>
+          ) : (
+            <><CheckCircle2 className="mr-2 w-5 h-5" /> Save & Continue</>
+          )}
+        </Button>
+      </div>
+    );
+  }
 
   // Show pending state
   if (receipt.processingStatus === 'pending') {
