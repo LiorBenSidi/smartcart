@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -129,7 +129,9 @@ export default function Home() {
     .map(cat => ({
       name: cat,
       thisMonth: thisMonthCats[cat] || 0,
-      lastMonth: lastMonthCats[cat] || 0
+      lastMonth: lastMonthCats[cat] || 0,
+      thisMonthLabel: format(now, 'MM/yyyy'),
+      lastMonthLabel: format(lastMonthDate, 'MM/yyyy')
     }))
     .sort((a, b) => b.thisMonth - a.thisMonth)
     .slice(0, displayCount);
@@ -233,8 +235,11 @@ export default function Home() {
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
                     ))}
+                    <LabelList dataKey="thisMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
                   </Bar>
-                  <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth" />
+                  <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth">
+                    <LabelList dataKey="lastMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
