@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus } from 'lucide-react';
+import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Home() {
@@ -13,6 +13,62 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [displayCount, setDisplayCount] = useState(5);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+      const user = await base44.auth.me();
+      // Fetch all receipts for export
+      const allReceipts = await base44.entities.Receipt.filter({ created_by: user.email });
+      
+      const headers = ['Date', 'Store', 'Address', 'Total Amount', 'Item Name', 'Category', 'Quantity', 'Price', 'Item Total'];
+      const rows = [];
+
+      allReceipts.forEach(r => {
+        if (r.items && r.items.length > 0) {
+            r.items.forEach(item => {
+                rows.push([
+                    r.date,
+                    `"${r.storeName}"`,
+                    `"${r.address || ''}"`,
+                    r.totalAmount,
+                    `"${item.name}"`,
+                    item.category,
+                    item.quantity,
+                    item.price,
+                    item.total
+                ].join(','));
+            });
+        } else {
+             rows.push([
+                    r.date,
+                    `"${r.storeName}"`,
+                    `"${r.address || ''}"`,
+                    r.totalAmount,
+                    '',
+                    '',
+                    '',
+                    '',
+                    ''
+                ].join(','));
+        }
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `all_receipts_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Export failed", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -174,6 +230,19 @@ export default function Home() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 p-1 md:p-0">
       
+      <div className="flex justify-end">
+          <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExportAll} 
+              disabled={isExporting}
+              className="text-indigo-600 border-indigo-100 hover:bg-indigo-50"
+          >
+              <Download className="w-4 h-4 mr-2" />
+              {isExporting ? 'Exporting...' : 'Export All to CSV'}
+          </Button>
+      </div>
+
       {/* Overview Cards */}
       <section className="grid grid-cols-2 gap-4 lg:gap-8">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">

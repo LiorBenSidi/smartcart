@@ -2,12 +2,56 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 export default function Receipt() {
   const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const handleExportCSV = () => {
+    if (!receipt) return;
+
+    const headers = ['Date', 'Store', 'Address', 'Total Amount', 'Item Name', 'Category', 'Quantity', 'Price', 'Item Total'];
+    const rows = [];
+
+    if (receipt.items && receipt.items.length > 0) {
+        receipt.items.forEach(item => {
+            rows.push([
+                receipt.date,
+                `"${receipt.storeName}"`,
+                `"${receipt.address || ''}"`,
+                receipt.totalAmount,
+                `"${item.name}"`,
+                item.category,
+                item.quantity,
+                item.price,
+                item.total
+            ].join(','));
+        });
+    } else {
+         rows.push([
+                receipt.date,
+                `"${receipt.storeName}"`,
+                `"${receipt.address || ''}"`,
+                receipt.totalAmount,
+                '',
+                '',
+                '',
+                '',
+                ''
+            ].join(','));
+    }
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `receipt_${receipt.storeName}_${receipt.date}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   useEffect(() => {
     const fetchReceipt = async () => {
@@ -50,13 +94,18 @@ export default function Receipt() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center gap-2 mb-4">
-            <Link to={createPageUrl('Home')}>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                </Button>
-            </Link>
-            <h2 className="font-bold text-lg text-gray-900">Receipt Details</h2>
+        <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+                <Link to={createPageUrl('Home')}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                        <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </Button>
+                </Link>
+                <h2 className="font-bold text-lg text-gray-900">Receipt Details</h2>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                <Download className="w-4 h-4 mr-2" /> Export CSV
+            </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
