@@ -9,7 +9,7 @@ export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isWebView, setIsWebView] = useState(false);
+  const [isWebView, setIsWebView] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
