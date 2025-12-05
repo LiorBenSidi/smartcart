@@ -230,8 +230,12 @@ export default function Home() {
                     formatter={(value, name) => [`$${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
                   />
                   <Legend iconType="circle" formatter={(value) => <span className="text-gray-500 text-xs ml-1">{value === 'thisMonth' ? 'This Month' : 'Last Month'}</span>} />
-                  <Bar dataKey="thisMonth" fill="#6366f1" radius={[4, 4, 0, 0]} name="thisMonth" />
-                  <Bar dataKey="lastMonth" fill="#e2e8f0" radius={[4, 4, 0, 0]} name="lastMonth" />
+                  <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
+                    ))}
+                  </Bar>
+                  <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
