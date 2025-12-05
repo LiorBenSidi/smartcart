@@ -38,7 +38,7 @@ export default function Layout({ children, currentPageName }) {
   const isLanding = currentPageName === 'Landing';
   
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased pb-20 md:pb-0 relative">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans antialiased pb-24 relative">
       <div className="fixed bottom-24 right-6 z-[60]">
         <button
           onClick={() => setIsWebView(!isWebView)}
@@ -50,7 +50,7 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* Content wrapper */}
-      <div className={`${isWebView ? 'max-w-5xl' : 'max-w-md'} mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden transition-all duration-300 ease-in-out`}>
+      <div className={`${isWebView ? 'w-full max-w-[1920px]' : 'max-w-md'} mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden transition-all duration-300 ease-in-out`}>
         
         {/* Header - only show on authenticated pages */}
         {!isLanding && user && (
@@ -70,7 +70,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Bottom Navigation - only for authenticated users */}
         {!isLanding && user && (
-          <nav className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 z-50 mx-auto transition-all duration-300 ease-in-out ${isWebView ? 'max-w-5xl' : 'max-w-md'}`}>
+          <nav className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 z-50 mx-auto transition-all duration-300 ease-in-out ${isWebView ? 'w-full max-w-[1920px]' : 'max-w-md'}`}>
             <div className="flex justify-between items-center">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
