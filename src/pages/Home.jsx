@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download } from 'lucide-react';
+import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Home() {
@@ -332,25 +332,66 @@ export default function Home() {
                   <p className="text-gray-500 text-sm">No receipts scanned yet.</p>
                </div>
             ) : (
-              recentReceipts.map((receipt) => (
-                  <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
-                      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99]">
-                          <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
-                                  <ShoppingBag className="w-5 h-5 text-gray-500" />
-                              </div>
-                              <div>
-                                  <h4 className="font-semibold text-gray-900 text-sm">{receipt.storeName}</h4>
-                                  <p className="text-gray-500 text-xs">{format(new Date(receipt.date), 'MMM d, yyyy')}</p>
-                              </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                              <span className="font-bold text-gray-900">${receipt.totalAmount?.toFixed(2)}</span>
-                              <ChevronRight className="w-4 h-4 text-gray-300" />
-                          </div>
-                      </div>
-                  </Link>
-              ))
+              recentReceipts.map((receipt) => {
+                  const isPending = receipt.processingStatus === 'pending';
+                  const isFailed = receipt.processingStatus === 'failed';
+
+                  return (
+                    <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
+                        <div className={`bg-white p-4 rounded-xl shadow-sm border flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99] ${
+                            isPending ? 'border-indigo-200 bg-indigo-50/30' : 
+                            isFailed ? 'border-red-200 bg-red-50/30' : 
+                            'border-gray-100'
+                        }`}>
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${
+                                    isPending ? 'bg-indigo-100 border-indigo-200' :
+                                    isFailed ? 'bg-red-100 border-red-200' :
+                                    'bg-gray-50 border-gray-100'
+                                }`}>
+                                    {isPending ? (
+                                        <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                                    ) : isFailed ? (
+                                        <AlertCircle className="w-5 h-5 text-red-500" />
+                                    ) : (
+                                        <ShoppingBag className="w-5 h-5 text-gray-500" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-gray-900 text-sm">
+                                        {isPending ? 'Processing...' : receipt.storeName}
+                                    </h4>
+                                    <p className={`text-xs ${
+                                        isPending ? 'text-indigo-600' :
+                                        isFailed ? 'text-red-500' :
+                                        'text-gray-500'
+                                    }`}>
+                                        {isPending ? 'Analyzing receipt...' :
+                                         isFailed ? 'Processing failed' :
+                                         format(new Date(receipt.date), 'MMM d, yyyy')}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {isPending ? (
+                                    <span className="text-xs text-indigo-600 font-medium bg-indigo-100 px-2 py-1 rounded-full">
+                                        In Progress
+                                    </span>
+                                ) : isFailed ? (
+                                    <span className="text-xs text-red-600 font-medium bg-red-100 px-2 py-1 rounded-full flex items-center gap-1">
+                                        <RefreshCw className="w-3 h-3" /> Retry
+                                    </span>
+                                ) : (
+                                    <>
+                                        <span className="font-bold text-gray-900">${receipt.totalAmount?.toFixed(2)}</span>
+                                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </Link>
+                  );
+              })
             )}
           </div>
         </section>
