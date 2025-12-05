@@ -5,6 +5,7 @@ import Receipt from './pages/Receipt';
 import Recommendations from './pages/Recommendations';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import CatalogAdmin from './pages/CatalogAdmin';
 import __Layout from './Layout.jsx';
 
 
@@ -16,6 +17,7 @@ export const PAGES = {
     "Recommendations": Recommendations,
     "Profile": Profile,
     "Admin": Admin,
+    "CatalogAdmin": CatalogAdmin,
 }
 
 export const pagesConfig = {
