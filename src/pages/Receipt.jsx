@@ -8,6 +8,79 @@ import { Button } from "@/components/ui/button";
 export default function Receipt() {
   const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Process pending receipt
+  const processReceipt = async (r) => {
+    if (!r || r.processingStatus !== 'pending' || isProcessing) return;
+    setIsProcessing(true);
+
+    try {
+      const prompt = `
+        Analyze this grocery receipt image and extract the data into the following JSON format:
+        - storeName: Name of the store
+        - date: Date of purchase (YYYY-MM-DD). If missing, use today's date.
+        - time: Time of purchase (HH:MM) if available.
+        - address: Address of the store if available.
+        - totalAmount: Total amount paid
+        - items: List of items purchased with product code (if available), name, category (Produce, Dairy, Meat, Snacks, etc), quantity (default 1), price (unit price), and total.
+        - insights: Array of insights. 'type' can be "warning" (e.g. unhealthy), "saving" (e.g. bought on sale), or "info". 'message' is the text.
+      `;
+
+      const llmRes = await base44.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        file_urls: [r.imageUrl],
+        response_json_schema: {
+            type: "object",
+            properties: {
+                storeName: { type: "string" },
+                date: { type: "string" },
+                time: { type: "string" },
+                address: { type: "string" },
+                totalAmount: { type: "number" },
+                items: { 
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            code: { type: "string" },
+                            name: { type: "string" },
+                            category: { type: "string" },
+                            quantity: { type: "number" },
+                            price: { type: "number" },
+                            total: { type: "number" }
+                        }
+                    }
+                },
+                insights: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            type: { type: "string", enum: ["warning", "saving", "info"] },
+                            message: { type: "string" }
+                        }
+                    }
+                }
+            },
+            required: ["storeName", "totalAmount", "date", "items"]
+        }
+      });
+
+      await base44.entities.Receipt.update(r.id, {
+        ...llmRes,
+        processingStatus: 'processed'
+      });
+
+      setReceipt({ ...r, ...llmRes, processingStatus: 'processed' });
+    } catch (error) {
+      console.error("Processing failed", error);
+      await base44.entities.Receipt.update(r.id, { processingStatus: 'failed' });
+      setReceipt({ ...r, processingStatus: 'failed' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleExportCSV = () => {
     if (!receipt) return;
@@ -82,185 +155,32 @@ export default function Receipt() {
 
             if (data.length > 0) {
               setReceipt(data[0]);
-              return data[0];
+              // If pending, trigger processing
+              if (data[0].processingStatus === 'pending') {
+                processReceipt(data[0]);
+              }
             }
         } catch (e) {
             console.error("Error loading receipt", e);
         }
       }
       setLoading(false);
-      return null;
     };
     
-    fetchReceipt().then((r) => {
-      setLoading(false);
-      
-      // If pending, poll every 3 seconds
-      if (r && r.processingStatus === 'pending') {
-        const interval = setInterval(async () => {
-          const updated = await fetchReceipt();
-          if (updated && updated.processingStatus !== 'pending') {
-            clearInterval(interval);
-          }
-        }, 3000);
-        
-        return () => clearInterval(interval);
-      }
-    });
+    fetchReceipt();
   }, []);
 
   const retryProcessing = async () => {
     if (!receipt) return;
 
-    try {
-      // Update status to pending
-      await base44.entities.Receipt.update(receipt.id, { processingStatus: 'pending' });
-      setReceipt({ ...receipt, processingStatus: 'pending' });
-
-      // Re-trigger AI processing
-      const prompt = `
-        Analyze this grocery receipt image and extract the data into the following JSON format:
-        - storeName: Name of the store
-        - date: Date of purchase (YYYY-MM-DD). If missing, use today's date.
-        - time: Time of purchase (HH:MM) if available.
-        - address: Address of the store if available.
-        - totalAmount: Total amount paid
-        - items: List of items purchased with product code (if available), name, category (Produce, Dairy, Meat, Snacks, etc), quantity (default 1), price (unit price), and total.
-        - insights: Array of insights. 'type' can be "warning" (e.g. unhealthy), "saving" (e.g. bought on sale), or "info". 'message' is the text.
-      `;
-
-      const llmRes = await base44.integrations.Core.InvokeLLM({
-        prompt: prompt,
-        file_urls: [receipt.imageUrl],
-        response_json_schema: {
-            type: "object",
-            properties: {
-                storeName: { type: "string" },
-                date: { type: "string" },
-                time: { type: "string" },
-                address: { type: "string" },
-                totalAmount: { type: "number" },
-                items: { 
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            code: { type: "string" },
-                            name: { type: "string" },
-                            category: { type: "string" },
-                            quantity: { type: "number" },
-                            price: { type: "number" },
-                            total: { type: "number" }
-                        }
-                    }
-                },
-                insights: {
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            type: { type: "string", enum: ["warning", "saving", "info"] },
-                            message: { type: "string" }
-                        }
-                    }
-                }
-            },
-            required: ["storeName", "totalAmount", "date", "items"]
-        }
-      });
-
-      await base44.entities.Receipt.update(receipt.id, {
-        ...llmRes,
-        processingStatus: 'processed'
-      });
-
-      // Reload the page to show updated data
-      window.location.reload();
-    } catch (error) {
-      console.error("Retry failed", error);
-      await base44.entities.Receipt.update(receipt.id, { processingStatus: 'failed' });
-      setReceipt({ ...receipt, processingStatus: 'failed' });
-    }
+    const updatedReceipt = { ...receipt, processingStatus: 'pending' };
+    setReceipt(updatedReceipt);
+    await base44.entities.Receipt.update(receipt.id, { processingStatus: 'pending' });
+    processReceipt(updatedReceipt);
   };
 
   if (loading) return <div className="p-10 text-center text-gray-500">Loading receipt...</div>;
   if (!receipt) return <div className="p-10 text-center text-gray-500">Receipt not found.</div>;
-
-  // Process pending receipt
-  const processReceipt = async () => {
-    if (!receipt || receipt.processingStatus !== 'pending') return;
-
-    try {
-      const prompt = `
-        Analyze this grocery receipt image and extract the data into the following JSON format:
-        - storeName: Name of the store
-        - date: Date of purchase (YYYY-MM-DD). If missing, use today's date.
-        - time: Time of purchase (HH:MM) if available.
-        - address: Address of the store if available.
-        - totalAmount: Total amount paid
-        - items: List of items purchased with product code (if available), name, category (Produce, Dairy, Meat, Snacks, etc), quantity (default 1), price (unit price), and total.
-        - insights: Array of insights. 'type' can be "warning" (e.g. unhealthy), "saving" (e.g. bought on sale), or "info". 'message' is the text.
-      `;
-
-      const llmRes = await base44.integrations.Core.InvokeLLM({
-        prompt: prompt,
-        file_urls: [receipt.imageUrl],
-        response_json_schema: {
-            type: "object",
-            properties: {
-                storeName: { type: "string" },
-                date: { type: "string" },
-                time: { type: "string" },
-                address: { type: "string" },
-                totalAmount: { type: "number" },
-                items: { 
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            code: { type: "string" },
-                            name: { type: "string" },
-                            category: { type: "string" },
-                            quantity: { type: "number" },
-                            price: { type: "number" },
-                            total: { type: "number" }
-                        }
-                    }
-                },
-                insights: {
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            type: { type: "string", enum: ["warning", "saving", "info"] },
-                            message: { type: "string" }
-                        }
-                    }
-                }
-            },
-            required: ["storeName", "totalAmount", "date", "items"]
-        }
-      });
-
-      await base44.entities.Receipt.update(receipt.id, {
-        ...llmRes,
-        processingStatus: 'processed'
-      });
-
-      setReceipt({ ...receipt, ...llmRes, processingStatus: 'processed' });
-    } catch (error) {
-      console.error("Processing failed", error);
-      await base44.entities.Receipt.update(receipt.id, { processingStatus: 'failed' });
-      setReceipt({ ...receipt, processingStatus: 'failed' });
-    }
-  };
-
-  // Auto-trigger processing when viewing a pending receipt
-  useEffect(() => {
-    if (receipt && receipt.processingStatus === 'pending') {
-      processReceipt();
-    }
-  }, [receipt?.id, receipt?.processingStatus]);
 
   // Show pending state
   if (receipt.processingStatus === 'pending') {
