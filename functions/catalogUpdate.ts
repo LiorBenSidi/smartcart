@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
     // -----------------------------------------------------------------------
     // STEP 1: Login via proxyFetch
     // -----------------------------------------------------------------------
+    console.log("[catalogUpdate] STEP 1: Starting login for username:", username);
 
     const loginForm = new URLSearchParams();
     loginForm.append(LOGIN_USERNAME_FIELD, username);
@@ -123,8 +124,11 @@ Deno.serve(async (req) => {
       body: loginForm.toString()
     });
 
+    console.log("[catalogUpdate] Login response status:", loginResp.status);
     const setCookie = loginResp.headers.get("set-cookie");
+    console.log("[catalogUpdate] Set-Cookie header:", setCookie);
     const cookieHeader = extractCookies(setCookie);
+    console.log("[catalogUpdate] Extracted cookie:", cookieHeader);
 
     if (!cookieHeader) {
       return jsonResponse({ error: "Login failed (no cookies)" }, 401);
@@ -133,12 +137,15 @@ Deno.serve(async (req) => {
     // -----------------------------------------------------------------------
     // STEP 2: Fetch file listing
     // -----------------------------------------------------------------------
+    console.log("[catalogUpdate] STEP 2: Fetching file list");
 
     const listResp = await callProxy(base44, FILE_LIST_URL, {
       headers: { Cookie: cookieHeader }
     });
 
+    console.log("[catalogUpdate] File list response status:", listResp.status);
     const html = await listResp.text();
+    console.log("[catalogUpdate] HTML length:", html.length);
 
     const gzFiles = new Set();
     const re = />([^<]+\.gz)</g;
@@ -156,26 +163,35 @@ Deno.serve(async (req) => {
 
     available.sort((a, b) => extractTimestamp(b).localeCompare(extractTimestamp(a)));
     const fileName = available[0];
+    console.log("[catalogUpdate] Selected file:", fileName);
 
     // -----------------------------------------------------------------------
     // STEP 3: Download file via proxy
     // -----------------------------------------------------------------------
+    console.log("[catalogUpdate] STEP 3: Downloading file");
 
     const downloadUrl = `${FILE_DOWNLOAD_URL}?fname=${encodeURIComponent(fileName)}`;
     const downloadResp = await callProxy(base44, downloadUrl, {
       headers: { Cookie: cookieHeader }
     });
 
-    const compressedData = new Uint8Array(await downloadResp.arrayBuffer());
+    console.log("[catalogUpdate] Download response status:", downloadResp.status);
+    const arrayBuf = await downloadResp.arrayBuffer();
+    console.log("[catalogUpdate] ArrayBuffer size:", arrayBuf.byteLength);
+    const compressedData = new Uint8Array(arrayBuf);
+    console.log("[catalogUpdate] Compressed data size:", compressedData.length);
 
     // -----------------------------------------------------------------------
     // STEP 4: Decompress
     // -----------------------------------------------------------------------
+    console.log("[catalogUpdate] STEP 4: Decompressing");
 
     let xmlString;
     try {
       xmlString = new TextDecoder().decode(gunzipSync(compressedData));
+      console.log("[catalogUpdate] Decompressed XML length:", xmlString.length);
     } catch (err) {
+      console.error("[catalogUpdate] Decompression failed:", err);
       return jsonResponse({ error: "Failed to decompress file" }, 500);
     }
 
@@ -313,6 +329,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (err) {
+    console.error("[catalogUpdate] Fatal error:", err);
     return jsonResponse({
       error: err.message || String(err)
     }, 500);

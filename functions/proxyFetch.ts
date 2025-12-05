@@ -7,6 +7,8 @@ Deno.serve(async (req) => {
     const headers = input.headers || {};
     const body = input.body || null;
 
+    console.log("[proxyFetch] Request:", { url, method, hasBody: !!body });
+
     if (!url) {
       return new Response(JSON.stringify({ error: "url is required" }), {
         status: 400,
@@ -22,7 +24,13 @@ Deno.serve(async (req) => {
       redirect: 'manual'
     });
 
+    console.log("[proxyFetch] External response:", { 
+      status: external.status, 
+      headers: Array.from(external.headers.entries()) 
+    });
+
     const buffer = new Uint8Array(await external.arrayBuffer());
+    console.log("[proxyFetch] Buffer size:", buffer.length);
 
     // Copy external headers to response
     const outputHeaders = {};
