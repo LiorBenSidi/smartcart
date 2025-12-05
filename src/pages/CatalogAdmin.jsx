@@ -32,7 +32,9 @@ export default function CatalogAdmin() {
         setResult(response.data);
       }
     } catch (err) {
-      setError(err.message || 'Failed to update catalog');
+      // Extract error message from response if available
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update catalog';
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
