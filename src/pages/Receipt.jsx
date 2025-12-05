@@ -54,9 +54,10 @@ export default function Receipt() {
   };
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    
     const fetchReceipt = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const id = urlParams.get('id');
       if (id) {
         try {
             const user = await base44.auth.me();
@@ -79,14 +80,33 @@ export default function Receipt() {
                 data = await base44.entities.Receipt.filter({ id, created_by: user.email });
             }
 
-            if (data.length > 0) setReceipt(data[0]);
+            if (data.length > 0) {
+              setReceipt(data[0]);
+              return data[0];
+            }
         } catch (e) {
             console.error("Error loading receipt", e);
         }
       }
       setLoading(false);
+      return null;
     };
-    fetchReceipt();
+    
+    fetchReceipt().then((r) => {
+      setLoading(false);
+      
+      // If pending, poll every 3 seconds
+      if (r && r.processingStatus === 'pending') {
+        const interval = setInterval(async () => {
+          const updated = await fetchReceipt();
+          if (updated && updated.processingStatus !== 'pending') {
+            clearInterval(interval);
+          }
+        }, 3000);
+        
+        return () => clearInterval(interval);
+      }
+    });
   }, []);
 
   const retryProcessing = async () => {
