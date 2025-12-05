@@ -26,14 +26,19 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const username = body.username || 'TivTaam';
+    const username = body.username;
+    const password = body.password || '';
     const filePattern = body.filePattern || 'PriceFull';
 
+    if (!username) {
+      return Response.json({ error: 'Username is required' }, { status: 400 });
+    }
+
     // Step 1: Login to get session cookies
-    console.log('Logging in...');
+    console.log(`Logging in as ${username}...`);
     const loginFormData = new URLSearchParams();
     loginFormData.append('username', username);
-    loginFormData.append('password', '');
+    loginFormData.append('password', password);
 
     const loginResponse = await fetch(LOGIN_URL, {
       method: 'POST',

@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Download, CheckCircle, AlertCircle, Database } from 'lucide-react';
 
 export default function CatalogAdmin() {
-  const [username, setUsername] = useState('TivTaam');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [filePattern, setFilePattern] = useState('PriceFull');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -21,6 +22,7 @@ export default function CatalogAdmin() {
     try {
       const response = await base44.functions.invoke('catalogUpdate', {
         username,
+        password,
         filePattern
       });
 
@@ -52,13 +54,24 @@ export default function CatalogAdmin() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Chain Username</label>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Chain Username *</label>
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g., TivTaam"
+              placeholder="e.g., TivTaam, RamiLevi, Shufersal"
             />
-            <p className="text-xs text-gray-500 mt-1">Username for login at publishedprices.co.il</p>
+            <p className="text-xs text-gray-500 mt-1">Username for login at publishedprices.co.il (required)</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Password</label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Leave empty if not required"
+            />
+            <p className="text-xs text-gray-500 mt-1">Optional - leave empty if the chain doesn't require a password</p>
           </div>
 
           <div>
