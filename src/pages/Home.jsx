@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -212,8 +212,7 @@ export default function Home() {
             <CardContent className="p-4 pt-8 h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} barGap={8}>
-                  <CartesianGrid vertical={true} horizontal={false} stroke="#c4b5fd" />
-                  <XAxis 
+                  <XAxis
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
