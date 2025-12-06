@@ -15,13 +15,21 @@ export default function PriceComparisonReview({ comparisonResults, onConfirm, on
   };
 
   const handleConfirm = () => {
-    const updates = differencesOnly
+    const dbUpdates = differencesOnly
       .filter((_, idx) => selections[idx] === 'receipt')
       .map(r => ({
         productPriceId: r.catalogPrice.id,
         newPrice: r.receiptPrice
       }));
-    onConfirm(updates);
+    
+    const receiptUpdates = differencesOnly
+      .filter((_, idx) => selections[idx] === 'db')
+      .map(r => ({
+        itemCode: r.item.code,
+        newPrice: r.dbPrice
+      }));
+    
+    onConfirm(dbUpdates, receiptUpdates);
   };
 
   return (
