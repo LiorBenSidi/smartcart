@@ -21,7 +21,7 @@ export default function PriceComparisonReview({ comparisonResults, onConfirm, on
         productPriceId: r.catalogPrice.id,
         newPrice: r.receiptPrice
       }));
-    onConfirm(updates);
+    onConfirm(updates, selections, differencesOnly);
   };
 
   return (
