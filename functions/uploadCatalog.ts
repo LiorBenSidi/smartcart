@@ -75,7 +75,9 @@ Deno.serve(async (req) => {
     });
 
     const parsed = parser.parse(xmlText);
-    const root = parsed.root;
+    // Dynamically get the root element regardless of its casing (root or Root)
+    const rootKey = Object.keys(parsed)[0];
+    const root = parsed[rootKey];
 
     if (!root) {
       return Response.json({ error: "Invalid XML structure" }, { status: 400 });
