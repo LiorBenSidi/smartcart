@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PriceComparisonReview from '../components/PriceComparisonReview';
 
 export default function Receipt() {
   const [receipt, setReceipt] = useState(null);
@@ -13,6 +14,9 @@ export default function Receipt() {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPriceComparison, setShowPriceComparison] = useState(false);
+  const [comparisonResults, setComparisonResults] = useState(null);
+  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
 
   // Process pending receipt
   const processReceipt = async (r) => {
@@ -77,10 +81,32 @@ export default function Receipt() {
       });
 
       const processedReceipt = { ...r, ...llmRes, processingStatus: 'processed' };
-      // Don't save yet - show edit mode first
-      setReceipt(processedReceipt);
-      setEditData(processedReceipt);
-      setEditMode(true);
+      
+      // If we have a store_id, compare prices with catalog
+      if (r.store_id && llmRes.items && llmRes.items.length > 0) {
+        try {
+          const compareRes = await base44.functions.invoke('comparePrices', {
+            items: llmRes.items,
+            store_id: r.store_id
+          });
+          
+          setComparisonResults(compareRes.data.results);
+          setReceipt(processedReceipt);
+          setEditData(processedReceipt);
+          setShowPriceComparison(true);
+        } catch (error) {
+          console.error("Price comparison failed", error);
+          // Skip comparison and go to edit mode
+          setReceipt(processedReceipt);
+          setEditData(processedReceipt);
+          setEditMode(true);
+        }
+      } else {
+        // No store selected or no items, skip comparison
+        setReceipt(processedReceipt);
+        setEditData(processedReceipt);
+        setEditMode(true);
+      }
     } catch (error) {
       console.error("Processing failed", error);
       await base44.entities.Receipt.update(r.id, { processingStatus: 'failed' });
@@ -243,11 +269,51 @@ export default function Receipt() {
     processReceipt(updatedReceipt);
   };
 
+  const handlePriceComparisonConfirm = async (updates) => {
+    setIsUpdatingPrices(true);
+    try {
+      const svc = base44.asServiceRole;
+      
+      for (const update of updates) {
+        await svc.entities.ProductPrice.update(update.productPriceId, {
+          price: update.newPrice,
+          price_update_at: new Date().toISOString()
+        });
+      }
+      
+      // Proceed to edit mode
+      setShowPriceComparison(false);
+      setEditMode(true);
+    } catch (error) {
+      console.error("Failed to update prices", error);
+    } finally {
+      setIsUpdatingPrices(false);
+    }
+  };
+
+  const handlePriceComparisonCancel = () => {
+    // Skip price updates, go to edit mode
+    setShowPriceComparison(false);
+    setEditMode(true);
+  };
+
   const calculatedSum = calculateSum();
   const hasMismatch = editData ? Math.abs(calculatedSum - editData.totalAmount) > 0.05 : false;
 
   if (loading) return <div className="p-10 text-center text-gray-500">Loading receipt...</div>;
   if (!receipt) return <div className="p-10 text-center text-gray-500">Receipt not found.</div>;
+
+  // Show price comparison review
+  if (showPriceComparison && comparisonResults) {
+    return (
+      <PriceComparisonReview
+        comparisonResults={comparisonResults}
+        onConfirm={handlePriceComparisonConfirm}
+        onCancel={handlePriceComparisonCancel}
+        isUpdating={isUpdatingPrices}
+      />
+    );
+  }
 
   // Show edit mode after processing
   if (editMode && editData) {
