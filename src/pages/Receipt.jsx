@@ -17,6 +17,7 @@ export default function Receipt() {
   const [showPriceComparison, setShowPriceComparison] = useState(false);
   const [comparisonResults, setComparisonResults] = useState(null);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [productMap, setProductMap] = useState(new Map());
 
   // Process pending receipt
   const processReceipt = async (r) => {
@@ -276,6 +277,7 @@ export default function Receipt() {
       
       // Proceed to edit mode
       setShowPriceComparison(false);
+      await loadProductsForEditMode();
       setEditMode(true);
     } catch (error) {
       console.error("Failed to update prices", error);
@@ -284,10 +286,26 @@ export default function Receipt() {
     }
   };
 
-  const handlePriceComparisonCancel = () => {
+  const handlePriceComparisonCancel = async () => {
     // Skip price updates, go to edit mode
     setShowPriceComparison(false);
+    await loadProductsForEditMode();
     setEditMode(true);
+  };
+
+  const loadProductsForEditMode = async () => {
+    if (!receipt?.store_id || !editData?.items) return;
+    
+    try {
+      const stores = await base44.entities.Store.filter({ id: receipt.store_id });
+      if (stores.length === 0) return;
+      
+      const products = await base44.entities.Product.filter({ chain_id: stores[0].chain_id });
+      const map = new Map(products.map(p => [p.external_item_code, p]));
+      setProductMap(map);
+    } catch (error) {
+      console.error("Failed to load products", error);
+    }
   };
 
   const calculatedSum = calculateSum();
@@ -390,11 +408,15 @@ export default function Receipt() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {editData.items.map((item, i) => (
+                {editData.items.map((item, i) => {
+                  const dbProduct = item.code ? productMap.get(item.code?.toString().trim()) : null;
+                  const displayName = dbProduct ? dbProduct.name : `product no. ${i + 1}`;
+                  
+                  return (
                   <tr key={i} className="group">
                     <td className="py-3 pl-2 align-top">
                       <Input 
-                        value={item.name} 
+                        value={displayName} 
                         onChange={(e) => handleItemChange(i, 'name', e.target.value)}
                         className="h-8 text-sm mb-1 border-gray-200 focus:border-indigo-300"
                         placeholder="Item name"
@@ -446,7 +468,7 @@ export default function Receipt() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
             <div className="mt-4">
