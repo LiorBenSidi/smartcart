@@ -2,6 +2,29 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.4";
 import { gunzipSync } from "npm:fflate@0.8.2";
 import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 
+// Helper to delay execution
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper to process in batches
+async function processBatch(items, batchSize, delayMs, processFn, label) {
+  const totalBatches = Math.ceil(items.length / batchSize);
+  
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const currentBatch = Math.floor(i / batchSize) + 1;
+    const remaining = items.length - (i + batch.length);
+    
+    console.log(`[${label}] Processing batch ${currentBatch}/${totalBatches} (${batch.length} items, ${remaining} remaining)`);
+    
+    await processFn(batch);
+    
+    if (i + batchSize < items.length) {
+      console.log(`[${label}] Waiting ${delayMs}ms before next batch...`);
+      await delay(delayMs);
+    }
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     // Step 1: Authenticate
@@ -32,6 +55,7 @@ Deno.serve(async (req) => {
     }
 
     // Step 3: Fetch and unzip .gz file
+    console.log("Fetching and decompressing file...");
     const fileResponse = await fetch(fileUrl);
     const compressedBuffer = await fileResponse.arrayBuffer();
     const decompressed = gunzipSync(new Uint8Array(compressedBuffer));
@@ -43,6 +67,7 @@ Deno.serve(async (req) => {
     }
 
     // Step 4: Parse XML to JSON
+    console.log("Parsing XML...");
     const parser = new XMLParser({
       ignoreAttributes: false,
       trimValues: true,
@@ -66,10 +91,13 @@ Deno.serve(async (req) => {
       items = [items];
     }
 
+    console.log(`Found ${items.length} items to process`);
+
     // Step 6: Update entities using service role
     const svc = base44.asServiceRole;
 
     // Create or get chain
+    console.log("Setting up chain and store...");
     let chains = await svc.entities.Chain.filter({ external_chain_id: chainId });
     let chain = chains[0];
     
@@ -97,6 +125,7 @@ Deno.serve(async (req) => {
     }
 
     // Load existing products and prices
+    console.log("Loading existing products and prices...");
     const existingProducts = await svc.entities.Product.filter({ chain_id: chain.id });
     const existingPrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
 
@@ -111,10 +140,9 @@ Deno.serve(async (req) => {
     }
 
     // Prepare bulk operations
+    console.log("Preparing product data...");
     const newProducts = [];
     const updateProducts = [];
-    const newPrices = [];
-    const updatePrices = [];
 
     for (const item of items) {
       const itemCode = item.ItemCode?.toString().trim();
@@ -143,20 +171,35 @@ Deno.serve(async (req) => {
     }
 
     // Bulk create new products
-    let createdProducts = [];
+    console.log(`Creating ${newProducts.length} new products...`);
     if (newProducts.length > 0) {
-      createdProducts = await svc.entities.Product.bulkCreate(newProducts);
+      const createdProducts = await svc.entities.Product.bulkCreate(newProducts);
       for (const p of createdProducts) {
         productMap.set(p.external_item_code, p);
       }
     }
 
-    // Update existing products in batches
-    for (const update of updateProducts) {
-      await svc.entities.Product.update(update.id, update.data);
+    // Update existing products in batches with delay
+    if (updateProducts.length > 0) {
+      console.log(`Updating ${updateProducts.length} existing products in batches...`);
+      await processBatch(
+        updateProducts,
+        50, // batch size
+        2000, // delay 2 seconds between batches
+        async (batch) => {
+          for (const update of batch) {
+            await svc.entities.Product.update(update.id, update.data);
+          }
+        },
+        "Product Updates"
+      );
     }
 
     // Now prepare prices
+    console.log("Preparing price data...");
+    const newPrices = [];
+    const updatePrices = [];
+
     for (const item of items) {
       const itemCode = item.ItemCode?.toString().trim();
       if (!itemCode) continue;
@@ -182,21 +225,39 @@ Deno.serve(async (req) => {
     }
 
     // Bulk create new prices
+    console.log(`Creating ${newPrices.length} new prices...`);
     if (newPrices.length > 0) {
       await svc.entities.ProductPrice.bulkCreate(newPrices);
     }
 
-    // Update existing prices
-    for (const update of updatePrices) {
-      await svc.entities.ProductPrice.update(update.id, update.data);
+    // Update existing prices in batches with delay
+    if (updatePrices.length > 0) {
+      console.log(`Updating ${updatePrices.length} existing prices in batches...`);
+      await processBatch(
+        updatePrices,
+        50, // batch size
+        2000, // delay 2 seconds between batches
+        async (batch) => {
+          for (const update of batch) {
+            await svc.entities.ProductPrice.update(update.id, update.data);
+          }
+        },
+        "Price Updates"
+      );
     }
+
+    console.log("Processing complete!");
 
     return Response.json({
       success: true,
       chainId,
       storeId,
       totalItems: items.length,
-      processed: items.length
+      processed: items.length,
+      newProducts: newProducts.length,
+      updatedProducts: updateProducts.length,
+      newPrices: newPrices.length,
+      updatedPrices: updatePrices.length
     });
 
   } catch (error) {
