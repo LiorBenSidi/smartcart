@@ -270,29 +270,10 @@ export default function Receipt() {
     processReceipt(updatedReceipt);
   };
 
-  const handlePriceComparisonConfirm = async (dbUpdates, receiptUpdates) => {
+  const handlePriceComparisonConfirm = async (updates) => {
     setIsUpdatingPrices(true);
     try {
-      // Update database prices if user chose receipt price
-      if (dbUpdates.length > 0) {
-        await base44.functions.invoke('updatePrices', { updates: dbUpdates });
-      }
-      
-      // Update receipt items if user chose catalog price
-      if (receiptUpdates.length > 0) {
-        const updatedItems = editData.items.map(item => {
-          const update = receiptUpdates.find(u => u.itemCode === item.code);
-          if (update) {
-            return {
-              ...item,
-              price: update.newPrice,
-              total: item.quantity * update.newPrice
-            };
-          }
-          return item;
-        });
-        setEditData({ ...editData, items: updatedItems });
-      }
+      await base44.functions.invoke('updatePrices', { updates });
       
       // Proceed to edit mode
       setShowPriceComparison(false);
