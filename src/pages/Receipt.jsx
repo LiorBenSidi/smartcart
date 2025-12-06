@@ -272,14 +272,7 @@ export default function Receipt() {
   const handlePriceComparisonConfirm = async (updates) => {
     setIsUpdatingPrices(true);
     try {
-      const svc = base44.asServiceRole;
-      
-      for (const update of updates) {
-        await svc.entities.ProductPrice.update(update.productPriceId, {
-          price: update.newPrice,
-          price_update_at: new Date().toISOString()
-        });
-      }
+      await base44.functions.invoke('updatePrices', { updates });
       
       // Proceed to edit mode
       setShowPriceComparison(false);
