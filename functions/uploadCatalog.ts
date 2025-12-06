@@ -88,6 +88,8 @@ Deno.serve(async (req) => {
     const storeId = root.StoreId?.toString() || "";
     const subChainId = root.SubChainId?.toString() || "";
 
+    console.log("Root.Items structure:", JSON.stringify(root.Items, null, 2).substring(0, 500));
+    
     let items = root?.Items?.Item || [];
     if (!Array.isArray(items)) {
       items = [items];
