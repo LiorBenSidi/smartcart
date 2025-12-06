@@ -71,7 +71,8 @@ Deno.serve(async (req) => {
     const parser = new XMLParser({
       ignoreAttributes: false,
       trimValues: true,
-      parseTagValue: false
+      parseTagValue: false,
+      ignoreDeclaration: true
     });
 
     const parsed = parser.parse(xmlText);
