@@ -54,36 +54,20 @@ export default function CatalogAdmin() {
     setUploadError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('xmlFile', xmlFile);
+      // Step 1: Upload file to get URL
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: xmlFile });
 
-      // Get the function URL and make direct fetch call for file upload
-      const functionUrl = `${window.location.origin}/api/functions/uploadCatalog`;
-      
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
+      // Step 2: Process the uploaded file
+      const response = await base44.functions.invoke('uploadCatalog', { fileUrl: file_url });
 
-      let data;
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
+      if (response.data.error) {
+        setUploadError(response.data.error);
       } else {
-        const text = await response.text();
-        throw new Error(`Server returned non-JSON response: ${text.substring(0, 200)}`);
-      }
-
-      if (!response.ok || data.error) {
-        setUploadError(data.error || 'Upload failed');
-      } else {
-        setUploadResult(data);
+        setUploadResult(response.data);
         setXmlFile(null);
       }
     } catch (err) {
-      const errorMsg = err.message || 'Failed to upload file';
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to upload file';
       setUploadError(errorMsg);
     } finally {
       setIsUploading(false);

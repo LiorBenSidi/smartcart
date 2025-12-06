@@ -23,16 +23,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Admin access required" }, { status: 403 });
     }
 
-    // Step 2: Get uploaded file
-    const form = await req.formData();
-    const file = form.get("xmlFile");
+    // Step 2: Get file URL from request
+    const body = await req.json();
+    const fileUrl = body.fileUrl;
 
-    if (!file) {
-      return Response.json({ error: "No file uploaded" }, { status: 400 });
+    if (!fileUrl) {
+      return Response.json({ error: "fileUrl is required" }, { status: 400 });
     }
 
-    // Step 3: Unzip .gz file
-    const compressedBuffer = await file.arrayBuffer();
+    // Step 3: Fetch and unzip .gz file
+    const fileResponse = await fetch(fileUrl);
+    const compressedBuffer = await fileResponse.arrayBuffer();
     const decompressed = gunzipSync(new Uint8Array(compressedBuffer));
     const xmlText = new TextDecoder("utf-8").decode(decompressed);
 
