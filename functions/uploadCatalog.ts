@@ -35,7 +35,12 @@ Deno.serve(async (req) => {
     const fileResponse = await fetch(fileUrl);
     const compressedBuffer = await fileResponse.arrayBuffer();
     const decompressed = gunzipSync(new Uint8Array(compressedBuffer));
-    const xmlText = new TextDecoder("utf-8").decode(decompressed);
+    let xmlText = new TextDecoder("utf-8").decode(decompressed);
+
+    // Ensure XML declaration is present if missing
+    if (!xmlText.trim().startsWith('<?xml')) {
+      xmlText = '<?xml version="1.0" encoding="utf-8"?>\n' + xmlText;
+    }
 
     // Step 4: Parse XML to JSON
     const parser = new XMLParser({
