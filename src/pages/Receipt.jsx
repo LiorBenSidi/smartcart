@@ -431,7 +431,7 @@ export default function Receipt() {
                   <tr key={i} className="group">
                     <td className="py-3 pl-2 align-top">
                       <Input 
-                        value={displayName} 
+                        value={item.name || displayName} 
                         onChange={(e) => handleItemChange(i, 'name', e.target.value)}
                         className="h-8 text-sm mb-1 border-gray-200 focus:border-indigo-300"
                         placeholder="Item name"
