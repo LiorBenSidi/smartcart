@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         brand: item.ManufacturerName || "",
         description: item.ManufacturerItemDescription || "",
         unit_of_measure: item.UnitOfMeasure || "",
-        unit_qty: item.UnitQty || "",
+        unit_qty: parseFloat(item.UnitQty) || 0,
         qty_in_package: parseFloat(item.QtyInPackage) || 0,
         is_weighted: item.bIsWeighted === "1",
         item_type: item.ItemType || "",
