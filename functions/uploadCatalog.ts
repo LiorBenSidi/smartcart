@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Load existing products and prices for this chain/store
+    // Load existing products and prices
     const existingProducts = await svc.entities.Product.filter({ chain_id: chain.id });
     const existingPrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
 
@@ -105,62 +105,85 @@ Deno.serve(async (req) => {
       priceMap.set(pr.product_id, pr);
     }
 
-    // Process items
-    let processed = 0;
-    let failed = 0;
+    // Prepare bulk operations
+    const newProducts = [];
+    const updateProducts = [];
+    const newPrices = [];
+    const updatePrices = [];
 
     for (const item of items) {
-      try {
-        const itemCode = item.ItemCode?.toString().trim();
-        if (!itemCode) continue;
+      const itemCode = item.ItemCode?.toString().trim();
+      if (!itemCode) continue;
 
-        // Product data
-        const productData = {
-          chain_id: chain.id,
-          external_item_code: itemCode,
-          name: item.ItemName || "",
-          brand: item.ManufacturerName || "",
-          description: item.ManufacturerItemDescription || "",
-          unit_of_measure: item.UnitOfMeasure || "",
-          unit_qty: item.UnitQty || "",
-          qty_in_package: parseFloat(item.QtyInPackage) || 0,
-          is_weighted: item.bIsWeighted === "1",
-          item_type: item.ItemType || "",
-          status: item.ItemStatus || ""
-        };
+      const productData = {
+        chain_id: chain.id,
+        external_item_code: itemCode,
+        name: item.ItemName || "",
+        brand: item.ManufacturerName || "",
+        description: item.ManufacturerItemDescription || "",
+        unit_of_measure: item.UnitOfMeasure || "",
+        unit_qty: item.UnitQty || "",
+        qty_in_package: parseFloat(item.QtyInPackage) || 0,
+        is_weighted: item.bIsWeighted === "1",
+        item_type: item.ItemType || "",
+        status: item.ItemStatus || ""
+      };
 
-        // Create or update product
-        let product = productMap.get(itemCode);
-        if (!product) {
-          product = await svc.entities.Product.create(productData);
-          productMap.set(itemCode, product);
-        } else {
-          await svc.entities.Product.update(product.id, productData);
-        }
-
-        // Price data
-        const priceData = {
-          product_id: product.id,
-          store_id: store.id,
-          price: parseFloat(item.ItemPrice) || 0,
-          unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
-          allow_discount: item.AllowDiscount === "1",
-          price_update_at: item.PriceUpdateDate || new Date().toISOString()
-        };
-
-        // Create or update price
-        let price = priceMap.get(product.id);
-        if (!price) {
-          await svc.entities.ProductPrice.create(priceData);
-        } else {
-          await svc.entities.ProductPrice.update(price.id, priceData);
-        }
-
-        processed++;
-      } catch (err) {
-        console.error("Item processing error:", err);
-        failed++;
+      let product = productMap.get(itemCode);
+      if (!product) {
+        newProducts.push(productData);
+      } else {
+        updateProducts.push({ id: product.id, data: productData });
       }
+    }
+
+    // Bulk create new products
+    let createdProducts = [];
+    if (newProducts.length > 0) {
+      createdProducts = await svc.entities.Product.bulkCreate(newProducts);
+      for (const p of createdProducts) {
+        productMap.set(p.external_item_code, p);
+      }
+    }
+
+    // Update existing products in batches
+    for (const update of updateProducts) {
+      await svc.entities.Product.update(update.id, update.data);
+    }
+
+    // Now prepare prices
+    for (const item of items) {
+      const itemCode = item.ItemCode?.toString().trim();
+      if (!itemCode) continue;
+
+      const product = productMap.get(itemCode);
+      if (!product) continue;
+
+      const priceData = {
+        product_id: product.id,
+        store_id: store.id,
+        price: parseFloat(item.ItemPrice) || 0,
+        unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
+        allow_discount: item.AllowDiscount === "1",
+        price_update_at: item.PriceUpdateDate || new Date().toISOString()
+      };
+
+      let price = priceMap.get(product.id);
+      if (!price) {
+        newPrices.push(priceData);
+      } else {
+        updatePrices.push({ id: price.id, data: priceData });
+      }
+    }
+
+    // Bulk create new prices
+    if (newPrices.length > 0) {
+      await svc.entities.ProductPrice.bulkCreate(newPrices);
+    }
+
+    // Update existing prices
+    for (const update of updatePrices) {
+      await svc.entities.ProductPrice.update(update.id, update.data);
     }
 
     return Response.json({
@@ -168,8 +191,7 @@ Deno.serve(async (req) => {
       chainId,
       storeId,
       totalItems: items.length,
-      processed,
-      failed
+      processed: items.length
     });
 
   } catch (error) {
