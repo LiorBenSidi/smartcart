@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
     const prices = await svc.entities.ProductPrice.filter({ store_id: store.id });
 
     const productMap = new Map(products.map((p) => [p.gtin, p]));
-    const priceMap = new Map(prices.map((p) => [p.product_id, p]));
+    const priceMap = new Map(prices.map((p) => [p.gtin, p]));
 
     // -----------------------------------------------------------------------
     // PROCESS items
@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
         }
 
         const pricePayload = {
-          product_id: product.id,
+          gtin: code,
           store_id: store.id,
           current_price: parseNumber(it.ItemPrice),
           unit_price: parseNumber(it.UnitOfMeasurePrice),
@@ -318,10 +318,10 @@ Deno.serve(async (req) => {
           price_updated_at: it.PriceUpdateDate || new Date().toISOString()
         };
 
-        let price = priceMap.get(product.id);
+        let price = priceMap.get(code);
         if (!price) {
           price = await svc.entities.ProductPrice.create(pricePayload);
-          priceMap.set(product.id, price);
+          priceMap.set(code, price);
         } else {
           await svc.entities.ProductPrice.update(price.id, pricePayload);
         }

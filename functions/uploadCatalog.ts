@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
 
     const priceMap = new Map();
     for (const pr of existingPrices) {
-      priceMap.set(pr.product_id, pr);
+      priceMap.set(pr.gtin, pr);
     }
 
     // Prepare bulk operations
@@ -222,11 +222,8 @@ Deno.serve(async (req) => {
       const itemCode = item.ItemCode?.toString().trim();
       if (!itemCode) continue;
 
-      const product = productMap.get(itemCode);
-      if (!product) continue;
-
       const priceData = {
-        product_id: product.id,
+        gtin: itemCode,
         store_id: store.id,
         current_price: parseFloat(item.ItemPrice) || 0,
         unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
@@ -234,7 +231,7 @@ Deno.serve(async (req) => {
         price_updated_at: item.PriceUpdateDate || new Date().toISOString()
       };
 
-      let price = priceMap.get(product.id);
+      let price = priceMap.get(itemCode);
       if (!price) {
         newPrices.push(priceData);
       } else {
