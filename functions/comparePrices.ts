@@ -25,13 +25,9 @@ Deno.serve(async (req) => {
     }
     const store = stores[0];
 
-    // Load all products
-    const products = await svc.entities.Product.list();
-    const productMap = new Map(products.map(p => [p.gtin, p]));
-
     // Load all prices for this store
     const prices = await svc.entities.ProductPrice.filter({ store_id: store.id });
-    const priceMap = new Map(prices.map(p => [p.product_id, p]));
+    const priceMap = new Map(prices.map(p => [p.gtin, p]));
 
     const results = [];
 
@@ -46,23 +42,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const product = productMap.get(code);
-      if (!product) {
-        results.push({
-          item,
-          status: "not_found",
-          message: "Product not found in catalog"
-        });
-        continue;
-      }
-
-      const catalogPrice = priceMap.get(product.id);
+      const catalogPrice = priceMap.get(code);
       if (!catalogPrice) {
         results.push({
           item,
-          product,
-          status: "no_catalog_price",
-          message: "No catalog price available"
+          status: "not_found",
+          message: "Product not found in catalog for this store"
         });
         continue;
       }
@@ -74,7 +59,6 @@ Deno.serve(async (req) => {
       if (difference > 0.01) {
         results.push({
           item,
-          product,
           catalogPrice,
           status: "price_difference",
           receiptPrice,
@@ -85,7 +69,6 @@ Deno.serve(async (req) => {
       } else {
         results.push({
           item,
-          product,
           catalogPrice,
           status: "match",
           receiptPrice,
