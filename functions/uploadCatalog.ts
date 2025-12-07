@@ -119,15 +119,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create or get store
+    // Create or get store - use chain_id + external_store_code + sub_chain_code as unique identifier
     let stores = await svc.entities.Store.filter({
       chain_id: chain.id,
-      external_store_code: storeId
+      external_store_code: storeId,
+      sub_chain_code: subChainId
     });
     let store = stores[0];
 
     if (!store) {
       store = await svc.entities.Store.create({
+        chain_id: chain.id,
+        external_store_code: storeId,
+        sub_chain_code: subChainId,
+        name: `Store ${storeId}`
+      });
+    } else {
+      // Update store name if needed
+      await svc.entities.Store.update(store.id, {
         chain_id: chain.id,
         external_store_code: storeId,
         sub_chain_code: subChainId,

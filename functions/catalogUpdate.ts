@@ -250,7 +250,8 @@ Deno.serve(async (req) => {
 
     let store = (await svc.entities.Store.filter({
       chain_id: chain.id,
-      external_store_code: storeId
+      external_store_code: storeId,
+      sub_chain_code: subChainId
     }))[0];
 
     if (!store) {
@@ -258,6 +259,11 @@ Deno.serve(async (req) => {
         chain_id: chain.id,
         external_store_code: storeId,
         sub_chain_code: subChainId,
+        name: `${username} - Store ${storeId}`
+      });
+    } else {
+      // Update store info if needed
+      await svc.entities.Store.update(store.id, {
         name: `${username} - Store ${storeId}`
       });
     }
