@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import CatalogAdmin from './pages/CatalogAdmin';
 import PriceComparison from './pages/PriceComparison';
+import SmartCart from './pages/SmartCart';
 import __Layout from './Layout.jsx';
 
 
@@ -20,6 +21,7 @@ export const PAGES = {
     "Admin": Admin,
     "CatalogAdmin": CatalogAdmin,
     "PriceComparison": PriceComparison,
+    "SmartCart": SmartCart,
 }
 
 export const pagesConfig = {
