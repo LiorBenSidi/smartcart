@@ -101,7 +101,7 @@ export default function Upload() {
               <SelectContent>
                 {stores.map((store) => (
                   <SelectItem key={store.id} value={store.id}>
-                    {store.name} {store.external_store_id && `(${store.external_store_id})`}
+                    {store.name} {store.external_store_code && `(${store.external_store_code})`}
                   </SelectItem>
                 ))}
               </SelectContent>

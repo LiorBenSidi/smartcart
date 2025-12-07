@@ -91,7 +91,7 @@ export default function Layout({ children, currentPageName }) {
                 );
               })}
               {/* Admin Link - conditionally rendered */}
-              {(userProfile?.isAdmin || user?.email === 'liorben@base44.com') && (
+              {(userProfile?.is_admin || user?.email === 'liorben@base44.com') && (
                 <Link 
                   to={createPageUrl('Admin')}
                   className={`flex flex-col items-center gap-1 transition-colors duration-200 ${

@@ -229,7 +229,7 @@ export default function Receipt() {
             if (!isAdmin) {
                 try {
                     const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-                    if (profiles.length > 0 && profiles[0].isAdmin) {
+                    if (profiles.length > 0 && profiles[0].is_admin) {
                         isAdmin = true;
                     }
                 } catch(e) {
@@ -312,11 +312,8 @@ export default function Receipt() {
     if (!receipt?.store_id || !editData?.items) return;
     
     try {
-      const stores = await base44.entities.Store.filter({ id: receipt.store_id });
-      if (stores.length === 0) return;
-      
-      const products = await base44.entities.Product.filter({ chain_id: stores[0].chain_id });
-      const map = new Map(products.map(p => [p.external_item_code, p]));
+      const products = await base44.entities.Product.list();
+      const map = new Map(products.map(p => [p.gtin, p]));
       setProductMap(map);
     } catch (error) {
       console.error("Failed to load products", error);
@@ -425,7 +422,7 @@ export default function Receipt() {
               <tbody className="divide-y divide-gray-50">
                 {editData.items.map((item, i) => {
                   const dbProduct = item.code ? productMap.get(item.code?.toString().trim()) : null;
-                  const displayName = dbProduct ? dbProduct.name : `product no. ${i + 1}`;
+                  const displayName = dbProduct ? dbProduct.canonical_name : `product no. ${i + 1}`;
                   
                   return (
                   <tr key={i} className="group">
