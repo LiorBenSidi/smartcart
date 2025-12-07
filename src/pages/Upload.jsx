@@ -54,15 +54,12 @@ export default function Upload() {
       const fileUrl = uploadRes.file_url;
 
       // 2. Create a pending receipt with store info
-      const today = new Date().toISOString().split('T')[0];
       const pendingReceipt = await base44.entities.Receipt.create({
-        storeName: selectedStore.name,
-        date: today,
-        totalAmount: 0,
-        imageUrl: fileUrl,
-        items: [],
-        processingStatus: 'pending',
-        store_id: selectedStore.id
+        store_id: selectedStore.id,
+        purchased_at: new Date().toISOString(),
+        total_amount: 0,
+        raw_receipt_image_url: fileUrl,
+        processing_status: 'pending'
       });
 
       // 3. Redirect to the Receipt page - processing will happen there
