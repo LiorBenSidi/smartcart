@@ -21,7 +21,7 @@ export default function Admin() {
             let isAdmin = user.email === 'liorben@base44.com';
             if (!isAdmin) {
                 const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-                isAdmin = profiles.length > 0 && profiles[0].isAdmin;
+                isAdmin = profiles.length > 0 && profiles[0].is_admin;
             }
 
             if (!isAdmin) {
