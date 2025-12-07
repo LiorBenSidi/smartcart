@@ -36,7 +36,7 @@ export default function PriceComparison() {
     setLoading(true);
     
     try {
-      const prices = await base44.entities.ProductPrice.filter({ product_id: product.id });
+      const prices = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
       
       // Sort by price (cheapest first)
       prices.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
