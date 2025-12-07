@@ -21,7 +21,7 @@ export default function Receipt() {
 
   // Process pending receipt
   const processReceipt = async (r) => {
-    if (!r || r.processingStatus !== 'pending' || isProcessing) return;
+    if (!r || r.processing_status !== 'pending' || isProcessing) return;
     setIsProcessing(true);
 
     try {
@@ -38,7 +38,7 @@ export default function Receipt() {
 
       const llmRes = await base44.integrations.Core.InvokeLLM({
         prompt: prompt,
-        file_urls: [r.imageUrl],
+        file_urls: [r.raw_receipt_image_url],
         response_json_schema: {
             type: "object",
             properties: {
@@ -78,10 +78,10 @@ export default function Receipt() {
 
       await base44.entities.Receipt.update(r.id, {
         ...llmRes,
-        processingStatus: 'processed'
+        processing_status: 'processed'
       });
 
-      const processedReceipt = { ...r, ...llmRes, processingStatus: 'processed' };
+      const processedReceipt = { ...r, ...llmRes, processing_status: 'processed' };
       
       // If we have a store_id, compare prices with catalog
       if (r.store_id && llmRes.items && llmRes.items.length > 0) {
@@ -110,8 +110,8 @@ export default function Receipt() {
       }
     } catch (error) {
       console.error("Processing failed", error);
-      await base44.entities.Receipt.update(r.id, { processingStatus: 'failed' });
-      setReceipt({ ...r, processingStatus: 'failed' });
+      await base44.entities.Receipt.update(r.id, { processing_status: 'failed' });
+      setReceipt({ ...r, processing_status: 'failed' });
     } finally {
       setIsProcessing(false);
     }
@@ -160,7 +160,7 @@ export default function Receipt() {
     try {
       await base44.entities.Receipt.update(receipt.id, {
         ...editData,
-        processingStatus: 'processed'
+        processing_status: 'processed'
       });
       setReceipt(editData);
       setEditMode(false);
@@ -183,9 +183,9 @@ export default function Receipt() {
         receipt.items.forEach(item => {
             rows.push([
                 receipt.date,
-                `"${receipt.storeName}"`,
+                `"${receipt.storeName || ''}"`,
                 `"${receipt.address || ''}"`,
-                receipt.totalAmount,
+                receipt.totalAmount || receipt.total_amount || 0,
                 `"${item.name}"`,
                 item.category,
                 item.quantity,
@@ -196,9 +196,9 @@ export default function Receipt() {
     } else {
          rows.push([
                 receipt.date,
-                `"${receipt.storeName}"`,
+                `"${receipt.storeName || ''}"`,
                 `"${receipt.address || ''}"`,
-                receipt.totalAmount,
+                receipt.totalAmount || receipt.total_amount || 0,
                 '',
                 '',
                 '',
@@ -211,7 +211,7 @@ export default function Receipt() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `receipt_${receipt.storeName}_${receipt.date}.csv`);
+    link.setAttribute("download", `receipt_${receipt.storeName || 'store'}_${receipt.date || 'date'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -247,7 +247,7 @@ export default function Receipt() {
             if (data.length > 0) {
               setReceipt(data[0]);
               // If pending, trigger processing
-              if (data[0].processingStatus === 'pending') {
+              if (data[0].processing_status === 'pending') {
                 processReceipt(data[0]);
               }
             }
@@ -264,9 +264,9 @@ export default function Receipt() {
   const retryProcessing = async () => {
     if (!receipt) return;
 
-    const updatedReceipt = { ...receipt, processingStatus: 'pending' };
+    const updatedReceipt = { ...receipt, processing_status: 'pending' };
     setReceipt(updatedReceipt);
-    await base44.entities.Receipt.update(receipt.id, { processingStatus: 'pending' });
+    await base44.entities.Receipt.update(receipt.id, { processing_status: 'pending' });
     processReceipt(updatedReceipt);
   };
 
@@ -321,7 +321,7 @@ export default function Receipt() {
   };
 
   const calculatedSum = calculateSum();
-  const hasMismatch = editData ? Math.abs(calculatedSum - editData.totalAmount) > 0.05 : false;
+  const hasMismatch = editData ? Math.abs(calculatedSum - (editData.totalAmount || 0)) > 0.05 : false;
 
   if (loading) return <div className="p-10 text-center text-gray-500">Loading receipt...</div>;
   if (!receipt) return <div className="p-10 text-center text-gray-500">Receipt not found.</div>;
@@ -502,7 +502,7 @@ export default function Receipt() {
             <div>
               <h4 className="font-bold text-amber-800 text-sm">Total Mismatch Detected</h4>
               <p className="text-xs text-amber-700 mt-1">
-                Sum of items (${calculatedSum.toFixed(2)}) does not match the receipt total (${editData.totalAmount.toFixed(2)}).
+                Sum of items (${calculatedSum.toFixed(2)}) does not match the receipt total (${(editData.totalAmount || 0).toFixed(2)}).
                 Please review your items or update the total amount.
               </p>
             </div>
@@ -531,7 +531,7 @@ export default function Receipt() {
   }
 
   // Show pending state
-  if (receipt.processingStatus === 'pending') {
+  if (receipt.processing_status === 'pending') {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-4">
@@ -551,8 +551,8 @@ export default function Receipt() {
           <p className="text-gray-500 text-sm mb-6">
             Our AI is extracting items and calculating totals. This usually takes 10-30 seconds.
           </p>
-          {receipt.imageUrl && (
-            <img src={receipt.imageUrl} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />
+          {receipt.raw_receipt_image_url && (
+            <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />
           )}
         </div>
       </div>
@@ -560,7 +560,7 @@ export default function Receipt() {
   }
 
   // Show failed state
-  if (receipt.processingStatus === 'failed') {
+  if (receipt.processing_status === 'failed') {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-4">
@@ -580,8 +580,8 @@ export default function Receipt() {
           <p className="text-gray-500 text-sm mb-6">
             We couldn't extract the data from this receipt. This might happen with unclear images or unusual formats.
           </p>
-          {receipt.imageUrl && (
-            <img src={receipt.imageUrl} alt="Receipt" className="max-h-64 mx-auto rounded-lg mb-6" />
+          {receipt.raw_receipt_image_url && (
+            <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg mb-6" />
           )}
           <Button onClick={retryProcessing} className="bg-indigo-600 hover:bg-indigo-700">
             <RefreshCw className="w-4 h-4 mr-2" /> Try Again
@@ -621,7 +621,7 @@ export default function Receipt() {
                           </div>
                       </div>
                       <div className="text-right">
-                          <span className="block text-2xl font-bold text-gray-900">${receipt.totalAmount.toFixed(2)}</span>
+                          <span className="block text-2xl font-bold text-gray-900">${(receipt.totalAmount || receipt.total_amount || 0).toFixed(2)}</span>
                           <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">Paid</span>
                       </div>
                   </div>
@@ -630,7 +630,7 @@ export default function Receipt() {
                   <div className="mt-6">
                       <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Items Purchased</h4>
                       <div className="space-y-3">
-                          {receipt.items.map((item, idx) => (
+                          {(receipt.items || []).map((item, idx) => (
                               <div key={idx} className="flex items-center justify-between text-sm">
                                   <div className="flex items-center gap-3">
                                       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 font-medium">
