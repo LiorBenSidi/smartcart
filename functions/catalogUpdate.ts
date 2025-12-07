@@ -240,24 +240,24 @@ Deno.serve(async (req) => {
     // UPSERT chain + store
     // -----------------------------------------------------------------------
 
-    let chain = (await svc.entities.Chain.filter({ external_chain_id: chainId }))[0];
+    let chain = (await svc.entities.Chain.filter({ external_chain_code: chainId }))[0];
     if (!chain) {
       chain = await svc.entities.Chain.create({
         name: username,
-        external_chain_id: chainId
+        external_chain_code: chainId
       });
     }
 
     let store = (await svc.entities.Store.filter({
       chain_id: chain.id,
-      external_store_id: storeId
+      external_store_code: storeId
     }))[0];
 
     if (!store) {
       store = await svc.entities.Store.create({
         chain_id: chain.id,
-        external_store_id: storeId,
-        sub_chain_id: subChainId,
+        external_store_code: storeId,
+        sub_chain_code: subChainId,
         name: `${username} - Store ${storeId}`
       });
     }
@@ -266,10 +266,10 @@ Deno.serve(async (req) => {
     // Load existing product + price mappings
     // -----------------------------------------------------------------------
 
-    const products = await svc.entities.Product.filter({ chain_id: chain.id });
+    const products = await svc.entities.Product.list();
     const prices = await svc.entities.ProductPrice.filter({ store_id: store.id });
 
-    const productMap = new Map(products.map((p) => [p.external_item_code, p]));
+    const productMap = new Map(products.map((p) => [p.gtin, p]));
     const priceMap = new Map(prices.map((p) => [p.product_id, p]));
 
     // -----------------------------------------------------------------------
@@ -285,17 +285,14 @@ Deno.serve(async (req) => {
         if (!code) continue;
 
         const productPayload = {
-          chain_id: chain.id,
-          external_item_code: code,
-          name: it.ItemName || "",
-          brand: it.ManufacturerName || "",
+          gtin: code,
+          canonical_name: it.ItemName || "",
+          brand_name: it.ManufacturerName || "",
           description: it.ManufacturerItemDescription || "",
           unit_of_measure: it.UnitOfMeasure || "",
-          unit_qty: it.UnitQty || "",
-          qty_in_package: parseNumber(it.QtyInPackage),
-          is_weighted: String(it.bIsWeighted || "") === "1",
-          item_type: it.ItemType || "",
-          status: it.ItemStatus || ""
+          unit_quantity: parseNumber(it.UnitQty),
+          package_quantity: parseNumber(it.QtyInPackage),
+          is_weight_based: String(it.bIsWeighted || "") === "1"
         };
 
         let product = productMap.get(code);
@@ -309,10 +306,10 @@ Deno.serve(async (req) => {
         const pricePayload = {
           product_id: product.id,
           store_id: store.id,
-          price: parseNumber(it.ItemPrice),
+          current_price: parseNumber(it.ItemPrice),
           unit_price: parseNumber(it.UnitOfMeasurePrice),
           allow_discount: String(it.AllowDiscount || "") === "1",
-          price_update_at: it.PriceUpdateDate || new Date().toISOString()
+          price_updated_at: it.PriceUpdateDate || new Date().toISOString()
         };
 
         let price = priceMap.get(product.id);

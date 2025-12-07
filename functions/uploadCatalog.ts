@@ -109,40 +109,40 @@ Deno.serve(async (req) => {
 
     // Create or get chain
     console.log("Setting up chain and store...");
-    let chains = await svc.entities.Chain.filter({ external_chain_id: chainId });
+    let chains = await svc.entities.Chain.filter({ external_chain_code: chainId });
     let chain = chains[0];
     
     if (!chain) {
       chain = await svc.entities.Chain.create({
         name: chainId,
-        external_chain_id: chainId
+        external_chain_code: chainId
       });
     }
 
     // Create or get store
     let stores = await svc.entities.Store.filter({
       chain_id: chain.id,
-      external_store_id: storeId
+      external_store_code: storeId
     });
     let store = stores[0];
 
     if (!store) {
       store = await svc.entities.Store.create({
         chain_id: chain.id,
-        external_store_id: storeId,
-        sub_chain_id: subChainId,
+        external_store_code: storeId,
+        sub_chain_code: subChainId,
         name: `Store ${storeId}`
       });
     }
 
     // Load existing products and prices
     console.log("Loading existing products and prices...");
-    const existingProducts = await svc.entities.Product.filter({ chain_id: chain.id });
+    const existingProducts = await svc.entities.Product.list();
     const existingPrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
 
     const productMap = new Map();
     for (const p of existingProducts) {
-      productMap.set(p.external_item_code, p);
+      productMap.set(p.gtin, p);
     }
 
     const priceMap = new Map();
@@ -160,17 +160,14 @@ Deno.serve(async (req) => {
       if (!itemCode) continue;
 
       const productData = {
-        chain_id: chain.id,
-        external_item_code: itemCode,
-        name: item.ItemName || "",
-        brand: item.ManufacturerName || "",
+        gtin: itemCode,
+        canonical_name: item.ItemName || "",
+        brand_name: item.ManufacturerName || "",
         description: item.ManufacturerItemDescription || "",
         unit_of_measure: item.UnitOfMeasure || "",
-        unit_qty: parseFloat(item.UnitQty) || 0,
-        qty_in_package: parseFloat(item.QtyInPackage) || 0,
-        is_weighted: item.bIsWeighted === "1",
-        item_type: item.ItemType || "",
-        status: item.ItemStatus || ""
+        unit_quantity: parseFloat(item.UnitQty) || 0,
+        package_quantity: parseFloat(item.QtyInPackage) || 0,
+        is_weight_based: item.bIsWeighted === "1"
       };
 
       let product = productMap.get(itemCode);
@@ -179,6 +176,7 @@ Deno.serve(async (req) => {
       } else {
         updateProducts.push({ id: product.id, data: productData });
       }
+      productMap.set(itemCode, product || { id: null, gtin: itemCode });
     }
 
     // Bulk create new products
@@ -186,7 +184,7 @@ Deno.serve(async (req) => {
     if (newProducts.length > 0) {
       const createdProducts = await svc.entities.Product.bulkCreate(newProducts);
       for (const p of createdProducts) {
-        productMap.set(p.external_item_code, p);
+        productMap.set(p.gtin, p);
       }
     }
 
@@ -221,10 +219,10 @@ Deno.serve(async (req) => {
       const priceData = {
         product_id: product.id,
         store_id: store.id,
-        price: parseFloat(item.ItemPrice) || 0,
+        current_price: parseFloat(item.ItemPrice) || 0,
         unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
         allow_discount: item.AllowDiscount === "1",
-        price_update_at: item.PriceUpdateDate || new Date().toISOString()
+        price_updated_at: item.PriceUpdateDate || new Date().toISOString()
       };
 
       let price = priceMap.get(product.id);

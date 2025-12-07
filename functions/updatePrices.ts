@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
 
     for (const update of updates) {
       await svc.entities.ProductPrice.update(update.productPriceId, {
-        price: update.newPrice,
-        price_update_at: new Date().toISOString()
+        current_price: update.newPrice,
+        price_updated_at: new Date().toISOString()
       });
     }
 

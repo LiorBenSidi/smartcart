@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
     }
     const store = stores[0];
 
-    // Load all products for this chain
-    const products = await svc.entities.Product.filter({ chain_id: store.chain_id });
-    const productMap = new Map(products.map(p => [p.external_item_code, p]));
+    // Load all products
+    const products = await svc.entities.Product.list();
+    const productMap = new Map(products.map(p => [p.gtin, p]));
 
     // Load all prices for this store
     const prices = await svc.entities.ProductPrice.filter({ store_id: store.id });
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       }
 
       const receiptPrice = parseFloat(item.price) || 0;
-      const dbPrice = catalogPrice.price || 0;
+      const dbPrice = catalogPrice.current_price || 0;
       const difference = Math.abs(receiptPrice - dbPrice);
 
       if (difference > 0.01) {
