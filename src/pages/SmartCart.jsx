@@ -14,15 +14,22 @@ export default function SmartCart() {
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [savedCarts, setSavedCarts] = useState([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [cartName, setCartName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      const [storesList, productsList] = await Promise.all([
-      base44.entities.Store.list(),
-      base44.entities.Product.list('-updated_date', 100)]
-      );
+      const [storesList, productsList, savedCartsList] = await Promise.all([
+        base44.entities.Store.list(),
+        base44.entities.Product.list('-updated_date', 100),
+        base44.entities.SavedCart.list('-created_date')
+      ]);
       setStores(storesList);
       setProducts(productsList);
+      setSavedCarts(savedCartsList);
 
       if (storesList.length > 0 && !selectedStore) {
         setSelectedStore(storesList[0]);
@@ -107,6 +114,53 @@ export default function SmartCart() {
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  const saveCart = async () => {
+    if (!cartName.trim()) return;
+    setSaving(true);
+    try {
+      const itemsWithPrices = await Promise.all(
+        cartItems.map(async (item) => {
+          const prices = await base44.entities.ProductPrice.filter({ gtin: item.gtin, store_id: selectedStore?.id });
+          const price = prices.length > 0 ? prices[0].current_price : 0;
+          return { ...item, price };
+        })
+      );
+
+      const totalAmount = itemsWithPrices.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      await base44.entities.SavedCart.create({
+        name: cartName,
+        store_id: selectedStore?.id,
+        store_name: selectedStore?.name,
+        items: itemsWithPrices,
+        total_amount: totalAmount,
+        total_items: totalItems
+      });
+
+      const updatedCarts = await base44.entities.SavedCart.list('-created_date');
+      setSavedCarts(updatedCarts);
+      setShowSaveDialog(false);
+      setCartName('');
+    } catch (error) {
+      console.error('Failed to save cart', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const loadSavedCart = (savedCart) => {
+    setCartItems(savedCart.items.map(item => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
+    const store = stores.find(s => s.id === savedCart.store_id);
+    if (store) setSelectedStore(store);
+    setShowHistory(false);
+  };
+
+  const deleteSavedCart = async (id) => {
+    await base44.entities.SavedCart.delete(id);
+    const updatedCarts = await base44.entities.SavedCart.list('-created_date');
+    setSavedCarts(updatedCarts);
+  };
+
   return (
     <div className="space-y-6 pb-24">
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-2xl shadow-lg">
@@ -172,24 +226,104 @@ export default function SmartCart() {
 
       {/* Cart Summary */}
       <Card className="bg-indigo-50 border-indigo-200">
-        <CardContent className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
-              {totalItems}
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                {totalItems}
+              </div>
+              <div>
+                <div className="font-bold text-gray-900">Items in Cart</div>
+                <div className="text-xs text-gray-600">{cartItems.length} unique products</div>
+              </div>
             </div>
-            <div>
-              <div className="font-bold text-gray-900">Items in Cart</div>
-              <div className="text-xs text-gray-600">{cartItems.length} unique products</div>
-            </div>
+            {cartItems.length > 0 &&
+            <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loadingRecommendations}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loadingRecommendations ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            }
           </div>
-          {cartItems.length > 0 &&
-          <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loadingRecommendations}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${loadingRecommendations ? 'animate-spin' : ''}`} />
-              Refresh
+          <div className="flex gap-2">
+            {cartItems.length > 0 && (
+              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => setShowSaveDialog(true)}>
+                Save Cart
+              </Button>
+            )}
+            <Button variant="outline" className="flex-1" onClick={() => setShowHistory(!showHistory)}>
+              {showHistory ? 'Hide' : 'Show'} History
             </Button>
-          }
+          </div>
         </CardContent>
       </Card>
+
+      {/* Save Dialog */}
+      {showSaveDialog && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <CardTitle className="text-lg">Save Cart List</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <input
+              type="text"
+              placeholder="Enter cart name (e.g., Weekly Groceries)"
+              value={cartName}
+              onChange={(e) => setCartName(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowSaveDialog(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={saveCart} disabled={saving || !cartName.trim()}>
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Saved Carts History */}
+      {showHistory && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Saved Cart Lists</CardTitle>
+            <p className="text-xs text-amber-600 mt-1">⚠️ Prices and availability shown are from the time each list was created</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {savedCarts.length === 0 ? (
+              <p className="text-center text-gray-400 py-6">No saved carts yet</p>
+            ) : (
+              savedCarts.map((cart) => (
+                <div key={cart.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900">{cart.name}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {cart.store_name} • {new Date(cart.created_date).toLocaleDateString()} at {new Date(cart.created_date).toLocaleTimeString()}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {cart.total_items} items • ${cart.total_amount?.toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => loadSavedCart(cart)}>
+                        Load
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => deleteSavedCart(cart.id)}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400 bg-amber-50 p-2 rounded border border-amber-200">
+                    📅 Historical pricing from {new Date(cart.created_date).toLocaleDateString()}
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Cart Items with Recommendations */}
       {cartItems.length === 0 ?
