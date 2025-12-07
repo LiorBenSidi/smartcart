@@ -3,7 +3,8 @@ import {
   PlusCircle, 
   Sparkles, 
   User, 
-  ShieldCheck 
+  ShieldCheck,
+  BarChart3
 } from "lucide-react";
 
 export const MOCK_STORES = [
@@ -79,6 +80,6 @@ export const generateMockReceipt = () => {
 export const NAV_ITEMS = [
   { label: "Home", path: "/", icon: Home },
   { label: "Scan", path: "/upload", icon: PlusCircle },
-  { label: "Insights", path: "/recommendations", icon: Sparkles },
+  { label: "Compare", path: "/pricecomparison", icon: BarChart3 },
   { label: "Profile", path: "/profile", icon: User },
 ];
