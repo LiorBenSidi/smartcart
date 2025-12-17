@@ -2,7 +2,20 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, Sparkles, ShoppingCart, Heart, Shield, TrendingDown, Loader2 } from 'lucide-react';
+import { ChevronRight, Sparkles, ShoppingCart, Heart, Shield, TrendingDown, Loader2, AlertTriangle } from 'lucide-react';
+
+const ALLERGEN_OPTIONS = [
+  { value: 'gluten', label: 'Gluten' },
+  { value: 'lactose', label: 'Lactose' },
+  { value: 'nuts', label: 'Nuts' },
+  { value: 'peanuts', label: 'Peanuts' },
+  { value: 'soy', label: 'Soy' },
+  { value: 'eggs', label: 'Eggs' },
+  { value: 'fish', label: 'Fish' },
+  { value: 'shellfish', label: 'Shellfish' },
+  { value: 'wheat', label: 'Wheat' },
+  { value: 'sesame', label: 'Sesame' }
+];
 
 const QUESTIONS = [
   {
@@ -51,6 +64,7 @@ const QUESTIONS = [
 export default function Onboarding({ onComplete }) {
   const [step, setStep] = useState(-1);
   const [answers, setAnswers] = useState({});
+  const [selectedAllergens, setSelectedAllergens] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
 
@@ -98,6 +112,14 @@ export default function Onboarding({ onComplete }) {
     }
   };
 
+  const toggleAllergen = (allergen) => {
+    if (selectedAllergens.includes(allergen)) {
+      setSelectedAllergens(selectedAllergens.filter(a => a !== allergen));
+    } else {
+      setSelectedAllergens([...selectedAllergens, allergen]);
+    }
+  };
+
   const generateRecommendations = async (finalAnswers) => {
     setIsGenerating(true);
     try {
@@ -106,7 +128,7 @@ export default function Onboarding({ onComplete }) {
       const profile = {
         budget_focus: finalAnswers.budget,
         kashrut_level: restrictions.includes('kosher') ? 'basic_kosher' : 'none',
-        allergen_avoid_list: restrictions.includes('allergies') ? ['gluten', 'nuts'] : [],
+        allergen_avoid_list: restrictions.includes('allergies') ? selectedAllergens : [],
         shopping_frequency: 'weekly',
         household_size: 1
       };
@@ -332,6 +354,38 @@ export default function Onboarding({ onComplete }) {
           );
         })}
       </div>
+
+      {/* Show allergen selection if allergies is selected */}
+      {currentQuestion.id === 'restrictions' && 
+       answers.restrictions && 
+       answers.restrictions.includes('allergies') && (
+        <Card className="border-2 border-amber-200 bg-amber-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              <h4 className="font-semibold text-gray-900">Select Your Allergens</h4>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {ALLERGEN_OPTIONS.map((allergen) => {
+                const isSelected = selectedAllergens.includes(allergen.value);
+                return (
+                  <button
+                    key={allergen.value}
+                    onClick={() => toggleAllergen(allergen.value)}
+                    className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                      isSelected
+                        ? 'bg-amber-600 border-amber-600 text-white'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-amber-400'
+                    }`}
+                  >
+                    {allergen.label}
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {currentQuestion.multiSelect && (
         <Button
