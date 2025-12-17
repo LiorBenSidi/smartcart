@@ -48,7 +48,7 @@ const QUESTIONS = [
 ];
 
 export default function Onboarding({ onComplete }) {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [answers, setAnswers] = useState({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
