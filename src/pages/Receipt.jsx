@@ -99,14 +99,8 @@ export default function Receipt() {
         prompt: summaryPrompt
       });
 
-      await base44.entities.Receipt.update(r.id, {
-        ...llmRes,
-        summary: summaryRes,
-        processing_status: 'processed'
-      });
-
       const processedReceipt = { ...r, ...llmRes, summary: summaryRes, processing_status: 'processed' };
-      
+
       // If we have a store_id, compare prices with catalog
       if (r.store_id && llmRes.items && llmRes.items.length > 0) {
         try {
@@ -114,23 +108,42 @@ export default function Receipt() {
             items: llmRes.items,
             store_id: r.store_id
           });
-          
+
+          // Update database and set state together
+          await base44.entities.Receipt.update(r.id, {
+            ...llmRes,
+            summary: summaryRes,
+            processing_status: 'processed'
+          });
+
           setComparisonResults(compareRes.data.results);
-          setReceipt(processedReceipt);
           setEditData(processedReceipt);
           setShowPriceComparison(true);
+          setReceipt(processedReceipt);
         } catch (error) {
           console.error("Price comparison failed", error);
           // Skip comparison and go to edit mode
-          setReceipt(processedReceipt);
+          await base44.entities.Receipt.update(r.id, {
+            ...llmRes,
+            summary: summaryRes,
+            processing_status: 'processed'
+          });
+
           setEditData(processedReceipt);
           setEditMode(true);
+          setReceipt(processedReceipt);
         }
       } else {
         // No store selected or no items, skip comparison
-        setReceipt(processedReceipt);
+        await base44.entities.Receipt.update(r.id, {
+          ...llmRes,
+          summary: summaryRes,
+          processing_status: 'processed'
+        });
+
         setEditData(processedReceipt);
         setEditMode(true);
+        setReceipt(processedReceipt);
       }
     } catch (error) {
       console.error("Processing failed", error);
