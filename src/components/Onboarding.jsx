@@ -144,9 +144,9 @@ export default function Onboarding({ onComplete }) {
   };
 
   // Welcome screen
-  if (step === -1 || step === 0 && Object.keys(answers).length === 0) {
+  if (step === -1) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+      <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
         <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl">
           <Sparkles className="w-10 h-10 text-white" />
         </div>
@@ -168,7 +168,7 @@ export default function Onboarding({ onComplete }) {
   // Generating recommendations
   if (isGenerating) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+      <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-6" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Creating Your Profile</h2>
         <p className="text-gray-500">Generating personalized recommendations...</p>
@@ -179,7 +179,8 @@ export default function Onboarding({ onComplete }) {
   // Show recommendations
   if (recommendations) {
     return (
-      <div className="space-y-6 animate-in fade-in duration-500 max-w-2xl mx-auto">
+      <div className="fixed inset-0 bg-white z-[100] overflow-y-auto p-6">
+        <div className="space-y-6 animate-in fade-in duration-500 max-w-2xl mx-auto py-8">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-green-600" />
@@ -231,6 +232,7 @@ export default function Onboarding({ onComplete }) {
         >
           Start Shopping <ChevronRight className="w-5 h-5 ml-2" />
         </Button>
+        </div>
       </div>
     );
   }
@@ -240,7 +242,8 @@ export default function Onboarding({ onComplete }) {
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 max-w-lg mx-auto">
+    <div className="fixed inset-0 bg-white z-[100] overflow-y-auto p-6">
+      <div className="space-y-6 animate-in fade-in duration-300 max-w-lg mx-auto py-8">
       {/* Progress bar */}
       <div className="w-full bg-gray-200 rounded-full h-2">
         <div 
@@ -283,6 +286,7 @@ export default function Onboarding({ onComplete }) {
           ← Back
         </Button>
       )}
+      </div>
     </div>
   );
 }
