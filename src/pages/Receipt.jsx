@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PriceComparisonReview from '../components/PriceComparisonReview';
+import AddProductDialog from '../components/AddProductDialog';
 
 export default function Receipt() {
   const [receipt, setReceipt] = useState(null);
@@ -18,6 +19,8 @@ export default function Receipt() {
   const [comparisonResults, setComparisonResults] = useState(null);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
   const [productMap, setProductMap] = useState(new Map());
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(null);
 
   // Process pending receipt
   const processReceipt = async (r) => {
@@ -225,20 +228,21 @@ export default function Receipt() {
       if (id) {
         try {
             const user = await base44.auth.me();
-            let isAdmin = user.email === 'liorben@base44.com';
-            if (!isAdmin) {
+            let adminStatus = user.email === 'liorben@base44.com';
+            if (!adminStatus) {
                 try {
                     const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
                     if (profiles.length > 0 && profiles[0].is_admin) {
-                        isAdmin = true;
+                        adminStatus = true;
                     }
                 } catch(e) {
                     console.error("Error checking admin status", e);
                 }
             }
+            setIsAdmin(adminStatus);
 
             let data;
-            if (isAdmin) {
+            if (adminStatus) {
                 data = await base44.entities.Receipt.filter({ id });
             } else {
                 data = await base44.entities.Receipt.filter({ id, created_by: user.email });
@@ -309,8 +313,6 @@ export default function Receipt() {
   };
 
   const loadProductsForEditMode = async () => {
-    if (!receipt?.store_id || !editData?.items) return;
-    
     try {
       const products = await base44.entities.Product.list();
       const map = new Map(products.map(p => [p.gtin, p]));
@@ -318,6 +320,11 @@ export default function Receipt() {
     } catch (error) {
       console.error("Failed to load products", error);
     }
+  };
+
+  const handleProductAdded = async (product) => {
+    // Reload products after adding new one
+    await loadProductsForEditMode();
   };
 
   const calculatedSum = calculateSum();
@@ -422,17 +429,38 @@ export default function Receipt() {
               <tbody className="divide-y divide-gray-50">
                 {editData.items.map((item, i) => {
                   const dbProduct = item.code ? productMap.get(item.code?.toString().trim()) : null;
-                  const displayName = dbProduct ? dbProduct.canonical_name : `product no. ${i + 1}`;
+                  const productNotFound = item.code && !dbProduct;
+                  const displayName = dbProduct ? dbProduct.canonical_name : item.name || `product no. ${i + 1}`;
                   
                   return (
                   <tr key={i} className="group">
                     <td className="py-3 pl-2 align-top">
-                      <Input 
-                        value={displayName} 
-                        onChange={(e) => handleItemChange(i, 'name', e.target.value)}
-                        className="h-8 text-sm mb-1 border-gray-200 focus:border-indigo-300"
-                        placeholder="Item name"
-                      />
+                      <div className="flex items-center gap-2 mb-1">
+                        <Input 
+                          value={displayName} 
+                          onChange={(e) => handleItemChange(i, 'name', e.target.value)}
+                          className="h-8 text-sm border-gray-200 focus:border-indigo-300 flex-1"
+                          placeholder="Item name"
+                          disabled={!!dbProduct}
+                        />
+                        {isAdmin && productNotFound && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setShowAddProduct(item)}
+                            className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            title="Add product to database"
+                          >
+                            <PackagePlus className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {productNotFound && (
+                        <div className="text-[10px] text-amber-600 mb-1 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Product not found in database
+                        </div>
+                      )}
                       <div className="flex gap-1">
                         <Input 
                           value={item.code || ''} 
@@ -526,6 +554,14 @@ export default function Receipt() {
             <><CheckCircle2 className="mr-2 w-5 h-5" /> Save & Continue</>
           )}
         </Button>
+
+        {showAddProduct && (
+          <AddProductDialog
+            item={showAddProduct}
+            onClose={() => setShowAddProduct(null)}
+            onSuccess={handleProductAdded}
+          />
+        )}
       </div>
     );
   }
