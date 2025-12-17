@@ -82,6 +82,7 @@ export const NAV_ITEMS = [
   { label: "Home", path: "/", icon: Home },
   { label: "Scan", path: "/upload", icon: PlusCircle },
   { label: "Cart", path: "/smartcart", icon: ShoppingCart },
+  { label: "Tips", path: "/recommendations", icon: Sparkles },
   { label: "Compare", path: "/pricecomparison", icon: BarChart3 },
   { label: "Profile", path: "/profile", icon: User },
 ];
