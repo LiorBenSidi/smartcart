@@ -23,9 +23,9 @@ const QUESTIONS = [
     text: 'What is your typical monthly shopping budget?',
     icon: TrendingDown,
     options: [
-      { value: 'save_money', label: '<$300', emoji: '💰' },
-      { value: 'balanced', label: '$300-600', emoji: '⚖️' },
-      { value: 'health_focused', label: '>$600', emoji: '🌟' }
+      { value: 'save_money', label: '<₪1000', emoji: '💰' },
+      { value: 'balanced', label: '₪1000-2000', emoji: '⚖️' },
+      { value: 'health_focused', label: '>₪2000', emoji: '🌟' }
     ]
   },
   {

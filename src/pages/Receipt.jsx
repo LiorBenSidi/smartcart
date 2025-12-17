@@ -542,7 +542,7 @@ export default function Receipt() {
                     </td>
                     <td className="py-3 px-1 align-top">
                       <div className="h-8 flex items-center justify-end px-1 text-sm font-bold text-gray-700">
-                        ${(item.total || 0).toFixed(2)}
+                        ₪{(item.total || 0).toFixed(2)}
                       </div>
                     </td>
                     <td className="py-3 pr-1 align-top text-right">
@@ -576,7 +576,7 @@ export default function Receipt() {
             <div>
               <h4 className="font-bold text-amber-800 text-sm">Total Mismatch Detected</h4>
               <p className="text-xs text-amber-700 mt-1">
-                Sum of items (${calculatedSum.toFixed(2)}) does not match the receipt total (${(editData.totalAmount || 0).toFixed(2)}).
+                Sum of items (₪{calculatedSum.toFixed(2)}) does not match the receipt total (₪{(editData.totalAmount || 0).toFixed(2)}).
                 Please review your items or update the total amount.
               </p>
             </div>
@@ -727,7 +727,7 @@ export default function Receipt() {
                           </div>
                       </div>
                       <div className="text-right">
-                          <span className="block text-2xl font-bold text-gray-900">${displayTotal.toFixed(2)}</span>
+                          <span className="block text-2xl font-bold text-gray-900">₪{displayTotal.toFixed(2)}</span>
                           <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">Paid</span>
                       </div>
                   </div>
@@ -750,7 +750,7 @@ export default function Receipt() {
                                           </div>
                                       </div>
                                   </div>
-                                  <span className="font-semibold text-gray-900">${item.total.toFixed(2)}</span>
+                                  <span className="font-semibold text-gray-900">₪{item.total.toFixed(2)}</span>
                               </div>
                           ))}
                       </div>

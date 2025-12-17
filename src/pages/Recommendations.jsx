@@ -50,7 +50,7 @@ export default function Recommendations() {
       const categorySummary = Object.entries(topCategories)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
-        .map(([cat, total]) => `${cat}: $${total.toFixed(2)}`)
+        .map(([cat, total]) => `${cat}: ₪${total.toFixed(2)}`)
         .join(', ');
 
       const totalSpent = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
@@ -70,8 +70,8 @@ User Profile:
 
 Shopping History:
 - Total Receipts: ${receipts.length}
-- Total Spent: $${totalSpent.toFixed(2)}
-- Average per Receipt: $${avgPerReceipt.toFixed(2)}
+- Total Spent: ₪${totalSpent.toFixed(2)}
+- Average per Receipt: ₪${avgPerReceipt.toFixed(2)}
 - Top Categories: ${categorySummary}
 - Recent Stores: ${receipts.slice(0, 3).map(r => r.storeName).join(', ')}
 
