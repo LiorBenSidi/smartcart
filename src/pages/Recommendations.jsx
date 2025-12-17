@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, TrendingDown, Leaf, ShoppingCart, Loader2, Store, Heart } from 'lucide-react';
+import { Sparkles, TrendingDown, Leaf, ShoppingCart, Loader2, Store, Heart, RefreshCw } from 'lucide-react';
 
 export default function Recommendations() {
   const [filter, setFilter] = useState('all');
@@ -162,12 +162,24 @@ Return as JSON array with: type (savings/health/info), title, description, savin
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-indigo-500" fill="currentColor" fillOpacity={0.2} />
-          Insights
-        </h2>
-        <p className="text-gray-500 text-sm">AI-powered suggestions based on your shopping.</p>
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-indigo-500" fill="currentColor" fillOpacity={0.2} />
+            Insights
+          </h2>
+          <p className="text-gray-500 text-sm">AI-powered suggestions based on your shopping.</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={generateRecommendations}
+          disabled={loading}
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
