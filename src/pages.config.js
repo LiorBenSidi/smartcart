@@ -4,10 +4,10 @@ import Home from './pages/Home';
 import Landing from './pages/Landing';
 import PriceComparison from './pages/PriceComparison';
 import Profile from './pages/Profile';
+import Receipt from './pages/Receipt';
 import Recommendations from './pages/Recommendations';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
-import Receipt from './pages/Receipt';
 import __Layout from './Layout.jsx';
 
 
@@ -18,10 +18,10 @@ export const PAGES = {
     "Landing": Landing,
     "PriceComparison": PriceComparison,
     "Profile": Profile,
+    "Receipt": Receipt,
     "Recommendations": Recommendations,
     "SmartCart": SmartCart,
     "Upload": Upload,
-    "Receipt": Receipt,
 }
 
 export const pagesConfig = {

@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
+import Onboarding from '../components/Onboarding';
 
 export default function Home() {
   const [receipts, setReceipts] = useState([]);
@@ -14,6 +15,8 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [displayCount, setDisplayCount] = useState(5);
   const [isExporting, setIsExporting] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasProfile, setHasProfile] = useState(false);
 
   const handleExportAll = async () => {
     setIsExporting(true);
@@ -113,7 +116,11 @@ export default function Home() {
         }
         console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users
 
-        
+
+        // Check if user has a profile
+        const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+        setHasProfile(profiles.length > 0);
+
         // Fetch receipts for stats and list
         // Fetching up to 100 receipts to calculate monthly stats accurately
         let data;
@@ -123,6 +130,11 @@ export default function Home() {
             data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 100);
         }
         setReceipts(data);
+
+        // Show onboarding if new user (no receipts and no profile)
+        if (data.length === 0 && profiles.length === 0) {
+            setShowOnboarding(true);
+        }
       } catch (error) {
         console.error("Error fetching dashboard data", error);
       } finally {
@@ -225,6 +237,11 @@ export default function Home() {
         </Button>
       </div>
     );
+  }
+
+  // Show onboarding for new users
+  if (showOnboarding) {
+    return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   }
 
   return (
