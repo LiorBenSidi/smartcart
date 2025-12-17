@@ -364,7 +364,7 @@ export default function Receipt() {
           <h2 className="font-bold text-lg text-gray-900">Review Receipt</h2>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[calc(100vh-12rem)]">
           {/* Receipt Image */}
           {receipt.raw_receipt_image_url && (
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden h-fit sticky top-4">
