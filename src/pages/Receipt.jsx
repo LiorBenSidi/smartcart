@@ -161,11 +161,20 @@ export default function Receipt() {
     setIsSaving(true);
     
     try {
-      await base44.entities.Receipt.update(receipt.id, {
+      const currentCalculatedSum = calculateSum();
+      const finalTotal = (editData.totalAmount !== undefined && editData.totalAmount !== null && !isNaN(editData.totalAmount))
+                         ? parseFloat(editData.totalAmount)
+                         : currentCalculatedSum;
+
+      const payload = {
         ...editData,
+        total_amount: finalTotal,
+        totalAmount: finalTotal,
         processing_status: 'processed'
-      });
-      setReceipt(editData);
+      };
+
+      await base44.entities.Receipt.update(receipt.id, payload);
+      setReceipt(payload);
       setEditMode(false);
     } catch (error) {
       console.error("Failed to save", error);
