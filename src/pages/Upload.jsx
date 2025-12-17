@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadCloud, ScanLine, Loader2, Store } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { Link } from 'react-router-dom';
 
 export default function Upload() {
   const [file, setFile] = useState(null);
@@ -14,11 +15,23 @@ export default function Upload() {
   const [stores, setStores] = useState([]);
   const [selectedStore, setSelectedStore] = useState(null);
   const [loadingStores, setLoadingStores] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const fetchStores = async () => {
+    const fetchData = async () => {
       try {
+        const user = await base44.auth.me();
+        const adminStatus = user.email === 'liorben@base44.com';
+        if (!adminStatus) {
+          const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+          if (profiles.length > 0 && profiles[0].is_admin) {
+            setIsAdmin(true);
+          }
+        } else {
+          setIsAdmin(true);
+        }
+        
         const storeList = await base44.entities.Store.list('-name', 1000);
         console.log('Loaded stores:', storeList.length);
         setStores(storeList);
@@ -28,7 +41,7 @@ export default function Upload() {
         setLoadingStores(false);
       }
     };
-    fetchStores();
+    fetchData();
   }, []);
 
   const handleFileChange = (e) => {
@@ -92,8 +105,21 @@ export default function Upload() {
               <span>Loading stores...</span>
             </div>
           ) : stores.length === 0 ? (
-            <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
-              No stores available. Please contact an administrator to add stores to the system.
+            <div className="text-sm bg-amber-50 border border-amber-200 p-4 rounded-lg space-y-2">
+              <p className="text-amber-800 font-medium">No stores available in the system.</p>
+              {isAdmin ? (
+                <div className="flex items-center gap-2">
+                  <p className="text-amber-700 text-xs">Add stores through the catalog admin:</p>
+                  <Link to={createPageUrl('CatalogAdmin')}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs border-amber-300 hover:bg-amber-100">
+                      <Settings className="w-3 h-3 mr-1" />
+                      Catalog Admin
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <p className="text-amber-700 text-xs">Please contact an administrator to add stores.</p>
+              )}
             </div>
           ) : (
             <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find(s => s.id === id))}>
