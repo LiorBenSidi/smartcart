@@ -4,6 +4,7 @@ import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut, UserCircle, Settings, Check } from 'lucide-react';
 
@@ -12,7 +13,8 @@ export default function Profile() {
     budgetFocus: 'balanced',
     isKosher: false,
     householdSize: 1,
-    dietaryRestrictions: [] // simplified for UI prototype
+    dietaryRestrictions: [], // simplified for UI prototype
+    allergen_avoid_list: []
   });
   const [user, setUser] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
@@ -119,6 +121,34 @@ export default function Profile() {
                         </button>
                     ))}
                  </div>
+            </div>
+
+            <div className="space-y-3">
+                <Label>Food Allergies</Label>
+                <div className="grid grid-cols-2 gap-3">
+                    {['gluten', 'lactose', 'nuts', 'peanuts', 'soy', 'eggs', 'fish', 'shellfish', 'wheat', 'sesame'].map(allergen => (
+                        <div key={allergen} className="flex items-center space-x-2">
+                            <Checkbox 
+                                id={allergen}
+                                checked={profile.allergen_avoid_list?.includes(allergen)}
+                                onCheckedChange={(checked) => {
+                                    const current = profile.allergen_avoid_list || [];
+                                    if (checked) {
+                                        setProfile({...profile, allergen_avoid_list: [...current, allergen]});
+                                    } else {
+                                        setProfile({...profile, allergen_avoid_list: current.filter(a => a !== allergen)});
+                                    }
+                                }}
+                            />
+                            <label
+                                htmlFor={allergen}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer"
+                            >
+                                {allergen}
+                            </label>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
 
