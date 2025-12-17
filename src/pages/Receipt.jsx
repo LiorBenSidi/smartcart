@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PriceComparisonReview from '../components/PriceComparisonReview';
@@ -79,12 +79,33 @@ export default function Receipt() {
         }
       });
 
+      // Generate AI summary
+      const topItems = [...llmRes.items]
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 3)
+        .map(item => `${item.name} ($${item.total.toFixed(2)})`)
+        .join(', ');
+
+      const summaryPrompt = `Create a concise 2-3 sentence summary of this receipt:
+        Store: ${llmRes.storeName}
+        Date: ${llmRes.date}
+        Total: $${llmRes.totalAmount}
+        Top 3 items: ${topItems}
+        Total items purchased: ${llmRes.items.length}
+
+        Make it sound natural and informative.`;
+
+      const summaryRes = await base44.integrations.Core.InvokeLLM({
+        prompt: summaryPrompt
+      });
+
       await base44.entities.Receipt.update(r.id, {
         ...llmRes,
+        summary: summaryRes,
         processing_status: 'processed'
       });
 
-      const processedReceipt = { ...r, ...llmRes, processing_status: 'processed' };
+      const processedReceipt = { ...r, ...llmRes, summary: summaryRes, processing_status: 'processed' };
       
       // If we have a store_id, compare prices with catalog
       if (r.store_id && llmRes.items && llmRes.items.length > 0) {
@@ -674,6 +695,23 @@ export default function Receipt() {
                 <Download className="w-4 h-4 mr-2" /> Export CSV
             </Button>
         </div>
+
+        {/* AI Summary Card */}
+        {receipt.summary && (
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-indigo-900 mb-1 flex items-center gap-2">
+                  AI Summary
+                </h3>
+                <p className="text-gray-700 leading-relaxed">{receipt.summary}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
