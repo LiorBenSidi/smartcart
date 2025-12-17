@@ -367,7 +367,7 @@ export default function Receipt() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[calc(100vh-12rem)]">
           {/* Receipt Image */}
           {receipt.raw_receipt_image_url && (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden h-full sticky top-4">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden h-fit sticky top-4">
               <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-700">Scanned Receipt</h3>
               </div>
