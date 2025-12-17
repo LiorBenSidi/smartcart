@@ -22,6 +22,22 @@ export default function Profile() {
   const [isSaved, setIsSaved] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  const loadProfile = async () => {
+    try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+        
+        if (currentUser) {
+            const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
+            if (existing.length > 0) {
+                setProfile(existing[0]);
+            }
+        }
+    } catch (err) {
+        console.error("Error loading profile:", err);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -46,26 +62,9 @@ export default function Profile() {
   if (showOnboarding) {
     return <Onboarding onComplete={() => {
       setShowOnboarding(false);
-      // Reload profile after onboarding
       loadProfile();
     }} />;
   }
-
-  const loadProfile = async () => {
-    try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-        
-        if (currentUser) {
-            const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
-            if (existing.length > 0) {
-                setProfile(existing[0]);
-            }
-        }
-    } catch (err) {
-        console.error("Error loading profile:", err);
-    }
-  };
 
   return (
     <div className="space-y-8">
