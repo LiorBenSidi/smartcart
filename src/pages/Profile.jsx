@@ -10,10 +10,11 @@ import { LogOut, UserCircle, Settings, Check } from 'lucide-react';
 
 export default function Profile() {
   const [profile, setProfile] = useState({
-    budgetFocus: 'balanced',
-    isKosher: false,
-    householdSize: 1,
-    dietaryRestrictions: [], // simplified for UI prototype
+    budget_focus: 'balanced',
+    kashrut_level: 'none',
+    household_size: 1,
+    age_range: '',
+    user_role: '',
     allergen_avoid_list: []
   });
   const [user, setUser] = useState(null);
@@ -79,8 +80,8 @@ export default function Profile() {
             <div className="space-y-2">
                 <Label>Budget Focus</Label>
                 <Select 
-                    value={profile.budgetFocus} 
-                    onValueChange={(val) => setProfile({...profile, budgetFocus: val})}
+                    value={profile.budget_focus} 
+                    onValueChange={(val) => setProfile({...profile, budget_focus: val})}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Select focus" />
@@ -93,15 +94,23 @@ export default function Profile() {
                 </Select>
             </div>
 
-            <div className="flex items-center justify-between py-2">
-                <div className="space-y-0.5">
-                    <Label>Kosher Only</Label>
-                    <p className="text-xs text-gray-500">Only suggest kosher products</p>
-                </div>
-                <Switch 
-                    checked={profile.isKosher} 
-                    onCheckedChange={(val) => setProfile({...profile, isKosher: val})} 
-                />
+            <div className="space-y-2">
+                <Label>Kosher Level</Label>
+                <Select 
+                    value={profile.kashrut_level} 
+                    onValueChange={(val) => setProfile({...profile, kashrut_level: val})}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="basic_kosher">Basic Kosher</SelectItem>
+                        <SelectItem value="strict_kosher">Strict Kosher</SelectItem>
+                        <SelectItem value="glatt_kosher">Glatt Kosher</SelectItem>
+                        <SelectItem value="mehadrin">Mehadrin</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="space-y-2">
@@ -110,9 +119,9 @@ export default function Profile() {
                     {[1, 2, 3, 4, 5].map(num => (
                         <button
                             key={num}
-                            onClick={() => setProfile({...profile, householdSize: num})}
+                            onClick={() => setProfile({...profile, household_size: num})}
                             className={`w-10 h-10 rounded-lg font-bold text-sm transition-colors ${
-                                profile.householdSize === num 
+                                profile.household_size === num 
                                 ? 'bg-indigo-600 text-white shadow-md' 
                                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                             }`}
@@ -121,6 +130,44 @@ export default function Profile() {
                         </button>
                     ))}
                  </div>
+            </div>
+
+            <div className="space-y-2">
+                <Label>Age Range (Optional)</Label>
+                <Select 
+                    value={profile.age_range || ''} 
+                    onValueChange={(val) => setProfile({...profile, age_range: val})}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select age range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="18-25">18-25</SelectItem>
+                        <SelectItem value="26-35">26-35</SelectItem>
+                        <SelectItem value="36-50">36-50</SelectItem>
+                        <SelectItem value="51-65">51-65</SelectItem>
+                        <SelectItem value="65+">65+</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            <div className="space-y-2">
+                <Label>Role (Optional)</Label>
+                <Select 
+                    value={profile.user_role || ''} 
+                    onValueChange={(val) => setProfile({...profile, user_role: val})}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="What best describes you?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="working">Working Professional</SelectItem>
+                        <SelectItem value="parent">Parent</SelectItem>
+                        <SelectItem value="retired">Retired</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="space-y-3">
