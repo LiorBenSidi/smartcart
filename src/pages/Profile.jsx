@@ -6,7 +6,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, UserCircle, Settings, Check } from 'lucide-react';
+import { LogOut, UserCircle, Settings, Check, RefreshCw } from 'lucide-react';
+import Onboarding from '../components/Onboarding';
 
 export default function Profile() {
   const [profile, setProfile] = useState({
@@ -19,24 +20,9 @@ export default function Profile() {
   });
   const [user, setUser] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    const loadProfile = async () => {
-        try {
-            const currentUser = await base44.auth.me();
-            setUser(currentUser);
-            
-            if (currentUser) {
-                // Try to fetch existing profile
-                const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
-                if (existing.length > 0) {
-                    setProfile(existing[0]);
-                }
-            }
-        } catch (err) {
-            console.error("Error loading profile:", err);
-        }
-    };
     loadProfile();
   }, []);
 
@@ -54,6 +40,30 @@ export default function Profile() {
         setTimeout(() => setIsSaved(false), 2000);
     } catch(e) {
         console.error("Error saving profile", e);
+    }
+  };
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={() => {
+      setShowOnboarding(false);
+      // Reload profile after onboarding
+      loadProfile();
+    }} />;
+  }
+
+  const loadProfile = async () => {
+    try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+        
+        if (currentUser) {
+            const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
+            if (existing.length > 0) {
+                setProfile(existing[0]);
+            }
+        }
+    } catch (err) {
+        console.error("Error loading profile:", err);
     }
   };
 
@@ -206,6 +216,14 @@ export default function Profile() {
             {isSaved ? <><Check className="w-4 h-4 mr-2" /> Saved</> : 'Save Preferences'}
         </Button>
       </div>
+
+      <Button 
+        variant="outline" 
+        className="w-full"
+        onClick={() => setShowOnboarding(true)}
+      >
+        <RefreshCw className="w-4 h-4 mr-2" /> Retake Onboarding
+      </Button>
 
       <Button 
         variant="outline" 
