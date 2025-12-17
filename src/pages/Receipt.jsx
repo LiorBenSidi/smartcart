@@ -354,7 +354,7 @@ export default function Receipt() {
   // Show edit mode after processing
   if (editMode && editData) {
     return (
-      <div className="space-y-6 pb-20 max-w-6xl mx-auto">
+      <div className="min-h-screen space-y-6 pb-20 max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-4">
           <Link to={createPageUrl('Home')}>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
