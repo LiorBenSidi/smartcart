@@ -58,6 +58,46 @@ const QUESTIONS = [
       { value: 'brand_loyal', label: 'Brand Loyal', emoji: '⭐' },
       { value: 'balanced', label: 'Flexible & Balanced', emoji: '🔄' }
     ]
+  },
+  {
+    id: 'household',
+    text: 'How many people in your household?',
+    icon: ShoppingCart,
+    options: [
+      { value: 1, label: '1+', emoji: '👤' },
+      { value: 2, label: '2+', emoji: '👥' },
+      { value: 3, label: '3+', emoji: '👨‍👩‍👦' },
+      { value: 4, label: '4+', emoji: '👨‍👩‍👧‍👦' },
+      { value: 5, label: '5+', emoji: '👨‍👩‍👧‍👧' }
+    ]
+  },
+  {
+    id: 'age',
+    text: 'What is your age range? (Optional)',
+    icon: Heart,
+    optional: true,
+    options: [
+      { value: '18-25', label: '18-25', emoji: '🎓' },
+      { value: '26-35', label: '26-35', emoji: '💼' },
+      { value: '36-50', label: '36-50', emoji: '👨‍👩‍👧' },
+      { value: '51-65', label: '51-65', emoji: '👴' },
+      { value: '65+', label: '65+', emoji: '👵' },
+      { value: 'skip', label: 'Skip', emoji: '➡️' }
+    ]
+  },
+  {
+    id: 'role',
+    text: 'What best describes you? (Optional)',
+    icon: Heart,
+    optional: true,
+    options: [
+      { value: 'student', label: 'Student', emoji: '📚' },
+      { value: 'working', label: 'Working Professional', emoji: '💼' },
+      { value: 'parent', label: 'Parent', emoji: '👨‍👩‍👧‍👦' },
+      { value: 'retired', label: 'Retired', emoji: '🌴' },
+      { value: 'other', label: 'Other', emoji: '✨' },
+      { value: 'skip', label: 'Skip', emoji: '➡️' }
+    ]
   }
 ];
 
@@ -68,7 +108,7 @@ export default function Onboarding({ onComplete }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
 
-  const currentQuestion = QUESTIONS[step];
+  const currentQuestion = step >= 0 ? QUESTIONS[step] : null;
   const isLastQuestion = step === QUESTIONS.length - 1;
 
   const handleAnswer = async (value) => {
@@ -130,7 +170,9 @@ export default function Onboarding({ onComplete }) {
         kashrut_level: restrictions.includes('kosher') ? 'basic_kosher' : 'none',
         allergen_avoid_list: restrictions.includes('allergies') ? selectedAllergens : [],
         shopping_frequency: 'weekly',
-        household_size: 1
+        household_size: finalAnswers.household || 1,
+        age_range: finalAnswers.age && finalAnswers.age !== 'skip' ? finalAnswers.age : null,
+        user_role: finalAnswers.role && finalAnswers.role !== 'skip' ? finalAnswers.role : null
       };
 
       // Create user profile
@@ -310,7 +352,10 @@ export default function Onboarding({ onComplete }) {
         <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Icon className="w-6 h-6 text-indigo-600" />
         </div>
-        <p className="text-sm text-gray-500 mb-2">Question {step + 1} of {QUESTIONS.length}</p>
+        <p className="text-sm text-gray-500 mb-2">
+          Question {step + 1} of {QUESTIONS.length}
+          {currentQuestion.optional && <span className="text-indigo-600 ml-1">(Optional)</span>}
+        </p>
         <h2 className="text-2xl font-bold text-gray-900">{currentQuestion.text}</h2>
       </div>
 
