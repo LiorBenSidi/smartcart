@@ -162,14 +162,11 @@ export default function Receipt() {
     
     try {
       const currentCalculatedSum = calculateSum();
-      const finalTotal = (editData.totalAmount !== undefined && editData.totalAmount !== null && !isNaN(editData.totalAmount))
-                         ? parseFloat(editData.totalAmount)
-                         : currentCalculatedSum;
 
       const payload = {
         ...editData,
-        total_amount: finalTotal,
-        totalAmount: finalTotal,
+        total_amount: currentCalculatedSum,
+        totalAmount: currentCalculatedSum,
         processing_status: 'processed'
       };
 
