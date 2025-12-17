@@ -19,7 +19,8 @@ export default function Upload() {
   useEffect(() => {
     const fetchStores = async () => {
       try {
-        const storeList = await base44.entities.Store.list();
+        const storeList = await base44.entities.Store.list('-name', 1000);
+        console.log('Loaded stores:', storeList.length);
         setStores(storeList);
       } catch (error) {
         console.error('Failed to load stores', error);
@@ -90,6 +91,10 @@ export default function Upload() {
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Loading stores...</span>
             </div>
+          ) : stores.length === 0 ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+              No stores available. Please contact an administrator to add stores to the system.
+            </div>
           ) : (
             <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find(s => s.id === id))}>
               <SelectTrigger className="w-full">
@@ -98,7 +103,7 @@ export default function Upload() {
               <SelectContent>
                 {stores.map((store) => (
                   <SelectItem key={store.id} value={store.id}>
-                    {store.name} {store.external_store_code && `(${store.external_store_code})`}
+                    {store.name} {store.city ? `• ${store.city}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
