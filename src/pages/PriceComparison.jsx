@@ -130,21 +130,21 @@ export default function PriceComparison() {
           <Card>
             <CardContent className="p-4 text-center">
               <TrendingDown className="w-6 h-6 text-green-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-green-600">${cheapestPrice.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-green-600">₪{cheapestPrice.toFixed(2)}</div>
               <div className="text-xs text-gray-500">Lowest Price</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <div className="w-6 h-6 bg-gray-200 rounded-full mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">${avgPrice.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-gray-900">₪{avgPrice.toFixed(2)}</div>
               <div className="text-xs text-gray-500">Average Price</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <TrendingUp className="w-6 h-6 text-red-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-red-600">${maxPrice.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-red-600">₪{maxPrice.toFixed(2)}</div>
               <div className="text-xs text-gray-500">Highest Price</div>
             </CardContent>
           </Card>
@@ -213,7 +213,7 @@ export default function PriceComparison() {
                               : 'No date'}
                           </span>
                           {price.unit_price > 0 && (
-                            <span>Unit: ${price.unit_price.toFixed(2)}</span>
+                            <span>Unit: ₪{price.unit_price.toFixed(2)}</span>
                           )}
                         </div>
                       </div>
@@ -221,11 +221,11 @@ export default function PriceComparison() {
 
                     <div className="text-right">
                       <div className={`text-2xl font-bold ${isCheapest ? 'text-green-600' : 'text-gray-900'}`}>
-                        ${price.current_price.toFixed(2)}
+                        ₪{price.current_price.toFixed(2)}
                       </div>
                       {!isCheapest && priceDiff > 0 && (
                         <div className="text-xs text-red-600 font-medium mt-1">
-                          +${priceDiff.toFixed(2)} more
+                          +₪{priceDiff.toFixed(2)} more
                         </div>
                       )}
                     </div>

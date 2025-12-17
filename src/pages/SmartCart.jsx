@@ -303,7 +303,7 @@ export default function SmartCart() {
                         {cart.store_name} • {new Date(cart.created_date).toLocaleDateString()} at {new Date(cart.created_date).toLocaleTimeString()}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        {cart.total_items} items • ${cart.total_amount?.toFixed(2)}
+                        {cart.total_items} items • ₪{cart.total_amount?.toFixed(2)}
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -352,7 +352,7 @@ export default function SmartCart() {
                         <div className="text-xs text-gray-500 mt-1">
                           Code: {item.gtin}
                           {itemRec?.originalPrice > 0 &&
-                        <span className="ml-2">• ${itemRec.originalPrice.toFixed(2)}</span>
+                        <span className="ml-2">• ₪{itemRec.originalPrice.toFixed(2)}</span>
                         }
                         </div>
                       </div>
@@ -412,14 +412,14 @@ export default function SmartCart() {
                           </div>
 
                           <div className="text-right">
-                            <div className="text-xl font-bold text-gray-900">${alt.price.toFixed(2)}</div>
+                            <div className="text-xl font-bold text-gray-900">₪{alt.price.toFixed(2)}</div>
                             {alt.priceDiff > 0 ?
                       <div className="text-xs text-green-600 font-bold mt-1">
-                                Save ${alt.priceDiff.toFixed(2)}
+                                Save ₪{alt.priceDiff.toFixed(2)}
                               </div> :
 
                       <div className="text-xs text-red-600 font-bold mt-1">
-                                +${Math.abs(alt.priceDiff).toFixed(2)}
+                                +₪{Math.abs(alt.priceDiff).toFixed(2)}
                               </div>
                       }
                           </div>

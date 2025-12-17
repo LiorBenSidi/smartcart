@@ -74,7 +74,7 @@ export default function PriceComparisonReview({ comparisonResults, onConfirm, on
                     <div className="text-xs text-gray-500">Code: {result.item.code}</div>
                   </div>
                   <div className={`text-sm font-bold ${result.receiptPrice > result.dbPrice ? 'text-red-600' : 'text-green-600'}`}>
-                    {result.receiptPrice > result.dbPrice ? '+' : '-'}${Math.abs(result.difference).toFixed(2)}
+                    {result.receiptPrice > result.dbPrice ? '+' : '-'}₪{Math.abs(result.difference).toFixed(2)}
                   </div>
                 </div>
 
@@ -88,7 +88,7 @@ export default function PriceComparisonReview({ comparisonResults, onConfirm, on
                     }`}
                   >
                     <div className="text-xs text-gray-500 mb-1">Catalog Price</div>
-                    <div className="font-bold text-gray-900">${result.dbPrice.toFixed(2)}</div>
+                    <div className="font-bold text-gray-900">₪{result.dbPrice.toFixed(2)}</div>
                   </button>
                   <button
                     onClick={() => toggleSelection(idx, 'receipt')}
@@ -99,7 +99,7 @@ export default function PriceComparisonReview({ comparisonResults, onConfirm, on
                     }`}
                   >
                     <div className="text-xs text-gray-500 mb-1">Receipt Price</div>
-                    <div className="font-bold text-gray-900">${result.receiptPrice.toFixed(2)}</div>
+                    <div className="font-bold text-gray-900">₪{result.receiptPrice.toFixed(2)}</div>
                   </button>
                 </div>
 
@@ -128,7 +128,7 @@ export default function PriceComparisonReview({ comparisonResults, onConfirm, on
                   <div className="font-medium text-gray-900">{result.item.name}</div>
                   <div className="text-xs text-gray-500">{result.message}</div>
                 </div>
-                <div className="text-sm text-gray-600">${(result.item.price || 0).toFixed(2)}</div>
+                <div className="text-sm text-gray-600">₪{(result.item.price || 0).toFixed(2)}</div>
               </div>
             ))}
           </CardContent>
