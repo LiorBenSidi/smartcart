@@ -657,6 +657,11 @@ export default function Receipt() {
     );
   }
 
+  // Calculate the actual total from items
+  const displayTotal = receipt.items && receipt.items.length > 0
+    ? receipt.items.reduce((sum, item) => sum + (item.total || (item.quantity * item.price) || 0), 0)
+    : (receipt.totalAmount || receipt.total_amount || 0);
+
   return (
     <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -687,7 +692,7 @@ export default function Receipt() {
                           </div>
                       </div>
                       <div className="text-right">
-                          <span className="block text-2xl font-bold text-gray-900">${(receipt.totalAmount || receipt.total_amount || 0).toFixed(2)}</span>
+                          <span className="block text-2xl font-bold text-gray-900">${displayTotal.toFixed(2)}</span>
                           <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">Paid</span>
                       </div>
                   </div>
