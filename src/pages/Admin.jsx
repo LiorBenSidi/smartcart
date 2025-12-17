@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database } from 'lucide-react';
+import { ShieldCheck, Database, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
@@ -11,6 +11,8 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -53,6 +55,27 @@ export default function Admin() {
     fetchAdminData();
   }, []);
 
+  const handleDeleteAllReceipts = async () => {
+    setIsDeleting(true);
+    try {
+      await base44.entities.Receipt.filter({}, '', 1000).then(async (allReceipts) => {
+        for (const receipt of allReceipts) {
+          await base44.entities.Receipt.delete(receipt.id);
+        }
+      });
+      setReceipts([]);
+      setShowConfirm(false);
+      
+      // Update user stats
+      const updatedUsers = users.map(u => ({ ...u, receipts: 0 }));
+      setUsers(updatedUsers);
+    } catch (error) {
+      console.error('Failed to delete receipts', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
@@ -80,11 +103,48 @@ export default function Admin() {
             </Card>
         </div>
 
-        <Link to={createPageUrl('CatalogAdmin')}>
-            <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-                <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
+        <div className="grid grid-cols-2 gap-4">
+            <Link to={createPageUrl('CatalogAdmin')}>
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+                    <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
+                </Button>
+            </Link>
+            <Button 
+                className="w-full bg-red-600 hover:bg-red-700" 
+                onClick={() => setShowConfirm(true)}
+                disabled={receipts.length === 0}
+            >
+                <Trash2 className="w-4 h-4 mr-2" /> Delete All Receipts
             </Button>
-        </Link>
+        </div>
+
+        {showConfirm && (
+            <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4 space-y-3">
+                    <h3 className="font-bold text-red-900">⚠️ Confirm Deletion</h3>
+                    <p className="text-sm text-red-700">
+                        Are you sure you want to delete all {receipts.length} receipts? This action cannot be undone.
+                    </p>
+                    <div className="flex gap-2">
+                        <Button 
+                            variant="outline" 
+                            className="flex-1" 
+                            onClick={() => setShowConfirm(false)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            className="flex-1 bg-red-600 hover:bg-red-700" 
+                            onClick={handleDeleteAllReceipts}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? 'Deleting...' : 'Delete All'}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
 
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
