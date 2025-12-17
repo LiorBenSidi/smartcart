@@ -348,7 +348,7 @@ export default function Receipt() {
   // Show edit mode after processing
   if (editMode && editData) {
     return (
-      <div className="space-y-6 pb-20 max-w-2xl mx-auto">
+      <div className="space-y-6 pb-20 max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-4">
           <Link to={createPageUrl('Home')}>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -358,6 +358,25 @@ export default function Receipt() {
           <h2 className="font-bold text-lg text-gray-900">Review Receipt</h2>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Receipt Image */}
+          {receipt.raw_receipt_image_url && (
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden h-fit sticky top-4">
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-700">Scanned Receipt</h3>
+              </div>
+              <div className="p-4">
+                <img 
+                  src={receipt.raw_receipt_image_url} 
+                  alt="Receipt" 
+                  className="w-full rounded-lg border border-gray-200"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Edit Form */}
+          <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="bg-indigo-600 px-6 py-6 text-white">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -562,9 +581,11 @@ export default function Receipt() {
             onSuccess={handleProductAdded}
           />
         )}
-      </div>
-    );
-  }
+          </div>
+        </div>
+        </div>
+        );
+        }
 
   // Show pending state
   if (receipt.processing_status === 'pending') {
