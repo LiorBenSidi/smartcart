@@ -29,6 +29,7 @@ const QUESTIONS = [
     id: 'restrictions',
     text: 'Do you have dietary restrictions?',
     icon: Shield,
+    multiSelect: true,
     options: [
       { value: 'none', label: 'None', emoji: '✅' },
       { value: 'kosher', label: 'Kosher', emoji: '✡️' },
@@ -57,11 +58,41 @@ export default function Onboarding({ onComplete }) {
   const isLastQuestion = step === QUESTIONS.length - 1;
 
   const handleAnswer = async (value) => {
-    const newAnswers = { ...answers, [currentQuestion.id]: value };
-    setAnswers(newAnswers);
+    if (currentQuestion.multiSelect) {
+      // Handle multi-select
+      const currentSelections = answers[currentQuestion.id] || [];
+      let newSelections;
+      
+      if (value === 'none') {
+        // If "None" is selected, clear all others
+        newSelections = currentSelections.includes('none') ? [] : ['none'];
+      } else {
+        // If other option selected, remove "None" and toggle the selection
+        const withoutNone = currentSelections.filter(v => v !== 'none');
+        if (withoutNone.includes(value)) {
+          newSelections = withoutNone.filter(v => v !== value);
+        } else {
+          newSelections = [...withoutNone, value];
+        }
+      }
+      
+      setAnswers({ ...answers, [currentQuestion.id]: newSelections });
+    } else {
+      // Single select - proceed immediately
+      const newAnswers = { ...answers, [currentQuestion.id]: value };
+      setAnswers(newAnswers);
 
+      if (isLastQuestion) {
+        await generateRecommendations(newAnswers);
+      } else {
+        setStep(step + 1);
+      }
+    }
+  };
+
+  const handleContinue = async () => {
     if (isLastQuestion) {
-      await generateRecommendations(newAnswers);
+      await generateRecommendations(answers);
     } else {
       setStep(step + 1);
     }
@@ -71,10 +102,11 @@ export default function Onboarding({ onComplete }) {
     setIsGenerating(true);
     try {
       // Map answers to profile
+      const restrictions = Array.isArray(finalAnswers.restrictions) ? finalAnswers.restrictions : [finalAnswers.restrictions];
       const profile = {
         budget_focus: finalAnswers.budget,
-        kashrut_level: finalAnswers.restrictions === 'kosher' ? 'basic_kosher' : 'none',
-        allergen_avoid_list: finalAnswers.restrictions === 'allergies' ? ['gluten', 'nuts'] : [],
+        kashrut_level: restrictions.includes('kosher') ? 'basic_kosher' : 'none',
+        allergen_avoid_list: restrictions.includes('allergies') ? ['gluten', 'nuts'] : [],
         shopping_frequency: 'weekly',
         household_size: 1
       };
@@ -261,21 +293,56 @@ export default function Onboarding({ onComplete }) {
       </div>
 
       <div className="space-y-3">
-        {currentQuestion.options.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => handleAnswer(option.value)}
-            className="w-full p-5 bg-white border-2 border-gray-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition-all text-left group active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-3xl">{option.emoji}</span>
-              <span className="font-semibold text-gray-900 group-hover:text-indigo-700 text-lg">
-                {option.label}
-              </span>
-            </div>
-          </button>
-        ))}
+        {currentQuestion.options.map((option) => {
+          const currentSelections = currentQuestion.multiSelect ? (answers[currentQuestion.id] || []) : null;
+          const isSelected = currentQuestion.multiSelect ? currentSelections.includes(option.value) : false;
+          const isDisabled = currentQuestion.multiSelect && 
+                            currentSelections.includes('none') && 
+                            option.value !== 'none';
+          
+          return (
+            <button
+              key={option.value}
+              onClick={() => !isDisabled && handleAnswer(option.value)}
+              disabled={isDisabled}
+              className={`w-full p-5 border-2 rounded-xl transition-all text-left group active:scale-[0.98] ${
+                isSelected 
+                  ? 'bg-indigo-600 border-indigo-600' 
+                  : isDisabled 
+                    ? 'bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed'
+                    : 'bg-white border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-3xl">{option.emoji}</span>
+                <span className={`font-semibold text-lg flex-1 ${
+                  isSelected ? 'text-white' : 'text-gray-900 group-hover:text-indigo-700'
+                }`}>
+                  {option.label}
+                </span>
+                {isSelected && (
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
+
+      {currentQuestion.multiSelect && (
+        <Button
+          onClick={handleContinue}
+          disabled={!answers[currentQuestion.id] || answers[currentQuestion.id].length === 0}
+          size="lg"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Continue <ChevronRight className="w-5 h-5 ml-2" />
+        </Button>
+      )}
 
       {step > 0 && (
         <Button 
