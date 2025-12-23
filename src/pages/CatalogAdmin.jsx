@@ -48,7 +48,14 @@ export default function CatalogAdmin() {
   };
 
   const handleFileUpload = async () => {
-    if (!xmlFile) return;
+    if (!xmlFile) {
+      setUploadError('Please select a file first');
+      return;
+    }
+    if (!chainName.trim()) {
+      setUploadError('Please enter a Chain name');
+      return;
+    }
 
     setIsUploading(true);
     setUploadResult(null);
@@ -59,13 +66,17 @@ export default function CatalogAdmin() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: xmlFile });
 
       // Step 2: Process the uploaded file
-      const response = await base44.functions.invoke('uploadCatalog', { fileUrl: file_url });
+      const response = await base44.functions.invoke('uploadCatalog', { 
+        fileUrl: file_url,
+        chain_name: chainName.trim()
+      });
 
       if (response.data.error) {
         setUploadError(response.data.error);
       } else {
         setUploadResult(response.data);
         setXmlFile(null);
+        setChainName('');
       }
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message || 'Failed to upload file';
@@ -95,6 +106,19 @@ export default function CatalogAdmin() {
         <CardContent className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-2">
+              Chain Name *
+            </label>
+            <Input
+              type="text"
+              value={chainName}
+              onChange={(e) => setChainName(e.target.value)}
+              placeholder="e.g., Osher Ad, Rami Levy, Shufersal"
+              className="mb-4"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-2">
               Select .gz File from Your Computer
             </label>
             <div className="flex items-center gap-3">
@@ -115,7 +139,7 @@ export default function CatalogAdmin() {
 
           <Button 
             onClick={handleFileUpload} 
-            disabled={isUploading || !xmlFile}
+            disabled={isUploading || !xmlFile || !chainName.trim()}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
             {isUploading ? (

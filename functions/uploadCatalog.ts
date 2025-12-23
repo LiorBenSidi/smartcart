@@ -46,12 +46,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Admin access required" }, { status: 403 });
     }
 
-    // Step 2: Get file URL from request
+    // Step 2: Get file URL and chain name from request
     const body = await req.json();
     const fileUrl = body.fileUrl;
+    const chainName = body.chain_name;
 
     if (!fileUrl) {
       return Response.json({ error: "fileUrl is required" }, { status: 400 });
+    }
+    
+    if (!chainName) {
+      return Response.json({ error: "chain_name is required" }, { status: 400 });
     }
 
     // Step 3: Fetch and unzip .gz file
@@ -107,16 +112,22 @@ Deno.serve(async (req) => {
     // Step 6: Update entities using service role
     const svc = base44.asServiceRole;
 
-    // Create or get chain
+    // Create or get chain - use the provided chain name
     console.log("Setting up chain and store...");
     let chains = await svc.entities.Chain.filter({ external_chain_code: chainId });
     let chain = chains[0];
     
     if (!chain) {
       chain = await svc.entities.Chain.create({
-        name: chainId,
+        name: chainName,
         external_chain_code: chainId
       });
+    } else {
+      // Update chain name if provided
+      await svc.entities.Chain.update(chain.id, {
+        name: chainName
+      });
+      chain.name = chainName;
     }
 
     // Create or get store - use chain_id + external_store_code + sub_chain_code as unique identifier
