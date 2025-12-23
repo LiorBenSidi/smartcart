@@ -19,6 +19,7 @@ export default function SmartCart() {
   const [cartName, setCartName] = useState('');
   const [saving, setSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,6 +37,21 @@ export default function SmartCart() {
       }
     };
     loadData();
+
+    // Get user location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Failed to get location', error);
+        }
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -51,7 +67,9 @@ export default function SmartCart() {
     try {
       const response = await base44.functions.invoke('getCartRecommendations', {
         cartItems: cartItems.map((item) => ({ gtin: item.gtin, quantity: item.quantity })),
-        store_id: selectedStore.id
+        store_id: selectedStore.id,
+        userLat: userLocation?.lat,
+        userLon: userLocation?.lon
       });
       setRecommendations(response.data.recommendations || []);
     } catch (error) {
@@ -407,6 +425,9 @@ export default function SmartCart() {
                         <Badge className="bg-orange-600 text-white">Other Store</Badge>
                         }
                                 <span className="text-gray-600">{alt.store?.name}</span>
+                                {alt.distance && (
+                                  <span className="text-gray-500">• {alt.distance.toFixed(1)} km</span>
+                                )}
                               </div>
                       }
                           </div>

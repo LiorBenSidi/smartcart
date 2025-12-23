@@ -1,5 +1,17 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.4";
 
+// Haversine formula to calculate distance between two coordinates in km
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -10,7 +22,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { cartItems, store_id } = body;
+    const { cartItems, store_id, userLat, userLon } = body;
 
     if (!cartItems || !store_id) {
       return Response.json({ error: "cartItems and store_id required" }, { status: 400 });
@@ -141,6 +153,16 @@ Deno.serve(async (req) => {
         if (userProfile.preferred_brands?.includes(altProduct.brand_name)) score += 30;
         if (altProduct.is_organic && userProfile.health_preferences?.includes('organic')) score += 20;
 
+        // Calculate distance if user location is available
+        let distance = null;
+        if (userLat && userLon && priceStore?.latitude && priceStore?.longitude) {
+          distance = calculateDistance(userLat, userLon, priceStore.latitude, priceStore.longitude);
+          // Reduce score based on distance for non-same-store alternatives
+          if (storeLevel !== 'same_store') {
+            score -= distance * 2; // Penalize distance
+          }
+        }
+
         alternatives.push({
           product: altProduct,
           price: bestPrice.current_price,
@@ -149,7 +171,8 @@ Deno.serve(async (req) => {
           priceDiff,
           savingsPercent,
           reasons,
-          score
+          score,
+          distance
         });
       }
 
