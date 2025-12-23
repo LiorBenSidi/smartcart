@@ -174,32 +174,7 @@ export default function Upload() {
             )}
           </div>
 
-          {selectedChain && (
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                Select Store Location
-              </label>
-              {stores.filter(s => s.chain_id === selectedChain.id).length === 0 ? (
-                <p className="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">No stores found for this chain</p>
-              ) : (
-                <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find(s => s.id === id))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose store location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stores
-                      .filter(s => s.chain_id === selectedChain.id)
-                      .map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.address_line || `${store.city || 'Unknown location'}`}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          )}
+
 
           {!selectedStore && chains.length > 0 && (
             <p className="text-xs text-amber-600">⚠️ Please select chain and store before uploading</p>
