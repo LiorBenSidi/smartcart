@@ -8,11 +8,10 @@ import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
-  const [selectedStore, setSelectedStore] = useState(null);
   const [stores, setStores] = useState([]);
   const [products, setProducts] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [storeComparisons, setStoreComparisons] = useState([]);
+  const [loadingComparisons, setLoadingComparisons] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [savedCarts, setSavedCarts] = useState([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -31,10 +30,6 @@ export default function SmartCart() {
       setStores(storesList);
       setProducts(productsList);
       setSavedCarts(savedCartsList);
-
-      if (storesList.length > 0 && !selectedStore) {
-        setSelectedStore(storesList[0]);
-      }
     };
     loadData();
 
@@ -55,27 +50,26 @@ export default function SmartCart() {
   }, []);
 
   useEffect(() => {
-    if (cartItems.length > 0 && selectedStore) {
-      fetchRecommendations();
+    if (cartItems.length > 0) {
+      fetchComparisons();
     } else {
-      setRecommendations([]);
+      setStoreComparisons([]);
     }
-  }, [cartItems, selectedStore]);
+  }, [cartItems, userLocation]);
 
-  const fetchRecommendations = async () => {
-    setLoadingRecommendations(true);
+  const fetchComparisons = async () => {
+    setLoadingComparisons(true);
     try {
       const response = await base44.functions.invoke('getCartRecommendations', {
         cartItems: cartItems.map((item) => ({ gtin: item.gtin, quantity: item.quantity })),
-        store_id: selectedStore.id,
         userLat: userLocation?.lat,
         userLon: userLocation?.lon
       });
-      setRecommendations(response.data.recommendations || []);
+      setStoreComparisons(response.data.topStores || []);
     } catch (error) {
-      console.error('Failed to load recommendations', error);
+      console.error('Failed to load comparisons', error);
     } finally {
-      setLoadingRecommendations(false);
+      setLoadingComparisons(false);
     }
   };
 
@@ -136,22 +130,14 @@ export default function SmartCart() {
     if (!cartName.trim()) return;
     setSaving(true);
     try {
-      const itemsWithPrices = await Promise.all(
-        cartItems.map(async (item) => {
-          const prices = await base44.entities.ProductPrice.filter({ gtin: item.gtin, store_id: selectedStore?.id });
-          const price = prices.length > 0 ? prices[0].current_price : 0;
-          return { ...item, price };
-        })
-      );
-
-      const totalAmount = itemsWithPrices.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
+      const bestStore = storeComparisons.length > 0 ? storeComparisons[0] : null;
+      
       await base44.entities.SavedCart.create({
         name: cartName,
-        store_id: selectedStore?.id,
-        store_name: selectedStore?.name,
-        items: itemsWithPrices,
-        total_amount: totalAmount,
+        store_id: bestStore?.store?.id,
+        store_name: bestStore?.store?.name,
+        items: cartItems.map(item => ({ ...item, price: 0 })),
+        total_amount: bestStore?.totalCost || 0,
         total_items: totalItems
       });
 
@@ -168,8 +154,6 @@ export default function SmartCart() {
 
   const loadSavedCart = (savedCart) => {
     setCartItems(savedCart.items.map(item => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
-    const store = stores.find(s => s.id === savedCart.store_id);
-    if (store) setSelectedStore(store);
     setShowHistory(false);
   };
 
@@ -182,34 +166,12 @@ export default function SmartCart() {
   return (
     <div className="space-y-6 pb-24">
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-2xl shadow-lg">
-        <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">Cart
-
-
+        <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+          <ShoppingCart className="w-7 h-7" />
+          Smart Cart Comparison
         </h1>
-        <p className="text-purple-100 text-sm">Get personalized product recommendations while you shop</p>
+        <p className="text-purple-100 text-sm">Build your cart and find the cheapest supermarkets near you</p>
       </div>
-
-      {/* Store Selection */}
-      <Card>
-        <CardContent className="p-4">
-          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <StoreIcon className="w-4 h-4" />
-            Shopping At
-          </label>
-          <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find((s) => s.id === id))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select store" />
-            </SelectTrigger>
-            <SelectContent>
-              {stores.map((store) =>
-              <SelectItem key={store.id} value={store.id}>
-                  {store.name} {store.city && `• ${store.city}`}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
 
       {/* Add Products */}
       <Card>
@@ -256,8 +218,8 @@ export default function SmartCart() {
               </div>
             </div>
             {cartItems.length > 0 &&
-            <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loadingRecommendations}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${loadingRecommendations ? 'animate-spin' : ''}`} />
+            <Button variant="outline" size="sm" onClick={fetchComparisons} disabled={loadingComparisons}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loadingComparisons ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             }
@@ -343,142 +305,108 @@ export default function SmartCart() {
         </Card>
       )}
 
-      {/* Cart Items with Recommendations */}
-      {cartItems.length === 0 ?
-      <Card>
+      {/* Cart Items List */}
+      {cartItems.length === 0 ? (
+        <Card>
           <CardContent className="p-10 text-center text-gray-400">
             <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p>Your cart is empty. Add products to see smart recommendations!</p>
+            <p>Your cart is empty. Add products to compare prices!</p>
           </CardContent>
-        </Card> :
-
-      <div className="space-y-6">
-          {cartItems.map((item, idx) => {
-          const itemRec = recommendations.find((r) => r.originalItem?.gtin === item.gtin);
-
-          return (
-            <Card key={item.gtin} className="overflow-hidden">
-                {/* Current Item */}
-                <CardHeader className="bg-gray-50 border-b">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-bold">
-                        {item.quantity}
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">{item.name}</CardTitle>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Code: {item.gtin}
-                          {itemRec?.originalPrice > 0 &&
-                        <span className="ml-2">• ₪{itemRec.originalPrice.toFixed(2)}</span>
-                        }
-                        </div>
-                      </div>
+        </Card>
+      ) : (
+        <>
+          {/* Cart Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Your Cart Items</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {cartItems.map((item) => (
+                <div key={item.gtin} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-sm">
+                      {item.quantity}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
-                      <Button variant="outline" size="icon" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
-                      <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.gtin)}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
+                    <div>
+                      <div className="font-medium text-gray-900">{item.name}</div>
+                      <div className="text-xs text-gray-500">{item.gtin}</div>
                     </div>
                   </div>
-                </CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.gtin)}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
-                {/* Recommendations */}
-                {loadingRecommendations ?
-              <CardContent className="p-6 text-center text-gray-500">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                    <p className="text-sm">Finding alternatives...</p>
-                  </CardContent> :
-              itemRec?.alternatives?.length > 0 ?
-              <CardContent className="p-4 space-y-3">
-                    <div className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-600" />
-                      Recommended Alternatives
-                    </div>
-                    {itemRec.alternatives.map((alt, altIdx) =>
-                <div key={altIdx} className={`p-4 rounded-lg border-2 transition-all ${
-                alt.storeLevel === 'same_store' ? 'border-green-200 bg-green-50' :
-                alt.storeLevel === 'same_chain' ? 'border-blue-200 bg-blue-50' :
-                'border-orange-200 bg-orange-50'}`
-                }>
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="font-bold text-gray-900">{alt.product.canonical_name}</div>
-                            <div className="text-xs text-gray-600 mt-1">{alt.product.brand_name}</div>
-                            
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {alt.reasons.slice(0, 3).map((reason, i) =>
-                        <Badge key={i} variant="outline" className="text-xs flex items-center gap-1">
-                                  {getReasonIcon(reason)}
-                                  {reason}
-                                </Badge>
+          {/* Store Comparisons */}
+          {loadingComparisons ? (
+            <Card>
+              <CardContent className="p-10 text-center text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-3"></div>
+                <p className="text-sm">Comparing prices across supermarkets...</p>
+              </CardContent>
+            </Card>
+          ) : storeComparisons.length > 0 ? (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <TrendingDown className="w-6 h-6 text-green-600" />
+                Top 3 Cheapest Supermarkets
+              </h3>
+              {storeComparisons.map((comparison, idx) => (
+                <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50' : idx === 1 ? 'border-blue-400 bg-blue-50' : 'border-orange-400 bg-orange-50'}`}>
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          {idx === 0 && <Badge className="bg-green-600 text-white">Best Deal</Badge>}
+                          {idx === 1 && <Badge className="bg-blue-600 text-white">2nd Best</Badge>}
+                          {idx === 2 && <Badge className="bg-orange-600 text-white">3rd Best</Badge>}
+                        </div>
+                        <h4 className="text-xl font-bold text-gray-900">{comparison.chain?.name || comparison.store?.name}</h4>
+                        {comparison.nearestBranch && (
+                          <div className="text-sm text-gray-600 mt-1 flex items-center gap-1">
+                            <StoreIcon className="w-4 h-4" />
+                            {comparison.nearestBranch.city || comparison.nearestBranch.address_line}
+                            {comparison.distance && (
+                              <span className="text-gray-500 ml-2">• {comparison.distance.toFixed(1)} km away</span>
+                            )}
+                          </div>
                         )}
-                            </div>
-
-                            {alt.storeLevel !== 'same_store' &&
-                      <div className="mt-2 text-xs flex items-center gap-1">
-                                {alt.storeLevel === 'same_chain' ?
-                        <Badge className="bg-blue-600 text-white">Same Chain</Badge> :
-
-                        <Badge className="bg-orange-600 text-white">Other Store</Badge>
-                        }
-                                <span className="text-gray-600">{alt.store?.name}</span>
-                                {alt.distance && (
-                                  <span className="text-gray-500">• {alt.distance.toFixed(1)} km</span>
-                                )}
-                              </div>
-                      }
+                        {comparison.availableItems !== cartItems.length && (
+                          <div className="text-xs text-amber-600 mt-2">
+                            ⚠️ Only {comparison.availableItems} of {cartItems.length} items available
                           </div>
-
-                          <div className="text-right">
-                            <div className="text-xl font-bold text-gray-900">₪{alt.price.toFixed(2)}</div>
-                            {alt.priceDiff > 0 ?
-                      <div className="text-xs text-green-600 font-bold mt-1">
-                                Save ₪{alt.priceDiff.toFixed(2)}
-                              </div> :
-
-                      <div className="text-xs text-red-600 font-bold mt-1">
-                                +₪{Math.abs(alt.priceDiff).toFixed(2)}
-                              </div>
-                      }
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => addToCart(alt.product)}>
-
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add to Cart
-                          </Button>
-                          <Button
-                      size="sm"
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
-                      onClick={() => replaceItem(item.gtin, alt.product)}>
-
-                            <RefreshCw className="w-3 h-3 mr-1" />
-                            Replace
-                          </Button>
-                        </div>
+                        )}
                       </div>
-                )}
-                  </CardContent> :
-              !loadingRecommendations &&
-              <CardContent className="p-6 text-center text-gray-400">
-                    <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm">No alternatives found for this product</p>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-gray-900">₪{comparison.totalCost.toFixed(2)}</div>
+                        {idx > 0 && storeComparisons[0] && (
+                          <div className="text-sm text-red-600 mt-1">
+                            +₪{(comparison.totalCost - storeComparisons[0].totalCost).toFixed(2)} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
-              }
-              </Card>);
-
-        })}
-        </div>
-      }
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-10 text-center text-gray-400">
+                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No price data available for comparison</p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>);
 
 }
