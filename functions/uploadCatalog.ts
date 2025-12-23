@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
     // Load existing products and prices
     console.log("Loading existing products and prices...");
     const existingProducts = await svc.entities.Product.list();
-    const existingPrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
+    const existingPrices = await svc.entities.ProductPrice.filter({ chain_id: chain.id, store_id: null });
 
     const productMap = new Map();
     for (const p of existingProducts) {
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Now prepare prices
+    // Now prepare prices - create at chain level by default
     console.log("Preparing price data...");
     const newPrices = [];
     const updatePrices = [];
@@ -346,7 +346,8 @@ Deno.serve(async (req) => {
 
       const priceData = {
         gtin: itemCode,
-        store_id: store.id,
+        chain_id: chain.id,
+        store_id: null, // Chain-level price by default
         current_price: parseFloat(item.ItemPrice) || 0,
         unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
         allow_discount: item.AllowDiscount === "1",

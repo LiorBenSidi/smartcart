@@ -25,9 +25,13 @@ Deno.serve(async (req) => {
     }
     const store = stores[0];
 
-    // Load all prices for this store
-    const prices = await svc.entities.ProductPrice.filter({ store_id: store.id });
-    const priceMap = new Map(prices.map(p => [p.gtin, p]));
+    // Load store-specific prices
+    const storePrices = await svc.entities.ProductPrice.filter({ store_id: store.id });
+    const storePriceMap = new Map(storePrices.map(p => [p.gtin, p]));
+
+    // Load chain-level prices (where store_id is null)
+    const chainPrices = await svc.entities.ProductPrice.filter({ chain_id: store.chain_id, store_id: null });
+    const chainPriceMap = new Map(chainPrices.map(p => [p.gtin, p]));
 
     const results = [];
 
@@ -42,12 +46,14 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const catalogPrice = priceMap.get(code);
+      // Check store-specific price first, then chain-level price
+      const catalogPrice = storePriceMap.get(code) || chainPriceMap.get(code);
+      
       if (!catalogPrice) {
         results.push({
           item,
           status: "not_found",
-          message: "Product not found in catalog for this store"
+          message: "Product not found in catalog for this chain"
         });
         continue;
       }
