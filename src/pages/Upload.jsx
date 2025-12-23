@@ -18,6 +18,7 @@ export default function Upload() {
   const [selectedStore, setSelectedStore] = useState(null);
   const [loadingStores, setLoadingStores] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -57,6 +58,34 @@ export default function Upload() {
         setPreview(reader.result);
       };
       reader.readAsDataURL(selectedFile);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && droppedFile.type.startsWith('image/')) {
+      setFile(droppedFile);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(droppedFile);
     }
   };
 
@@ -179,17 +208,26 @@ export default function Upload() {
       </Card>
 
       {/* Upload / Preview Area */}
-      <Card className="border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden shadow-none hover:border-indigo-300 transition-colors">
+      <Card className={`border-2 border-dashed bg-gray-50 overflow-hidden shadow-none transition-colors ${
+        isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'
+      }`}>
         <CardContent className="p-0">
           {!preview ? (
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="h-64 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors p-6"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`h-64 flex flex-col items-center justify-center cursor-pointer transition-colors p-6 ${
+                isDragging ? 'bg-indigo-100' : 'hover:bg-gray-100'
+              }`}
             >
-              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 text-indigo-600">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                isDragging ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-600'
+              }`}>
                 <UploadCloud className="w-8 h-8" />
               </div>
-              <p className="font-medium text-gray-900">Tap to upload receipt</p>
+              <p className="font-medium text-gray-900">{isDragging ? 'Drop receipt here' : 'Tap to upload receipt'}</p>
               <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG</p>
             </div>
           ) : (
