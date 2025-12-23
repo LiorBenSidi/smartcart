@@ -76,6 +76,49 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteAllData = async () => {
+    setIsDeleting(true);
+    try {
+      // Delete in order to respect dependencies
+      const allReceipts = await base44.entities.Receipt.list();
+      for (const r of allReceipts) await base44.entities.Receipt.delete(r.id);
+      
+      const receiptItems = await base44.entities.ReceiptItem.list();
+      for (const r of receiptItems) await base44.entities.ReceiptItem.delete(r.id);
+      
+      const receiptInsights = await base44.entities.ReceiptInsight.list();
+      for (const r of receiptInsights) await base44.entities.ReceiptInsight.delete(r.id);
+      
+      const savedCarts = await base44.entities.SavedCart.list();
+      for (const r of savedCarts) await base44.entities.SavedCart.delete(r.id);
+      
+      const productPrices = await base44.entities.ProductPrice.list();
+      for (const r of productPrices) await base44.entities.ProductPrice.delete(r.id);
+      
+      const products = await base44.entities.Product.list();
+      for (const r of products) await base44.entities.Product.delete(r.id);
+      
+      const promotions = await base44.entities.Promotion.list();
+      for (const r of promotions) await base44.entities.Promotion.delete(r.id);
+      
+      const stores = await base44.entities.Store.list();
+      for (const r of stores) await base44.entities.Store.delete(r.id);
+      
+      const chains = await base44.entities.Chain.list();
+      for (const r of chains) await base44.entities.Chain.delete(r.id);
+      
+      setReceipts([]);
+      setShowConfirm(false);
+      
+      const updatedUsers = users.map(u => ({ ...u, receipts: 0 }));
+      setUsers(updatedUsers);
+    } catch (error) {
+      console.error('Failed to delete all data', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
@@ -117,6 +160,13 @@ export default function Admin() {
                 <Trash2 className="w-4 h-4 mr-2" /> Delete All Receipts
             </Button>
         </div>
+
+        <Button 
+            className="w-full bg-red-800 hover:bg-red-900" 
+            onClick={handleDeleteAllData}
+        >
+            <Trash2 className="w-4 h-4 mr-2" /> Delete ALL Data (Receipts, Products, Stores, Chains)
+        </Button>
 
         {showConfirm && (
             <Card className="border-red-200 bg-red-50">
