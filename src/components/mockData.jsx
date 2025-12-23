@@ -5,7 +5,8 @@ import {
   User, 
   ShieldCheck,
   BarChart3,
-  ShoppingCart
+  ShoppingCart,
+  MapPin
 } from "lucide-react";
 
 export const MOCK_STORES = [
@@ -82,6 +83,7 @@ export const NAV_ITEMS = [
   { label: "Home", path: "/", icon: Home },
   { label: "Scan", path: "/upload", icon: PlusCircle },
   { label: "Cart", path: "/smartcart", icon: ShoppingCart },
+  { label: "Stores", path: "/nearbystores", icon: MapPin },
   { label: "Tips", path: "/recommendations", icon: Sparkles },
   { label: "Compare", path: "/pricecomparison", icon: BarChart3 },
   { label: "Profile", path: "/profile", icon: User },
