@@ -16,6 +16,7 @@ export default function CatalogAdmin() {
 
   // Upload states
   const [xmlFile, setXmlFile] = useState(null);
+  const [chainName, setChainName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState(null);
