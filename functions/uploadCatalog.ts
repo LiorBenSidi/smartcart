@@ -119,9 +119,36 @@ Deno.serve(async (req) => {
     let isNewChain = false;
     
     if (!chain) {
+      // Search the web for chain information
+      console.log(`Searching web for ${chainName} information...`);
+      let chainInfo = {};
+      try {
+        const llmResponse = await base44.integrations.Core.InvokeLLM({
+          prompt: `Find information about the Israeli supermarket chain "${chainName}". Provide: website URL, logo image URL, brief description, and chain type (supermarket, discount_store, premium_store, organic_store, kosher_store, or convenience_store).`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              website_url: { type: "string" },
+              logo_url: { type: "string" },
+              description: { type: "string" },
+              chain_type: { type: "string", enum: ["supermarket", "discount_store", "premium_store", "organic_store", "kosher_store", "convenience_store"] }
+            }
+          }
+        });
+        chainInfo = llmResponse;
+        console.log("Found chain info:", chainInfo);
+      } catch (error) {
+        console.error("Failed to fetch chain info from web:", error);
+      }
+      
       chain = await svc.entities.Chain.create({
         name: chainName,
-        external_chain_code: chainId
+        external_chain_code: chainId,
+        logo_url: chainInfo.logo_url || "",
+        website_url: chainInfo.website_url || "",
+        description: chainInfo.description || "",
+        chain_type: chainInfo.chain_type || "supermarket"
       });
       isNewChain = true;
     } else {
