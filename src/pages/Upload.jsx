@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadCloud, ScanLine, Loader2, Store, Settings } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 
@@ -12,7 +12,9 @@ export default function Upload() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [chains, setChains] = useState([]);
   const [stores, setStores] = useState([]);
+  const [selectedChain, setSelectedChain] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [loadingStores, setLoadingStores] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -32,8 +34,10 @@ export default function Upload() {
           setIsAdmin(true);
         }
         
+        const chainList = await base44.entities.Chain.list('-name', 1000);
         const storeList = await base44.entities.Store.list('-name', 1000);
-        console.log('Loaded stores:', storeList.length);
+        console.log('Loaded chains:', chainList.length, 'stores:', storeList.length);
+        setChains(chainList);
         setStores(storeList);
       } catch (error) {
         console.error('Failed to load stores', error);
@@ -92,51 +96,84 @@ export default function Upload() {
         <p className="text-gray-500 text-sm">Upload a photo to analyze your groceries</p>
       </div>
 
-      {/* Store Selection */}
+      {/* Chain & Store Selection */}
       <Card className="shadow-sm">
-        <CardContent className="p-6">
-          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Store className="w-4 h-4" />
-            Select Supermarket
-          </label>
-          {loadingStores ? (
-            <div className="flex items-center gap-2 text-gray-500">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Loading stores...</span>
-            </div>
-          ) : stores.length === 0 ? (
-            <div className="text-sm bg-amber-50 border border-amber-200 p-4 rounded-lg space-y-2">
-              <p className="text-amber-800 font-medium">No stores available in the system.</p>
-              {isAdmin ? (
-                <div className="flex items-center gap-2">
-                  <p className="text-amber-700 text-xs">Add stores through the catalog admin:</p>
-                  <Link to={createPageUrl('CatalogAdmin')}>
-                    <Button size="sm" variant="outline" className="h-7 text-xs border-amber-300 hover:bg-amber-100">
-                      <Settings className="w-3 h-3 mr-1" />
-                      Catalog Admin
-                    </Button>
-                  </Link>
-                </div>
+        <CardContent className="p-6 space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Store className="w-4 h-4" />
+              Select Chain
+            </label>
+            {loadingStores ? (
+              <div className="flex items-center gap-2 text-gray-500">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading chains...</span>
+              </div>
+            ) : chains.length === 0 ? (
+              <div className="text-sm bg-amber-50 border border-amber-200 p-4 rounded-lg space-y-2">
+                <p className="text-amber-800 font-medium">No chains available in the system.</p>
+                {isAdmin ? (
+                  <div className="flex items-center gap-2">
+                    <p className="text-amber-700 text-xs">Add chains through the catalog admin:</p>
+                    <Link to={createPageUrl('CatalogAdmin')}>
+                      <Button size="sm" variant="outline" className="h-7 text-xs border-amber-300 hover:bg-amber-100">
+                        <Settings className="w-3 h-3 mr-1" />
+                        Catalog Admin
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-amber-700 text-xs">Please contact an administrator to add chains.</p>
+                )}
+              </div>
+            ) : (
+              <Select value={selectedChain?.id} onValueChange={(id) => {
+                setSelectedChain(chains.find(c => c.id === id));
+                setSelectedStore(null);
+              }}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose chain" />
+                </SelectTrigger>
+                <SelectContent>
+                  {chains.map((chain) => (
+                    <SelectItem key={chain.id} value={chain.id}>
+                      {chain.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {selectedChain && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Select Store Location
+              </label>
+              {stores.filter(s => s.chain_id === selectedChain.id).length === 0 ? (
+                <p className="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">No stores found for this chain</p>
               ) : (
-                <p className="text-amber-700 text-xs">Please contact an administrator to add stores.</p>
+                <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find(s => s.id === id))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose store location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stores
+                      .filter(s => s.chain_id === selectedChain.id)
+                      .map((store) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          {store.address_line || `${store.city || 'Unknown location'}`}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
-          ) : (
-            <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find(s => s.id === id))}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choose your supermarket" />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map((store) => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.name} {store.city ? `• ${store.city}` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           )}
-          {!selectedStore && stores.length > 0 && (
-            <p className="text-xs text-amber-600 mt-2">⚠️ Please select a store before uploading</p>
+
+          {!selectedStore && chains.length > 0 && (
+            <p className="text-xs text-amber-600">⚠️ Please select chain and store before uploading</p>
           )}
         </CardContent>
       </Card>
