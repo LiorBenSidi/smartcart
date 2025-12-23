@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       console.log(`Fetching branch locations for ${chainName} from OpenStreetMap...`);
       try {
         // Search for chain branches in Israel
-        const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(chainName + ' Israel')}&format=json&countrycodes=il&limit=50`;
+        const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(chainName + ' Israel')}&format=json&countrycodes=il&limit=50&addressdetails=1`;
         const response = await fetch(searchUrl, {
           headers: {
             'User-Agent': 'SmartCart-CatalogIngestion/1.0'
@@ -155,14 +155,16 @@ Deno.serve(async (req) => {
           for (let i = 0; i < locations.length; i++) {
             const loc = locations[i];
             
-            // Parse address components
-            const addressParts = loc.display_name.split(', ');
-            const city = addressParts.find(part => !part.match(/\d/)) || '';
+            // Extract city from OSM address object
+            let city = '';
+            if (loc.address) {
+              city = loc.address.city || loc.address.town || loc.address.village || loc.address.municipality || '';
+            }
             
             storesToCreate.push({
               chain_id: chain.id,
               external_store_code: `OSM_${i + 1}`,
-              name: loc.name || `${chainName} - ${city}`,
+              name: chainName,
               address_line: loc.display_name,
               city: city,
               latitude: parseFloat(loc.lat),
@@ -195,12 +197,12 @@ Deno.serve(async (req) => {
         chain_id: chain.id,
         external_store_code: storeId,
         sub_chain_code: subChainId,
-        name: `${chainName} - ${storeId}`
+        name: chainName
       });
     } else {
       // Update store name if needed
       await svc.entities.Store.update(store.id, {
-        name: `${chainName} - ${storeId}`
+        name: chainName
       });
     }
 
