@@ -277,10 +277,43 @@ Deno.serve(async (req) => {
       productMap.set(itemCode, product || { id: null, gtin: itemCode });
     }
 
-    // Bulk create new products
+    // Bulk create new products with enrichment
     console.log(`Creating ${newProducts.length} new products...`);
     if (newProducts.length > 0) {
-      const createdProducts = await svc.entities.Product.bulkCreate(newProducts);
+      // Enrich first 20 products with web search
+      const productsToEnrich = newProducts.slice(0, 20);
+      const enrichedProducts = [];
+      
+      console.log(`Enriching ${productsToEnrich.length} products with web search...`);
+      for (const product of productsToEnrich) {
+        try {
+          const enrichment = await base44.integrations.Core.InvokeLLM({
+            prompt: `Find information about this product: "${product.canonical_name}" by ${product.brand_name || 'unknown brand'}. Provide: category, subcategory, image URL, and dietary flags (is_organic, is_gluten_free, is_lactose_free, is_vegan, is_kosher).`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                category: { type: "string" },
+                subcategory: { type: "string" },
+                image_url: { type: "string" },
+                is_organic: { type: "boolean" },
+                is_gluten_free: { type: "boolean" },
+                is_lactose_free: { type: "boolean" },
+                is_vegan: { type: "boolean" },
+                is_kosher: { type: "boolean" }
+              }
+            }
+          });
+          enrichedProducts.push({ ...product, ...enrichment });
+        } catch (error) {
+          console.error(`Failed to enrich product ${product.canonical_name}:`, error);
+          enrichedProducts.push(product);
+        }
+      }
+      
+      // Combine enriched and non-enriched products
+      const allProducts = [...enrichedProducts, ...newProducts.slice(20)];
+      const createdProducts = await svc.entities.Product.bulkCreate(allProducts);
       for (const p of createdProducts) {
         productMap.set(p.gtin, p);
       }
