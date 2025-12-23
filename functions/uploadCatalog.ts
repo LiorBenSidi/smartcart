@@ -116,18 +116,70 @@ Deno.serve(async (req) => {
     console.log("Setting up chain and store...");
     let chains = await svc.entities.Chain.filter({ external_chain_code: chainId });
     let chain = chains[0];
+    let isNewChain = false;
     
     if (!chain) {
       chain = await svc.entities.Chain.create({
         name: chainName,
         external_chain_code: chainId
       });
+      isNewChain = true;
     } else {
       // Update chain name if provided
       await svc.entities.Chain.update(chain.id, {
         name: chainName
       });
       chain.name = chainName;
+    }
+
+    // Fetch store locations from OpenStreetMap if this is a new chain or no stores exist yet
+    const existingStores = await svc.entities.Store.filter({ chain_id: chain.id });
+    
+    if (isNewChain || existingStores.length === 0) {
+      console.log(`Fetching branch locations for ${chainName} from OpenStreetMap...`);
+      try {
+        // Search for chain branches in Israel
+        const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(chainName + ' Israel')}&format=json&countrycodes=il&limit=50`;
+        const response = await fetch(searchUrl, {
+          headers: {
+            'User-Agent': 'SmartCart-CatalogIngestion/1.0'
+          }
+        });
+        
+        if (response.ok) {
+          const locations = await response.json();
+          console.log(`Found ${locations.length} potential locations for ${chainName}`);
+          
+          // Create store records for each location
+          const storesToCreate = [];
+          for (let i = 0; i < locations.length; i++) {
+            const loc = locations[i];
+            
+            // Parse address components
+            const addressParts = loc.display_name.split(', ');
+            const city = addressParts.find(part => !part.match(/\d/)) || '';
+            
+            storesToCreate.push({
+              chain_id: chain.id,
+              external_store_code: `OSM_${i + 1}`,
+              name: loc.name || `${chainName} - ${city}`,
+              address_line: loc.display_name,
+              city: city,
+              latitude: parseFloat(loc.lat),
+              longitude: parseFloat(loc.lon),
+              postal_code: loc.address?.postcode || ''
+            });
+          }
+          
+          if (storesToCreate.length > 0) {
+            await svc.entities.Store.bulkCreate(storesToCreate);
+            console.log(`Created ${storesToCreate.length} store locations from OpenStreetMap`);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch locations from OpenStreetMap:', error);
+        // Continue without location data
+      }
     }
 
     // Create or get store - use chain_id + external_store_code + sub_chain_code as unique identifier
@@ -143,15 +195,12 @@ Deno.serve(async (req) => {
         chain_id: chain.id,
         external_store_code: storeId,
         sub_chain_code: subChainId,
-        name: `Store ${storeId}`
+        name: `${chainName} - ${storeId}`
       });
     } else {
       // Update store name if needed
       await svc.entities.Store.update(store.id, {
-        chain_id: chain.id,
-        external_store_code: storeId,
-        sub_chain_code: subChainId,
-        name: `Store ${storeId}`
+        name: `${chainName} - ${storeId}`
       });
     }
 
