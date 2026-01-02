@@ -25,7 +25,7 @@ export default function Upload() {
     const fetchData = async () => {
       try {
         const user = await base44.auth.me();
-        const adminStatus = user.email === 'liorben@base44.com';
+        const adminStatus = user.role === 'admin';
         if (!adminStatus) {
           const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
           if (profiles.length > 0 && profiles[0].is_admin) {
