@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 
     // admin check
-    let admin = user.email === "liorben@base44.com";
+    let admin = user.role === 'admin';
     try {
       if (!admin) {
         const profiles = await base44.entities.UserProfile.filter({
