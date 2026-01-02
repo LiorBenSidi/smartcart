@@ -2,6 +2,15 @@ import https from "node:https";
 
 Deno.serve(async (req) => {
   console.log("[proxyFetch] Function invoked");
+
+  const base44 = createClientFromRequest(req);
+  const user = await base44.auth.me();
+  if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" }
+      });
+  }
   
   try {
     console.log("[proxyFetch] Parsing request body");
