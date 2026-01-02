@@ -101,7 +101,7 @@ export default function Home() {
         const user = await base44.auth.me();
         console.log('Current User Email:', user.email); // Check if this is the correct email
         let isAdmin = false;
-        if (user.email === 'liorben@base44.com') {
+        if (user.role === 'admin') {
             isAdmin = true;
         } else {
             try {
