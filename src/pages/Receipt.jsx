@@ -268,7 +268,7 @@ export default function Receipt() {
       if (id) {
         try {
             const user = await base44.auth.me();
-            let adminStatus = user.email === 'liorben@base44.com';
+            let adminStatus = user.role === 'admin';
             if (!adminStatus) {
                 try {
                     const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
