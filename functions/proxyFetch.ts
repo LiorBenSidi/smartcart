@@ -1,3 +1,4 @@
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.4";
 import https from "node:https";
 
 Deno.serve(async (req) => {
