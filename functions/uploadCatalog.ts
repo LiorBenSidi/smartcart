@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     // Check admin
-    let isAdmin = user.email === "liorben@base44.com";
+    let isAdmin = user.role === 'admin';
     if (!isAdmin) {
       const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
       isAdmin = profiles.length > 0 && !!profiles[0].isAdmin;
