@@ -268,7 +268,7 @@ export default function Home() {
               size="sm" 
               onClick={handleExportAll} 
               disabled={isExporting}
-              className="text-indigo-600 border-indigo-100 hover:bg-indigo-50"
+              className="text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/50"
           >
               <Download className="w-4 h-4 mr-2" />
               {isExporting ? 'Exporting...' : 'Export All to CSV'}
