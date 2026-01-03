@@ -101,9 +101,9 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
             </div>
 
             <div className="space-y-4">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     Recent Reviews 
-                    <span className="text-sm font-normal text-gray-500">({reviews.length})</span>
+                    <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({reviews.length})</span>
                 </h3>
                 
                 {loading ? (
