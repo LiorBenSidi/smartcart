@@ -58,7 +58,7 @@ export default function Layout({ children, currentPageName }) {
 
 
       {/* Content wrapper */}
-      <div className={`${isWebView ? 'w-full max-w-[1920px]' : 'max-w-md'} mx-auto bg-white dark:bg-gray-800 min-h-screen shadow-2xl relative overflow-hidden transition-all duration-300 ease-in-out`}>
+      <div className={`${isWebView ? 'w-full max-w-[1920px]' : 'max-w-md'} mx-auto bg-white dark:bg-gray-800 min-h-screen shadow-2xl relative transition-all duration-300 ease-in-out`}>
         
         {/* Header - only show on authenticated pages */}
         {!isLanding && user && (
