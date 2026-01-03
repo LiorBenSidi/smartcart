@@ -732,6 +732,7 @@ export default function Receipt() {
                   </div>
               </div>
           </div>
+          </div>
 
           {/* Insights Section - Separate Card on Desktop */}
           <div className="lg:col-span-1">
