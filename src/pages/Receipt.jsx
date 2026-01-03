@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PriceComparisonReview from '../components/PriceComparisonReview';
 import AddProductDialog from '../components/AddProductDialog';
+import ReceiptReview from '../components/ReceiptReview';
 
 export default function Receipt() {
   const [receipt, setReceipt] = useState(null);
@@ -28,130 +29,37 @@ export default function Receipt() {
     setIsProcessing(true);
 
     try {
-      const prompt = `
-        Analyze this grocery receipt image and extract the data into the following JSON format:
-        - storeName: Name of the store
-        - date: Date of purchase (YYYY-MM-DD). If missing, use today's date.
-        - time: Time of purchase (HH:MM) if available.
-        - address: Address of the store if available.
-        - totalAmount: Total amount paid
-        - items: List of items purchased with product code (if available), name, category (Produce, Dairy, Meat, Snacks, etc), quantity, price (unit price), and total. IMPORTANT: If the receipt shows a price for multiple units of an item, calculate the unit price by dividing that price by the quantity. Ensure 'total' is the line item total (quantity * unit price).
-        - insights: Array of insights. 'type' can be "warning" (e.g. unhealthy), "saving" (e.g. bought on sale), or "info". 'message' is the text.
-      `;
-
-      const llmRes = await base44.integrations.Core.InvokeLLM({
-        prompt: prompt,
-        file_urls: [r.raw_receipt_image_url],
-        response_json_schema: {
-            type: "object",
-            properties: {
-                storeName: { type: "string" },
-                date: { type: "string" },
-                time: { type: "string" },
-                address: { type: "string" },
-                totalAmount: { type: "number" },
-                items: { 
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            code: { type: "string" },
-                            name: { type: "string" },
-                            category: { type: "string" },
-                            quantity: { type: "number" },
-                            price: { type: "number" },
-                            total: { type: "number" }
-                        }
-                    }
-                },
-                insights: {
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            type: { type: "string", enum: ["warning", "saving", "info"] },
-                            message: { type: "string" }
-                        }
-                    }
-                }
-            },
-            required: ["storeName", "totalAmount", "date", "items"]
+        // Call backend function for robust extraction
+        const response = await base44.functions.invoke('processReceipt', { receiptId: r.id });
+        
+        if (response.data.success) {
+            const updatedReceipt = { ...r, ...response.data.data };
+            setReceipt(updatedReceipt);
+            
+            // If needs review, we stay on this page and the render logic handles it
+            if (response.data.needs_review) {
+                // Just update state, the component will render ReviewReceipt
+            } else {
+                // If by miracle it's perfect, we can proceed (e.g. to comparison or summary)
+                // But generally we expect review.
+            }
+        } else {
+            throw new Error(response.data.error || "Unknown processing error");
         }
-      });
 
-      // Generate AI summary
-      const topItems = [...llmRes.items]
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 3)
-        .map(item => `${item.name} ($${item.total.toFixed(2)})`)
-        .join(', ');
-
-      const summaryPrompt = `Create a concise 2-3 sentence summary of this receipt:
-        Store: ${llmRes.storeName}
-        Date: ${llmRes.date}
-        Total: $${llmRes.totalAmount}
-        Top 3 items: ${topItems}
-        Total items purchased: ${llmRes.items.length}
-
-        Make it sound natural and informative.`;
-
-      const summaryRes = await base44.integrations.Core.InvokeLLM({
-        prompt: summaryPrompt
-      });
-
-      const processedReceipt = { ...r, ...llmRes, summary: summaryRes, processing_status: 'processed' };
-
-      // If we have a store_id, compare prices with catalog
-      if (r.store_id && llmRes.items && llmRes.items.length > 0) {
-        try {
-          const compareRes = await base44.functions.invoke('comparePrices', {
-            items: llmRes.items,
-            store_id: r.store_id
-          });
-
-          // Update database and set state together
-          await base44.entities.Receipt.update(r.id, {
-            ...llmRes,
-            summary: summaryRes,
-            processing_status: 'processed'
-          });
-
-          setComparisonResults(compareRes.data.results);
-          setEditData(processedReceipt);
-          setShowPriceComparison(true);
-          setReceipt(processedReceipt);
-        } catch (error) {
-          console.error("Price comparison failed", error);
-          // Skip comparison and go to edit mode
-          await base44.entities.Receipt.update(r.id, {
-            ...llmRes,
-            summary: summaryRes,
-            processing_status: 'processed'
-          });
-
-          setEditData(processedReceipt);
-          setEditMode(true);
-          setReceipt(processedReceipt);
-        }
-      } else {
-        // No store selected or no items, skip comparison
-        await base44.entities.Receipt.update(r.id, {
-          ...llmRes,
-          summary: summaryRes,
-          processing_status: 'processed'
-        });
-
-        setEditData(processedReceipt);
-        setEditMode(true);
-        setReceipt(processedReceipt);
-      }
     } catch (error) {
       console.error("Processing failed", error);
-      await base44.entities.Receipt.update(r.id, { processing_status: 'failed' });
+      await base44.entities.Receipt.update(r.id, { processing_status: 'failed', processing_error_message: error.message });
       setReceipt({ ...r, processing_status: 'failed' });
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleReviewConfirm = (confirmedReceipt) => {
+      setReceipt(confirmedReceipt);
+      // After confirmation, we can trigger insights or price comparison if needed
+      // For now, just showing the details page is enough as per requirements
   };
 
   const handleItemChange = (index, field, value) => {
@@ -372,6 +280,23 @@ export default function Receipt() {
 
   if (loading) return <div className="p-10 text-center text-gray-500">Loading receipt...</div>;
   if (!receipt) return <div className="p-10 text-center text-gray-500">Receipt not found.</div>;
+
+  // Show Review Mode if needed
+  if (receipt.needs_review) {
+      return (
+          <div className="min-h-screen max-w-6xl mx-auto pb-20 pt-6 px-4">
+              <div className="flex items-center gap-2 mb-6">
+                <Link to={createPageUrl('Home')}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </Button>
+                </Link>
+                <h2 className="font-bold text-2xl text-gray-900">Review Receipt</h2>
+              </div>
+              <ReceiptReview receipt={receipt} onConfirm={handleReviewConfirm} />
+          </div>
+      );
+  }
 
   // Show price comparison review
   if (showPriceComparison && comparisonResults) {
