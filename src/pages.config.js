@@ -7,8 +7,8 @@ import PriceComparison from './pages/PriceComparison';
 import Profile from './pages/Profile';
 import Receipt from './pages/Receipt';
 import Recommendations from './pages/Recommendations';
-import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
+import SmartCart from './pages/SmartCart';
 import __Layout from './Layout.jsx';
 
 
@@ -22,8 +22,8 @@ export const PAGES = {
     "Profile": Profile,
     "Receipt": Receipt,
     "Recommendations": Recommendations,
-    "SmartCart": SmartCart,
     "Upload": Upload,
+    "SmartCart": SmartCart,
 }
 
 export const pagesConfig = {

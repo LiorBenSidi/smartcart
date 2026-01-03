@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, Camera } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 
@@ -20,6 +20,7 @@ export default function Upload() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -213,12 +214,11 @@ export default function Upload() {
         <CardContent className="p-0">
           {!preview ? (
             <div 
-              onClick={() => fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`h-64 flex flex-col items-center justify-center cursor-pointer transition-colors p-6 ${
-                isDragging ? 'bg-indigo-100' : 'hover:bg-gray-100'
+              className={`h-64 flex flex-col items-center justify-center transition-colors p-6 ${
+                isDragging ? 'bg-indigo-100' : 'bg-gray-50'
               }`}
             >
               <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
@@ -226,8 +226,28 @@ export default function Upload() {
               }`}>
                 <UploadCloud className="w-8 h-8" />
               </div>
-              <p className="font-medium text-gray-900">{isDragging ? 'Drop receipt here' : 'Tap to upload receipt'}</p>
-              <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG</p>
+              <p className="font-medium text-gray-900 mb-6">{isDragging ? 'Drop receipt here' : 'Upload or scan a receipt'}</p>
+              
+              <div className="flex gap-3">
+                 <Button 
+                   onClick={() => cameraInputRef.current?.click()}
+                   className="bg-indigo-600 hover:bg-indigo-700"
+                 >
+                   <Camera className="w-4 h-4 mr-2" />
+                   Take Photo
+                 </Button>
+                 
+                 <Button 
+                   variant="outline"
+                   onClick={() => fileInputRef.current?.click()}
+                   className="bg-white dark:bg-gray-800 dark:text-gray-100"
+                 >
+                   <UploadCloud className="w-4 h-4 mr-2" />
+                   Browse Files
+                 </Button>
+              </div>
+
+              <p className="text-xs text-gray-400 mt-6">Supports JPG, PNG</p>
             </div>
           ) : (
             <div className="relative">
@@ -250,6 +270,14 @@ export default function Upload() {
             ref={fileInputRef} 
             className="hidden" 
             accept="image/*" 
+            onChange={handleFileChange} 
+          />
+          <Input 
+            type="file" 
+            ref={cameraInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            capture="environment"
             onChange={handleFileChange} 
           />
         </CardContent>
