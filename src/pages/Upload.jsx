@@ -126,8 +126,8 @@ export default function Upload() {
   return (
     <div className="space-y-6 pb-20 max-w-2xl mx-auto">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Scan Receipt</h2>
-        <p className="text-gray-500 text-sm">Upload a photo to analyze your groceries</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Scan Receipt</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Upload a photo to analyze your groceries</p>
       </div>
 
       {/* Chain & Store Selection */}
