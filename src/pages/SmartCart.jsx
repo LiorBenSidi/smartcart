@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
@@ -20,6 +20,41 @@ export default function SmartCart() {
   const [saving, setSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [suggestions, setSuggestions] = useState(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [expandedSuggestion, setExpandedSuggestion] = useState(null);
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+
+  useEffect(() => {
+      const fetchSuggestions = async () => {
+          try {
+              setLoadingSuggestions(true);
+              const user = await base44.auth.me();
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Try to find existing draft for today
+              const drafts = await base44.entities.SuggestedCartDraft.filter({ 
+                  created_by: user.email, 
+                  generated_date: today 
+              });
+
+              if (drafts.length > 0) {
+                  setSuggestions(drafts[0]);
+              } else {
+                  // Trigger generation if none exists
+                  const res = await base44.functions.invoke('generateDailySuggestions');
+                  if (res.data.success) {
+                      setSuggestions(res.data.draft);
+                  }
+              }
+          } catch (error) {
+              console.error("Failed to fetch suggestions", error);
+          } finally {
+              setLoadingSuggestions(false);
+          }
+      };
+      fetchSuggestions();
+  }, []);
 
   const applyOptimizedCart = () => {
     if (!optimizedCart) return;
@@ -185,6 +220,115 @@ export default function SmartCart() {
         </h1>
         <p className="text-purple-100 text-sm">Build your cart and find the cheapest supermarkets near you</p>
       </div>
+
+      {/* Suggested for Today */}
+      {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 && (
+          <Card className="border-indigo-100 bg-indigo-50/30">
+              <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2 text-indigo-900">
+                          <CalendarDays className="w-5 h-5 text-indigo-600" />
+                          Suggested for Today
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-white text-indigo-600 border-indigo-200">
+                          {suggestions.items.length} items
+                      </Badge>
+                  </div>
+              </CardHeader>
+              <CardContent>
+                  <div className="space-y-3">
+                      {suggestions.items.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) => (
+                          <div key={idx} className="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
+                              <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                          <span className="font-semibold text-gray-900">{item.product_name}</span>
+                                          <Badge className={`text-[10px] px-1.5 py-0 h-5 ${
+                                              item.reason_type.includes('Weekly') ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                          }`}>
+                                              {item.reason_type}
+                                          </Badge>
+                                      </div>
+                                      <div className="text-xs text-gray-500 flex items-center gap-3">
+                                          <span>Qty: {item.suggested_qty}</span>
+                                          <span className={`${item.confidence > 0.8 ? 'text-green-600' : 'text-gray-400'}`}>
+                                              {item.confidence > 0.8 ? 'High Confidence' : 'Medium Confidence'}
+                                          </span>
+                                      </div>
+                                      
+                                      {/* Why Expander */}
+                                      <button 
+                                          onClick={() => setExpandedSuggestion(expandedSuggestion === idx ? null : idx)}
+                                          className="text-[10px] text-indigo-500 flex items-center gap-1 mt-2 hover:underline"
+                                      >
+                                          Why? {expandedSuggestion === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                      </button>
+                                      {expandedSuggestion === idx && (
+                                          <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
+                                              {item.reason_type.includes('Weekly') && (
+                                                  <p> bought {item.evidence.occurrences} times on this weekday in last {item.evidence.n_weeks} weeks.</p>
+                                              )}
+                                              {item.reason_type.includes('Restock') && (
+                                                  <p> Usually bought every {item.evidence.avg_cadence_days} days. Last bought {item.evidence.days_since_last_purchase} days ago.</p>
+                                              )}
+                                          </div>
+                                      )}
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                      <Button 
+                                          size="sm" 
+                                          className="h-8 bg-indigo-600 hover:bg-indigo-700"
+                                          onClick={() => {
+                                              addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                                              // Ideally mark as added in local state or remove from view?
+                                          }}
+                                      >
+                                          <Plus className="w-4 h-4" />
+                                      </Button>
+                                  </div>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+                  
+                  <div className="mt-4 flex gap-3">
+                      <Button 
+                          className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                          onClick={() => {
+                              suggestions.items.forEach(item => {
+                                  addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                              });
+                              // Mark draft as accepted?
+                          }}
+                      >
+                          Add All to Cart
+                      </Button>
+                      <Button 
+                          variant="outline"
+                          className="text-gray-500"
+                          onClick={async () => {
+                              try {
+                                  await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
+                                  setSuggestions(null);
+                              } catch(e) { console.error(e); }
+                          }}
+                      >
+                          Dismiss
+                      </Button>
+                  </div>
+                  {suggestions.items.length > 6 && (
+                      <div className="text-center mt-2">
+                          <button 
+                              className="text-xs text-gray-500 hover:text-indigo-600"
+                              onClick={() => setShowAllSuggestions(!showAllSuggestions)}
+                          >
+                              {showAllSuggestions ? 'Show Less' : `Show ${suggestions.items.length - 6} More`}
+                          </button>
+                      </div>
+                  )}
+              </CardContent>
+          </Card>
+      )}
 
       {/* Add Products */}
       <Card>
