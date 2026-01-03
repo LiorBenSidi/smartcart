@@ -132,7 +132,7 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-        <div className="bg-slate-800 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-slate-800 dark:bg-slate-900 text-white p-6 rounded-2xl shadow-lg">
             <h1 className="text-2xl font-bold flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-emerald-400" />
                 Admin Console
@@ -141,28 +141,28 @@ export default function Admin() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="border-none shadow-sm bg-white">
+            <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Total Users</p>
-                    <h3 className="text-2xl font-bold text-slate-800">{users.length}</h3>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Total Users</p>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{users.length}</h3>
                 </CardContent>
             </Card>
-            <Card className="border-none shadow-sm bg-white">
+            <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Total Receipts</p>
-                    <h3 className="text-2xl font-bold text-slate-800">{receipts.length}</h3>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Total Receipts</p>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{receipts.length}</h3>
                 </CardContent>
             </Card>
-            <Card className="border-none shadow-sm bg-white">
+            <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Products</p>
-                    <h3 className="text-2xl font-bold text-slate-800">{productCount}</h3>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Products</p>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{productCount}</h3>
                 </CardContent>
             </Card>
-            <Card className="border-none shadow-sm bg-white">
+            <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Stores</p>
-                    <h3 className="text-2xl font-bold text-slate-800">{storeCount}</h3>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Stores</p>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{storeCount}</h3>
                 </CardContent>
             </Card>
         </div>
@@ -180,23 +180,23 @@ export default function Admin() {
         <SystemValidationPanel />
 
         {showConfirm && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
                 <CardContent className="p-4 space-y-3">
-                    <h3 className="font-bold text-red-900">⚠️ Confirm Deletion</h3>
-                    <p className="text-sm text-red-700">
+                    <h3 className="font-bold text-red-900 dark:text-red-300">⚠️ Confirm Deletion</h3>
+                    <p className="text-sm text-red-700 dark:text-red-400">
                         Are you sure you want to delete all {receipts.length} receipts? This action cannot be undone.
                     </p>
                     <div className="flex gap-2">
                         <Button 
                             variant="outline" 
-                            className="flex-1" 
+                            className="flex-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300" 
                             onClick={() => setShowConfirm(false)}
                             disabled={isDeleting}
                         >
                             Cancel
                         </Button>
                         <Button 
-                            className="flex-1 bg-red-600 hover:bg-red-700" 
+                            className="flex-1 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600" 
                             onClick={handleDeleteAllReceipts}
                             disabled={isDeleting}
                         >
@@ -207,28 +207,28 @@ export default function Admin() {
             </Card>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                <h3 className="font-bold text-sm text-gray-700">User Database</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-sm text-gray-700 dark:text-gray-200">User Database</h3>
             </div>
             <Table>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead className="text-right">Receipts</TableHead>
+                    <TableRow className="dark:border-gray-700">
+                        <TableHead className="dark:text-gray-400">Email</TableHead>
+                        <TableHead className="dark:text-gray-400">Role</TableHead>
+                        <TableHead className="text-right dark:text-gray-400">Receipts</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {users.map((user) => (
-                        <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.email}</TableCell>
+                        <TableRow key={user.id} className="dark:border-gray-700">
+                            <TableCell className="font-medium dark:text-gray-200">{user.email}</TableCell>
                             <TableCell>
-                                <span className={`text-xs px-2 py-1 rounded-full font-bold ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                                <span className={`text-xs px-2 py-1 rounded-full font-bold ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                     {user.role}
                                 </span>
                             </TableCell>
-                            <TableCell className="text-right">{user.receipts}</TableCell>
+                            <TableCell className="text-right dark:text-gray-300">{user.receipts}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

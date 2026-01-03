@@ -45,9 +45,9 @@ export default function SystemValidationPanel() {
     };
 
     const getStatusColor = (status) => {
-        if (status === 'PASS') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        if (status === 'FAIL') return 'bg-red-100 text-red-700 border-red-200';
-        return 'bg-amber-100 text-amber-700 border-amber-200';
+        if (status === 'PASS') return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        if (status === 'FAIL') return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+        return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
     };
 
     const modules = [
@@ -59,12 +59,12 @@ export default function SystemValidationPanel() {
 
     if (!latestResult && !isRunning) {
         return (
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
-                    <CardTitle className="text-lg">System Validation</CardTitle>
+                    <CardTitle className="text-lg dark:text-gray-100">System Validation</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-center py-6 text-gray-500">
+                    <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                         No validation reports found.
                         <div className="mt-4">
                             <Button onClick={runValidation}>Run First Validation</Button>
@@ -76,11 +76,11 @@ export default function SystemValidationPanel() {
     }
 
     return (
-        <Card className="overflow-hidden">
-            <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
+        <Card className="overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
+                        <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
                             System Validation
                             {latestResult && (
                                 <Badge variant="outline" className={getStatusColor(latestResult.status)}>
@@ -89,7 +89,7 @@ export default function SystemValidationPanel() {
                             )}
                         </CardTitle>
                         {latestResult && (
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Last run: {format(new Date(latestResult.run_at), 'PPP p')}
                             </p>
                         )}
@@ -98,7 +98,7 @@ export default function SystemValidationPanel() {
                         size="sm" 
                         onClick={runValidation} 
                         disabled={isRunning}
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                     >
                         {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
                         Run Validation
@@ -107,24 +107,24 @@ export default function SystemValidationPanel() {
             </CardHeader>
             <CardContent className="p-0">
                 {latestResult && latestResult.results ? (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
                         {modules.map((mod) => {
                             const result = latestResult.results[mod.key];
                             const isFail = result?.status === 'FAIL';
                             const failureCount = result?.failures?.length || 0;
-                            
+
                             return (
-                                <div key={mod.key} className="bg-white">
+                                <div key={mod.key} className="bg-white dark:bg-gray-800">
                                     <div 
-                                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                         onClick={() => setExpandedModule(expandedModule === mod.key ? null : mod.key)}
                                     >
                                         <div className="flex items-center gap-3">
                                             {getStatusIcon(result?.status || 'PASS')}
                                             <div>
-                                                <p className="font-medium text-sm text-gray-900">{mod.label}</p>
+                                                <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{mod.label}</p>
                                                 {isFail && (
-                                                    <p className="text-xs text-red-600 font-medium">
+                                                    <p className="text-xs text-red-600 dark:text-red-400 font-medium">
                                                         {failureCount} assertion failure{failureCount !== 1 ? 's' : ''}
                                                     </p>
                                                 )}
@@ -133,19 +133,19 @@ export default function SystemValidationPanel() {
                                         {failureCount > 0 ? (
                                             expandedModule === mod.key ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />
                                         ) : (
-                                            <span className="text-xs text-gray-400">OK</span>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">OK</span>
                                         )}
                                     </div>
-                                    
+
                                     {expandedModule === mod.key && result?.failures?.length > 0 && (
-                                        <div className="bg-red-50/50 p-4 border-t border-gray-100 text-xs text-red-800 space-y-2">
+                                        <div className="bg-red-50/50 dark:bg-red-900/20 p-4 border-t border-gray-100 dark:border-gray-700 text-xs text-red-800 dark:text-red-300 space-y-2">
                                             {result.failures.map((fail, idx) => (
                                                 <div key={idx} className="flex gap-2 items-start">
-                                                    <span className="font-mono bg-red-100 px-1 rounded text-[10px] mt-0.5">FAIL</span>
+                                                    <span className="font-mono bg-red-100 dark:bg-red-900/50 px-1 rounded text-[10px] mt-0.5 text-red-700 dark:text-red-300">FAIL</span>
                                                     <div className="flex-1">
                                                         {fail.message}
                                                         {fail.entityId && (
-                                                            <span className="block text-red-500 text-[10px] font-mono mt-0.5">ID: {fail.entityId}</span>
+                                                            <span className="block text-red-500 dark:text-red-400 text-[10px] font-mono mt-0.5">ID: {fail.entityId}</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -157,7 +157,7 @@ export default function SystemValidationPanel() {
                         })}
                     </div>
                 ) : (
-                    <div className="p-6 text-center text-gray-500">
+                    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
                         {isRunning ? 'Running validation suite...' : 'No details available.'}
                     </div>
                 )}
