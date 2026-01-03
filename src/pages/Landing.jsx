@@ -147,9 +147,10 @@ Assistant
             </>
           }
           
-          <p className="text-xs text-gray-400 mt-6">Demo • Powered by Gemini 3 Pro
-Lior Ben Sidi & Yarin Katan
-          </p>
+          <pre className="text-xs text-gray-400 mt-6">
+          Demo • Powered by Gemini 3 Pro
+          Lior Ben Sidi & Yarin Katan
+          </pre>
         </motion.div>
 
         <div className="mt-16 grid grid-cols-2 gap-4 w-full">
