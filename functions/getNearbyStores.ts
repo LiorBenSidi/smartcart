@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { latitude, longitude, radius = 5 } = await req.json();
+    const { latitude, longitude, radius } = await req.json();
 
     if (!latitude || !longitude) {
       return Response.json({ error: 'Latitude and longitude are required' }, { status: 400 });
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     // Fetch all stores
     const stores = await base44.entities.Store.list();
 
-    // Filter stores within radius and calculate distance
+    // Filter stores within radius (if provided) and calculate distance
     const nearbyStores = stores
       .filter(store => store.latitude && store.longitude)
       .map(store => {
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         );
         return { ...store, distance };
       })
-      .filter(store => store.distance <= radius)
+      .filter(store => !radius || store.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
 
     // Get user profile for recommendations

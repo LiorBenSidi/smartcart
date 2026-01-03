@@ -94,7 +94,7 @@ export default function NearbyStores() {
           const response = await base44.functions.invoke('getNearbyStores', {
             latitude,
             longitude,
-            radius: 5
+            // radius: 5 // Commented out to fetch all stores
           });
 
           setStores(response.data.nearbyStores || []);
@@ -106,11 +106,49 @@ export default function NearbyStores() {
         }
       },
       (err) => {
-        setError('Unable to get your location. Please enable location access.');
-        setLoading(false);
+        // Fallback if location denied - fetch all stores centered on Tel Aviv
+        base44.functions.invoke('getNearbyStores', {
+            latitude: 32.0853,
+            longitude: 34.7818,
+        }).then(res => {
+            setStores(res.data.nearbyStores || []);
+            setLoading(false);
+        }).catch(() => setLoading(false));
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  // Generate distinct colors for chains
+  const getChainColor = (chainId) => {
+    if (!chainId) return '#6b7280'; // gray
+    let hash = 0;
+    for (let i = 0; i < chainId.length; i++) {
+      hash = chainId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    return '#' + '00000'.substring(0, 6 - c.length) + c;
+  };
+
+  const createMarkerIcon = (store, isClosest) => {
+      const color = getChainColor(store.chain_id);
+      
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${isClosest ? 48 : 32}" height="${isClosest ? 48 : 32}">
+          <path fill="${color}" d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8z" stroke="white" stroke-width="1.5"/>
+          <circle cx="12" cy="8" r="3.5" fill="white"/>
+          ${isClosest ? `<circle cx="12" cy="8" r="1.5" fill="${color}"/><path d="M12 -4 L12 -12" stroke="${color}" stroke-width="2" />` : ''}
+          ${isClosest ? `<text x="12" y="-5" text-anchor="middle" fill="#1f2937" font-weight="bold" font-size="8" stroke="white" stroke-width="0.5">Closest</text>` : ''}
+        </svg>
+      `;
+
+      return L.divIcon({
+          className: 'custom-marker-icon',
+          html: svg,
+          iconSize: [isClosest ? 48 : 32, isClosest ? 48 : 32],
+          iconAnchor: [isClosest ? 24 : 16, isClosest ? 48 : 32],
+          popupAnchor: [0, isClosest ? -48 : -32],
+      });
   };
 
   useEffect(() => {
@@ -186,7 +224,7 @@ export default function NearbyStores() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Nearby Stores</h2>
           <p className="text-sm text-gray-500 mt-1">
-            {stores.length} store{stores.length !== 1 ? 's' : ''} within 5 km
+            Showing all {stores.length} stores
           </p>
         </div>
         <Button 
@@ -224,18 +262,25 @@ export default function NearbyStores() {
                     </Marker>
                 )}
 
-                {stores.map(store => (
+                {stores.map((store, index) => {
+                    const isClosest = index === 0; // Stores are sorted by distance
+                    return (
                     <Marker 
                         key={store.id} 
                         position={[store.latitude, store.longitude]}
-                        icon={store.id === recommendedStore?.id ? RecommendedIcon : StoreIcon}
+                        icon={createMarkerIcon(store, isClosest)}
+                        zIndexOffset={isClosest ? 1000 : 0}
                         eventHandlers={{
                             click: () => setSelectedStore(store),
                         }}
                     >
                         <Popup>
                              <div className="p-1">
-                                <h4 className="font-bold text-sm mb-1">{store.name}</h4>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-3 h-3 rounded-full" style={{ background: getChainColor(store.chain_id) }}></div>
+                                    <h4 className="font-bold text-sm">{store.name}</h4>
+                                </div>
+                                {isClosest && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1 rounded mb-1 block w-fit">Closest Store</span>}
                                 <p className="text-xs text-gray-600 mb-2">{store.address_line}</p>
                                 <Button 
                                     size="sm" 
@@ -247,7 +292,7 @@ export default function NearbyStores() {
                             </div>
                         </Popup>
                     </Marker>
-                ))}
+                )})}
 
                 {routeGeometry && <Polyline positions={routeGeometry} color="blue" />}
 
