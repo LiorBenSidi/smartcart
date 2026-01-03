@@ -60,13 +60,7 @@ export default function Layout({ children, currentPageName }) {
         >
           {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
-        <button
-          onClick={() => setIsWebView(!isWebView)}
-          className="bg-gray-900 dark:bg-gray-700 text-white p-3 rounded-full shadow-xl hover:bg-gray-800 dark:hover:bg-gray-600 transition-all hover:scale-105"
-          title={isWebView ? "Switch to Mobile View" : "Switch to Web View"}
-        >
-          {isWebView ? <Smartphone className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
-        </button>
+
       </div>
 
       {/* Content wrapper */}
