@@ -102,7 +102,7 @@ export default function Profile() {
   return (
     <div className="space-y-8">
       {/* User Header */}
-      <div className="bg-white px-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6 dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="bg-white px-6 py-3 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6 dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="relative group">
             <div className="w-24 h-24 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300 overflow-hidden border-2 border-indigo-50 dark:border-indigo-800">
                 {profile.profile_picture ?
@@ -143,7 +143,7 @@ export default function Profile() {
       </div>
 
       {/* Preferences Form */}
-      <div className="bg-white pr-6 pl-6 rounded-2xl dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 space-y-6">
+      <div className="bg-white pr-6 pb-3 pl-6 rounded-2xl dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 space-y-6">
         <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Settings className="w-4 h-4 text-gray-400 dark:text-gray-500" /> Preferences
         </h3>
