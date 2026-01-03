@@ -163,6 +163,16 @@ Lior Ben Sidi & Yarin Katan
                 <h3 className="font-bold text-gray-900">Eat Better</h3>
                 <p className="text-xs text-gray-500">Health insights</p>
             </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-left">
+                <Leaf className="w-6 h-6 text-emerald-500 mb-2" />
+                <h3 className="font-bold text-gray-900">Eat Better</h3>
+                <p className="text-xs text-gray-500">Health insights</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-left">
+                <Leaf className="w-6 h-6 text-emerald-500 mb-2" />
+                <h3 className="font-bold text-gray-900">Eat Better</h3>
+                <p className="text-xs text-gray-500">Health insights</p>
+            </div>
         </div>
       </div>
     </div>);
