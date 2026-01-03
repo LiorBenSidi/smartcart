@@ -24,7 +24,7 @@ export default function Layout({ children, currentPageName }) {
         if (isAuthenticated) {
           const currentUser = await base44.auth.me();
           setUser(currentUser);
-          
+
           // Fetch extended profile
           const profiles = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
           if (profiles.length > 0) {
@@ -51,84 +51,84 @@ export default function Layout({ children, currentPageName }) {
 
   // If not landing page and not logged in, showing simplified layout
   const isLanding = currentPageName === 'Landing';
-  
+
   return (
     <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased pb-32 relative transition-colors duration-200">
+    <div className="bg-gray-50 text-gray-900 font-sans min-h-screen dark:bg-gray-900 dark:text-gray-100 antialiased relative transition-colors duration-200">
 
 
       {/* Content wrapper */}
       <div className={`${isWebView ? 'w-full max-w-[1920px]' : 'max-w-md'} mx-auto bg-white dark:bg-gray-800 min-h-screen shadow-2xl relative transition-all duration-300 ease-in-out`}>
         
         {/* Header - only show on authenticated pages */}
-        {!isLanding && user && (
+        {!isLanding && user &&
           <header className="px-6 py-4 flex justify-between items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
               {currentPageName === 'Home' ? 'Dashboard' : currentPageName}
             </h1>
             <Link to={createPageUrl('Profile')}>
-              {userProfile?.profile_picture ? (
-                <img src={userProfile.profile_picture} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-indigo-100 dark:border-indigo-700" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold text-sm hover:ring-2 hover:ring-indigo-300 transition-all">
+              {userProfile?.profile_picture ?
+              <img src={userProfile.profile_picture} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-indigo-100 dark:border-indigo-700" /> :
+
+              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold text-sm hover:ring-2 hover:ring-indigo-300 transition-all">
                    {user.full_name?.[0] || user.email?.[0] || 'U'}
                 </div>
-              )}
+              }
             </Link>
           </header>
-        )}
+          }
 
         <main className={!isLanding && user ? "p-6" : ""}>
           {children}
         </main>
 
         {/* Bottom Navigation - only for authenticated users */}
-        {!isLanding && user && (
+        {!isLanding && user &&
           <nav className={`fixed bottom-6 left-4 right-4 backdrop-blur-md border rounded-2xl shadow-2xl px-2 py-3 z-50 mx-auto transition-all duration-300 ease-in-out max-w-md ${
-            darkMode 
-              ? 'bg-white/95 border-gray-200/50' 
-              : 'bg-gray-900/95 border-gray-700/50'
-          }`}>
+          darkMode ?
+          'bg-white/95 border-gray-200/50' :
+          'bg-gray-900/95 border-gray-700/50'}`
+          }>
             <div className="flex justify-around items-center">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
-                const isActive = (item.path === '/' && currentPageName === 'Home') || 
-                               (`/${currentPageName.toLowerCase()}` === item.path);
-                
+                const isActive = item.path === '/' && currentPageName === 'Home' ||
+                `/${currentPageName.toLowerCase()}` === item.path;
+
                 return (
-                  <Link 
-                    key={item.label} 
+                  <Link
+                    key={item.label}
                     to={createPageUrl(item.path === '/' ? 'Home' : item.path.substring(1))}
                     className={`flex flex-col items-center gap-1 transition-colors duration-200 ${
-                      isActive 
-                        ? (darkMode ? 'text-indigo-600' : 'text-indigo-400') 
-                        : (darkMode ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200')
-                    }`}
-                  >
+                    isActive ?
+                    darkMode ? 'text-indigo-600' : 'text-indigo-400' :
+                    darkMode ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'}`
+                    }>
+
                     <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
                     <span className="text-[10px] font-medium">{item.label}</span>
-                  </Link>
-                );
+                  </Link>);
+
               })}
               {/* Admin Link - conditionally rendered */}
-              {(userProfile?.is_admin || user?.role === 'admin') && (
-                <Link 
-                  to={createPageUrl('Admin')}
-                  className={`flex flex-col items-center gap-1 transition-colors duration-200 ${
-                    currentPageName === 'Admin' 
-                      ? (darkMode ? 'text-indigo-600' : 'text-indigo-400') 
-                      : (darkMode ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200')
-                  }`}
-                >
+              {(userProfile?.is_admin || user?.role === 'admin') &&
+              <Link
+                to={createPageUrl('Admin')}
+                className={`flex flex-col items-center gap-1 transition-colors duration-200 ${
+                currentPageName === 'Admin' ?
+                darkMode ? 'text-indigo-600' : 'text-indigo-400' :
+                darkMode ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'}`
+                }>
+
                   <ShieldCheck className="w-6 h-6" />
                   <span className="text-[10px] font-medium">Admin</span>
                 </Link>
-              )}
+              }
             </div>
           </nav>
-        )}
+          }
       </div>
     </div>
-    </ThemeContext.Provider>
-  );
+    </ThemeContext.Provider>);
+
 }
