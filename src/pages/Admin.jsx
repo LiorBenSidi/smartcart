@@ -159,13 +159,12 @@ export default function Admin() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="w-full">
             <Link to={createPageUrl('CatalogAdmin')}>
                 <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
                     <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
                 </Button>
             </Link>
-
         </div>
 
 
