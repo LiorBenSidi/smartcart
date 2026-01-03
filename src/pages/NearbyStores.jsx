@@ -1,9 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus } from 'lucide-react';
-import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icons in Leaflet with Webpack/Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom Icons
+const UserIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const StoreIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const RecommendedIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+// Component to handle map bounds and interactions
+function MapController({ center, bounds, selectedStore }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else if (center) {
+      map.setView(center, 14);
+    }
+  }, [center, bounds, map]);
+
+  useEffect(() => {
+    if (selectedStore) {
+        map.setView([selectedStore.latitude, selectedStore.longitude], 16, { animate: true });
+    }
+  }, [selectedStore, map]);
+
+  return null;
+}
 
 export default function NearbyStores() {
   const [stores, setStores] = useState([]);
@@ -12,11 +71,13 @@ export default function NearbyStores() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
-  const [locationPermission, setLocationPermission] = useState('prompt');
+  const [routeGeometry, setRouteGeometry] = useState(null);
+  const [calculatingRoute, setCalculatingRoute] = useState(false);
 
   const getUserLocation = () => {
     setLoading(true);
     setError(null);
+    setRouteGeometry(null);
 
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
@@ -27,8 +88,7 @@ export default function NearbyStores() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        setUserLocation({ latitude, longitude });
-        setLocationPermission('granted');
+        setUserLocation([latitude, longitude]);
         
         try {
           const response = await base44.functions.invoke('getNearbyStores', {
@@ -46,15 +106,10 @@ export default function NearbyStores() {
         }
       },
       (err) => {
-        setLocationPermission('denied');
         setError('Unable to get your location. Please enable location access.');
         setLoading(false);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -62,9 +117,41 @@ export default function NearbyStores() {
     getUserLocation();
   }, []);
 
-  const openInMaps = (store) => {
-    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`;
-    window.open(mapsUrl, '_blank');
+  const openDirections = async (store) => {
+    // 1. Calculate internal route to display on map
+    if (userLocation) {
+        setCalculatingRoute(true);
+        try {
+            const res = await base44.functions.invoke('getRoute', {
+                origin: { lat: userLocation[0], lon: userLocation[1] },
+                destination: { lat: store.latitude, lon: store.longitude },
+                mode: 'driving'
+            });
+            if (res.data && res.data.geometry) {
+                // OSRM returns GeoJSON (lon, lat), Leaflet needs [lat, lon]
+                const latLngs = res.data.geometry.coordinates.map(c => [c[1], c[0]]);
+                setRouteGeometry(latLngs);
+                setSelectedStore(store);
+            }
+        } catch (e) {
+            console.error("Routing failed", e);
+        } finally {
+            setCalculatingRoute(false);
+        }
+    }
+    
+    // 2. Open external directions (OSM or generic)
+    const url = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLocation[0]}%2C${userLocation[1]}%3B${store.latitude}%2C${store.longitude}`;
+    window.open(url, '_blank');
+  };
+
+  // Calculate bounds
+  const getBounds = () => {
+    if (!userLocation && stores.length === 0) return null;
+    const bounds = L.latLngBounds([]);
+    if (userLocation) bounds.extend(userLocation);
+    stores.forEach(s => bounds.extend([s.latitude, s.longitude]));
+    return bounds;
   };
 
   if (loading) {
@@ -112,51 +199,60 @@ export default function NearbyStores() {
         </Button>
       </div>
 
-      {/* Google Map */}
-      <Card className="overflow-hidden shadow-lg border-2 border-indigo-100 h-[400px]">
-        <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}>
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={userLocation ? { lat: userLocation.latitude, lng: userLocation.longitude } : { lat: 32.0853, lng: 34.7818 }}
-            zoom={13}
-          >
-            {userLocation && (
-              <Marker
-                position={{ lat: userLocation.latitude, lng: userLocation.longitude }}
-                icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-                title="You"
-              />
-            )}
-            {stores.map(store => (
-              <Marker
-                key={store.id}
-                position={{ lat: store.latitude, lng: store.longitude }}
-                icon={store.id === recommendedStore?.id 
-                  ? "http://maps.google.com/mapfiles/ms/icons/green-dot.png" 
-                  : "http://maps.google.com/mapfiles/ms/icons/red-dot.png"}
-                onClick={() => setSelectedStore(store)}
-              />
-            ))}
-            {selectedStore && (
-              <InfoWindow
-                position={{ lat: selectedStore.latitude, lng: selectedStore.longitude }}
-                onCloseClick={() => setSelectedStore(null)}
-              >
-                <div className="p-2 max-w-xs">
-                  <h4 className="font-bold text-sm mb-1">{selectedStore.name}</h4>
-                  <p className="text-xs text-gray-600 mb-2">{selectedStore.address_line}</p>
-                  <Button 
-                    size="sm" 
-                    className="w-full h-6 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-                    onClick={() => openInMaps(selectedStore)}
-                  >
-                    Navigate
-                  </Button>
-                </div>
-              </InfoWindow>
-            )}
-          </GoogleMap>
-        </LoadScript>
+      {/* Leaflet Map */}
+      <Card className="overflow-hidden shadow-lg border-2 border-indigo-100 h-[400px] relative z-0">
+        {typeof window !== 'undefined' && (
+             <MapContainer 
+                center={userLocation || [32.0853, 34.7818]} 
+                zoom={13} 
+                style={{ width: '100%', height: '100%' }}
+                scrollWheelZoom={false}
+             >
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapController 
+                    center={userLocation} 
+                    bounds={stores.length > 0 ? getBounds() : null} 
+                    selectedStore={selectedStore}
+                />
+                
+                {userLocation && (
+                    <Marker position={userLocation} icon={UserIcon}>
+                        <Popup>You are here</Popup>
+                    </Marker>
+                )}
+
+                {stores.map(store => (
+                    <Marker 
+                        key={store.id} 
+                        position={[store.latitude, store.longitude]}
+                        icon={store.id === recommendedStore?.id ? RecommendedIcon : StoreIcon}
+                        eventHandlers={{
+                            click: () => setSelectedStore(store),
+                        }}
+                    >
+                        <Popup>
+                             <div className="p-1">
+                                <h4 className="font-bold text-sm mb-1">{store.name}</h4>
+                                <p className="text-xs text-gray-600 mb-2">{store.address_line}</p>
+                                <Button 
+                                    size="sm" 
+                                    className="w-full h-6 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    onClick={() => openDirections(store)}
+                                >
+                                    {calculatingRoute && selectedStore?.id === store.id ? 'Loading...' : 'Navigate'}
+                                </Button>
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
+
+                {routeGeometry && <Polyline positions={routeGeometry} color="blue" />}
+
+             </MapContainer>
+        )}
       </Card>
 
       {/* Recommended Store */}
@@ -177,24 +273,17 @@ export default function NearbyStores() {
                 <p className="text-sm text-gray-600 mb-2">{recommendedStore.address_line}, {recommendedStore.city}</p>
                 
                 <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
-                  {!recommendedStore.drivingInfo && (
+                  {!recommendedStore.drivingInfo ? (
                     <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4 text-indigo-600" />
                         <span className="font-semibold">{recommendedStore.distance.toFixed(1)} km</span>
                     </div>
-                  )}
-                  {recommendedStore.drivingInfo && (
+                  ) : (
                       <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1" title="Driving">
                               <Car className="w-4 h-4 text-indigo-600" />
                               <span className="font-semibold">{recommendedStore.drivingInfo.duration} ({recommendedStore.drivingInfo.distance})</span>
                           </div>
-                          {recommendedStore.transitInfo && (
-                                <div className="flex items-center gap-1" title="Public Transport">
-                                  <Bus className="w-4 h-4 text-indigo-600" />
-                                  <span className="font-semibold">{recommendedStore.transitInfo.duration}</span>
-                              </div>
-                          )}
                       </div>
                   )}
                   {recommendedStore.phone_number && (
@@ -218,7 +307,7 @@ export default function NearbyStores() {
             </div>
 
             <Button 
-              onClick={() => openInMaps(recommendedStore)}
+              onClick={() => openDirections(recommendedStore)}
               className="w-full bg-indigo-600 hover:bg-indigo-700"
             >
               <Navigation className="w-4 h-4 mr-2" /> Get Directions
@@ -250,25 +339,17 @@ export default function NearbyStores() {
                     <p className="text-xs text-gray-500 mt-1">{store.address_line}, {store.city}</p>
                     
                     <div className="flex flex-col gap-1 mt-2 text-xs text-gray-600">
-                      {!store.drivingInfo && (
+                      {!store.drivingInfo ? (
                         <div className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
                             <span>{store.distance.toFixed(1)} km away</span>
                         </div>
-                      )}
-                      
-                      {store.drivingInfo && (
+                      ) : (
                            <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-1" title="Driving">
                                     <Car className="w-3 h-3 text-gray-500" />
                                     <span>{store.drivingInfo.duration} ({store.drivingInfo.distance})</span>
                                 </div>
-                                {store.transitInfo && (
-                                     <div className="flex items-center gap-1" title="Public Transport">
-                                        <Bus className="w-3 h-3 text-gray-500" />
-                                        <span>{store.transitInfo.duration}</span>
-                                    </div>
-                                )}
                             </div>
                       )}
 
@@ -294,7 +375,7 @@ export default function NearbyStores() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => openInMaps(store)}
+                    onClick={() => openDirections(store)}
                     className="flex-shrink-0"
                   >
                     <Navigation className="w-4 h-4" />

@@ -257,62 +257,34 @@ Deno.serve(async (req) => {
     }
 
 
-    // Enrich with Google Maps real distance/duration if API key is present
-    const googleApiKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
-    if (googleApiKey && userLat && userLon && topStores.length > 0) {
-      try {
-        const destinations = topStores.map(item =>
-          item.nearestBranch ? `${item.nearestBranch.latitude},${item.nearestBranch.longitude}` : ''
-        ).filter(d => d).join('|');
+    // Enrich with OSRM real distance/duration
+    if (userLat && userLon && topStores.length > 0) {
+        await Promise.all(topStores.map(async (item) => {
+            if (item.nearestBranch) {
+                try {
+                    const res = await base44.functions.invoke('getRoute', {
+                        origin: { lat: userLat, lon: userLon },
+                        destination: { lat: item.nearestBranch.latitude, lon: item.nearestBranch.longitude },
+                        mode: 'driving'
+                    });
 
-        if (destinations) {
-          const origin = `${userLat},${userLon}`;
-          
-          // Fetch Driving
-          const driveUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=driving&key=${googleApiKey}`;
-          const driveRes = await fetch(driveUrl);
-          const driveData = await driveRes.json();
+                    if (res.data && res.data.distance) {
+                        const distKm = (res.data.distance / 1000).toFixed(1) + " km";
+                        const minutes = Math.round(res.data.duration / 60);
+                        const durationText = minutes > 60 
+                            ? `${Math.floor(minutes/60)} hr ${minutes%60} min` 
+                            : `${minutes} min`;
 
-          // Fetch Transit
-          const transitUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=transit&key=${googleApiKey}`;
-          const transitRes = await fetch(transitUrl);
-          const transitData = await transitRes.json();
-
-          if (driveData.status === 'OK') {
-             const elements = driveData.rows[0].elements;
-             let validIndex = 0;
-             for (let i = 0; i < topStores.length; i++) {
-                if (topStores[i].nearestBranch) {
-                   if (elements[validIndex] && elements[validIndex].status === 'OK') {
-                      topStores[i].drivingInfo = {
-                         distance: elements[validIndex].distance.text,
-                         duration: elements[validIndex].duration.text
-                      };
-                   }
-                   validIndex++;
+                        item.drivingInfo = {
+                            distance: distKm,
+                            duration: durationText
+                        };
+                    }
+                } catch (e) {
+                    console.error("Routing error", e.message);
                 }
-             }
-          }
-
-          if (transitData.status === 'OK') {
-             const elements = transitData.rows[0].elements;
-             let validIndex = 0;
-             for (let i = 0; i < topStores.length; i++) {
-                if (topStores[i].nearestBranch) {
-                   if (elements[validIndex] && elements[validIndex].status === 'OK') {
-                      topStores[i].transitInfo = {
-                         distance: elements[validIndex].distance.text,
-                         duration: elements[validIndex].duration.text
-                      };
-                   }
-                   validIndex++;
-                }
-             }
-          }
-        }
-      } catch (err) {
-        console.error("Google Maps API error:", err);
-      }
+            }
+        }));
     }
 
     return Response.json({ topStores, optimizedCart });
