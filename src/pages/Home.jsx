@@ -317,7 +317,7 @@ export default function Home() {
                           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 h-full flex flex-col">
                               <div className="flex items-start justify-between mb-3">
                                   <div className={`p-2 rounded-lg ${
-                                      insight.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                                      insight.type === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                                   }`}>
                                       {insight.type === 'warning' ? <AlertCircle className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                   </div>
@@ -328,13 +328,13 @@ export default function Home() {
                               
                               <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-700">
                                   {insight.potential_savings > 0 ? (
-                                      <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded">
                                           Save ₪{insight.potential_savings.toFixed(2)}
                                       </span>
                                   ) : (
                                       <span className="text-xs text-gray-400">View Details</span>
                                   )}
-                                  <ChevronRight className="w-4 h-4 text-gray-300" />
+                                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
                               </div>
                           </div>
                       </Link>
@@ -455,7 +455,7 @@ export default function Home() {
                                 ) : (
                                     <>
                                         <span className="font-bold text-gray-900 dark:text-gray-100">₪{receipt.totalAmount?.toFixed(2)}</span>
-                                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                                        <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
                                     </>
                                 )}
                             </div>
