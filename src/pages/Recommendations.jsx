@@ -113,11 +113,11 @@ Return as JSON array with: type (savings/health/info), title, description, savin
         else if (rec.icon === 'info') iconComponent = Sparkles;
 
         return {
-          ...rec,
-          id: idx + 1,
-          color: rec.type === 'savings' ? 'text-green-600' : rec.type === 'health' ? 'text-emerald-600' : 'text-blue-600',
-          bg: rec.type === 'savings' ? 'bg-green-100' : rec.type === 'health' ? 'bg-emerald-100' : 'bg-blue-100',
-          icon: iconComponent
+        ...rec,
+        id: idx + 1,
+        color: rec.type === 'savings' ? 'text-green-600 dark:text-green-300' : rec.type === 'health' ? 'text-emerald-600 dark:text-emerald-300' : 'text-blue-600 dark:text-blue-300',
+        bg: rec.type === 'savings' ? 'bg-green-100 dark:bg-green-900/20' : rec.type === 'health' ? 'bg-emerald-100 dark:bg-emerald-900/20' : 'bg-blue-100 dark:bg-blue-900/20',
+        icon: iconComponent
         };
       });
 
@@ -133,8 +133,8 @@ Return as JSON array with: type (savings/health/info), title, description, savin
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
-        <p className="text-gray-500">Generating personalized recommendations...</p>
+        <Loader2 className="w-10 h-10 text-indigo-600 dark:text-indigo-400 animate-spin mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">Generating personalized recommendations...</p>
       </div>
     );
   }
@@ -153,9 +153,9 @@ Return as JSON array with: type (savings/health/info), title, description, savin
   if (recommendations.length === 0) {
     return (
       <div className="text-center py-20">
-        <Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Recommendations Yet</h3>
-        <p className="text-gray-500 mb-6">Scan some receipts to get personalized insights!</p>
+        <Sparkles className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No Recommendations Yet</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">Scan some receipts to get personalized insights!</p>
       </div>
     );
   }
@@ -164,11 +164,11 @@ Return as JSON array with: type (savings/health/info), title, description, savin
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-indigo-500" fill="currentColor" fillOpacity={0.2} />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-indigo-500 dark:text-indigo-400" fill="currentColor" fillOpacity={0.2} />
             Insights
           </h2>
-          <p className="text-gray-500 text-sm">AI-powered suggestions based on your shopping.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">AI-powered suggestions based on your shopping.</p>
         </div>
         <Button 
           variant="outline" 
@@ -189,8 +189,8 @@ Return as JSON array with: type (savings/health/info), title, description, savin
                 onClick={() => setFilter(f)}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                     filter === f 
-                    ? 'bg-gray-900 text-white' 
-                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900' 
+                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
             >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -205,17 +205,17 @@ Return as JSON array with: type (savings/health/info), title, description, savin
                 return rec.type === filter;
             })
             .map(rec => (
-            <Card key={rec.id} className="border-none shadow-sm hover:shadow-md transition-all duration-300">
+            <Card key={rec.id} className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800">
                 <CardContent className="p-5 flex gap-4">
                     <div className={`w-12 h-12 rounded-xl ${rec.bg} ${rec.color} flex items-center justify-center flex-shrink-0`}>
                         <rec.icon className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
                         <div className="flex justify-between items-start mb-1">
-                            <h3 className="font-bold text-gray-900 text-sm">{rec.title}</h3>
-                            <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{rec.savings}</span>
+                            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">{rec.title}</h3>
+                            <span className="text-[10px] font-bold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">{rec.savings}</span>
                         </div>
-                        <p className="text-sm text-gray-500 leading-relaxed">{rec.description}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{rec.description}</p>
                     </div>
                 </CardContent>
             </Card>
