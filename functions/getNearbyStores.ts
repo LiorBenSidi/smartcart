@@ -28,13 +28,29 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
-    // Fetch all stores (up to 1000)
-    const stores = await base44.entities.Store.list('-created_date', 1000);
+    // Fetch all stores and chains
+    const [stores, chains] = await Promise.all([
+        base44.entities.Store.list('-created_date', 1000),
+        base44.entities.Chain.list()
+    ]);
+
+    const chainMap = new Map(chains.map(c => [c.id, c]));
 
     // Filter stores within radius (if provided) and calculate distance
     const nearbyStores = stores
       .filter(store => store.latitude && store.longitude)
       .map(store => {
+        const chain = chainMap.get(store.chain_id);
+        return { 
+            ...store, 
+            distance: calculateDistance(latitude, longitude, store.latitude, store.longitude),
+            chain_name: chain?.name || 'Unknown Chain',
+            chain_logo: chain?.logo_url
+        };
+      })
+      .map(store => { // Legacy mapping structure kept for safety, but enriched above
+        return store; 
+      })
         const distance = calculateDistance(
           latitude, 
           longitude, 
