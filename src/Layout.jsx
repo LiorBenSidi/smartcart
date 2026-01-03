@@ -51,7 +51,7 @@ export default function Layout({ children, currentPageName }) {
   const isLanding = currentPageName === 'Landing';
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased pb-24 relative transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased pb-32 relative transition-colors duration-200">
       <div className="fixed bottom-24 right-6 z-[60] flex flex-col gap-2">
         <button
           onClick={() => setDarkMode(!darkMode)}
@@ -96,8 +96,8 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Bottom Navigation - only for authenticated users */}
         {!isLanding && user && (
-          <nav className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-3 z-50 mx-auto transition-all duration-300 ease-in-out ${isWebView ? 'w-full max-w-[1920px]' : 'max-w-md'}`}>
-            <div className="flex justify-between items-center">
+          <nav className="fixed bottom-6 left-4 right-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-2xl px-2 py-3 z-50 mx-auto transition-all duration-300 ease-in-out max-w-md">
+            <div className="flex justify-around items-center">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = (item.path === '/' && currentPageName === 'Home') || 
