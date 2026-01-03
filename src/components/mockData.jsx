@@ -86,5 +86,4 @@ export const NAV_ITEMS = [
   { label: "Stores", path: "/nearbystores", icon: MapPin },
   { label: "Tips", path: "/recommendations", icon: Sparkles },
   { label: "Compare", path: "/pricecomparison", icon: BarChart3 },
-  { label: "Profile", path: "/profile", icon: User },
 ];
