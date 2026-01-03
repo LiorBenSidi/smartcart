@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target } from 'lucide-react';
+import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 
 export default function NearbyStores() {
   const [stores, setStores] = useState([]);
@@ -10,6 +11,7 @@ export default function NearbyStores() {
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedStore, setSelectedStore] = useState(null);
   const [locationPermission, setLocationPermission] = useState('prompt');
 
   const getUserLocation = () => {
@@ -109,6 +111,53 @@ export default function NearbyStores() {
           <Navigation className="w-4 h-4" /> Refresh
         </Button>
       </div>
+
+      {/* Google Map */}
+      <Card className="overflow-hidden shadow-lg border-2 border-indigo-100 h-[400px]">
+        <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}>
+          <GoogleMap
+            mapContainerStyle={{ width: '100%', height: '100%' }}
+            center={userLocation ? { lat: userLocation.latitude, lng: userLocation.longitude } : { lat: 32.0853, lng: 34.7818 }}
+            zoom={13}
+          >
+            {userLocation && (
+              <Marker
+                position={{ lat: userLocation.latitude, lng: userLocation.longitude }}
+                icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                title="You"
+              />
+            )}
+            {stores.map(store => (
+              <Marker
+                key={store.id}
+                position={{ lat: store.latitude, lng: store.longitude }}
+                icon={store.id === recommendedStore?.id 
+                  ? "http://maps.google.com/mapfiles/ms/icons/green-dot.png" 
+                  : "http://maps.google.com/mapfiles/ms/icons/red-dot.png"}
+                onClick={() => setSelectedStore(store)}
+              />
+            ))}
+            {selectedStore && (
+              <InfoWindow
+                position={{ lat: selectedStore.latitude, lng: selectedStore.longitude }}
+                onCloseClick={() => setSelectedStore(null)}
+              >
+                <div className="p-2 max-w-xs">
+                  <h4 className="font-bold text-sm mb-1">{selectedStore.name}</h4>
+                  <p className="text-xs text-gray-600 mb-2">{selectedStore.address_line}</p>
+                  <Button 
+                    size="sm" 
+                    className="w-full h-6 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                    onClick={() => openInMaps(selectedStore)}
+                  >
+                    Navigate
+                  </Button>
+                </div>
+              </InfoWindow>
+            )}
+          </GoogleMap>
+        </LoadScript>
+      </Card>
 
       {/* Recommended Store */}
       {recommendedStore && (
