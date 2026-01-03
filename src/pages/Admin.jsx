@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, Database, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import SystemValidationPanel from '../components/SystemValidationPanel';
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -179,6 +180,8 @@ export default function Admin() {
         >
             <Trash2 className="w-4 h-4 mr-2" /> Delete ALL Data (Receipts, Products, Stores, Chains)
         </Button>
+
+        <SystemValidationPanel />
 
         {showConfirm && (
             <Card className="border-red-200 bg-red-50">
