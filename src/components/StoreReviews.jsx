@@ -85,7 +85,7 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                         placeholder="Share your experience (optional)..." 
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        className="bg-white"
+                        className="bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                         rows={3}
                     />
                     
