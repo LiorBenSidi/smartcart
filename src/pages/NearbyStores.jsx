@@ -250,6 +250,12 @@ export default function NearbyStores() {
                                   {idx === 0 ? '1st Place' : idx === 1 ? '2nd Place' : '3rd Place'}
                               </div>
                               <h3 className="font-bold text-sm text-gray-900 truncate w-full">{store.name}</h3>
+                              {store.average_rating > 0 && (
+                                  <div className="flex items-center justify-center gap-0.5 text-[10px] text-yellow-600 font-bold mb-1">
+                                      <Star className="w-3 h-3 fill-current" />
+                                      {store.average_rating.toFixed(1)} <span className="text-gray-400 font-normal">({store.review_count})</span>
+                                  </div>
+                              )}
                               <p className="text-xs text-gray-500 truncate w-full mb-2">{store.chain_name}</p>
                               <div className="flex items-center gap-1 text-xs font-semibold text-gray-700 bg-gray-50 px-2 py-1 rounded">
                                   <Car className="w-3 h-3" />
