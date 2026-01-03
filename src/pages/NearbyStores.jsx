@@ -154,6 +154,7 @@ export default function NearbyStores() {
                 id: store.chain_id,
                 name: store.chain_name || 'Unknown Chain',
                 color: getChainColor(store.chain_id),
+                logo: store.chain_logo,
                 stores: []
             };
         }
@@ -258,9 +259,17 @@ export default function NearbyStores() {
                       onClick={() => setExpandedChain(expandedChain === chain.id ? null : chain.id)}
                   >
                       <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm" style={{ background: chain.color }}>
-                              {chain.name.substring(0, 2).toUpperCase()}
-                          </div>
+                          {chain.logo ? (
+                              <img 
+                                  src={chain.logo} 
+                                  alt={chain.name} 
+                                  className="w-8 h-8 rounded-full object-contain bg-white shadow-sm border border-gray-100"
+                              />
+                          ) : (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm" style={{ background: chain.color }}>
+                                  {chain.name.substring(0, 2).toUpperCase()}
+                              </div>
+                          )}
                           <div>
                               <h4 className="font-bold text-gray-900">{chain.name}</h4>
                               <p className="text-xs text-gray-500">{chain.stores.length} locations nearby</p>
