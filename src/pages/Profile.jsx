@@ -102,9 +102,9 @@ export default function Profile() {
   return (
     <div className="space-y-8">
       {/* User Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="relative group">
-            <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 overflow-hidden border-2 border-indigo-50">
+            <div className="w-24 h-24 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300 overflow-hidden border-2 border-indigo-50 dark:border-indigo-800">
                 {profile.profile_picture ? (
                     <img src={profile.profile_picture} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -135,7 +135,7 @@ export default function Profile() {
             </div>
             <div className="space-y-1">
                 <Label>Email</Label>
-                <div className="text-sm text-gray-500 font-medium px-3 py-2 bg-gray-50 rounded-md border border-gray-200 max-w-md truncate">
+                <div className="text-sm text-gray-500 dark:text-gray-400 font-medium px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md border border-gray-200 dark:border-gray-600 max-w-md truncate">
                     {user?.email}
                 </div>
             </div>
@@ -143,16 +143,16 @@ export default function Profile() {
       </div>
 
       {/* Preferences Form */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-        <h3 className="font-bold text-gray-900 flex items-center gap-2">
-            <Settings className="w-4 h-4 text-gray-400" /> Preferences
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-6">
+        <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Settings className="w-4 h-4 text-gray-400 dark:text-gray-500" /> Preferences
         </h3>
 
         <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
                 <div className="flex items-center gap-2">
-                    {darkMode ? <Moon className="w-4 h-4 text-indigo-500" /> : <Sun className="w-4 h-4 text-orange-500" />}
-                    <Label htmlFor="dark-mode" className="cursor-pointer font-medium text-gray-700">Dark Mode</Label>
+                    {darkMode ? <Moon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> : <Sun className="w-4 h-4 text-orange-500" />}
+                    <Label htmlFor="dark-mode" className="cursor-pointer font-medium text-gray-700 dark:text-gray-200">Dark Mode</Label>
                 </div>
                 <Switch 
                     id="dark-mode" 
@@ -207,7 +207,7 @@ export default function Profile() {
                             className={`w-10 h-10 rounded-lg font-bold text-sm transition-colors ${
                                 profile.household_size === num 
                                 ? 'bg-indigo-600 text-white shadow-md' 
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                         >
                             {num}+
@@ -301,7 +301,7 @@ export default function Profile() {
 
       <Button 
         variant="outline" 
-        className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100"
+        className="w-full text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-100 dark:border-red-900/50"
         onClick={async () => {
             await base44.auth.logout(createPageUrl('Landing'));
         }}
