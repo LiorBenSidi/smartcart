@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { ThemeContext } from '../Layout';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2 } from 'lucide-react';
+import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2, Moon, Sun } from 'lucide-react';
 import Onboarding from '../components/Onboarding';
 
 export default function Profile() {
@@ -25,6 +26,7 @@ export default function Profile() {
   const [isSaved, setIsSaved] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const { darkMode, setDarkMode } = useContext(ThemeContext) || {};
 
   const loadProfile = async () => {
     try {
@@ -147,6 +149,18 @@ export default function Profile() {
         </h3>
 
         <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                    {darkMode ? <Moon className="w-4 h-4 text-indigo-500" /> : <Sun className="w-4 h-4 text-orange-500" />}
+                    <Label htmlFor="dark-mode" className="cursor-pointer font-medium text-gray-700">Dark Mode</Label>
+                </div>
+                <Switch 
+                    id="dark-mode" 
+                    checked={darkMode} 
+                    onCheckedChange={setDarkMode} 
+                />
+            </div>
+
             <div className="space-y-2">
                 <Label>Budget Focus</Label>
                 <Select 

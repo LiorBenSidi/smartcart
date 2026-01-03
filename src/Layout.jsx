@@ -5,6 +5,8 @@ import { base44 } from '@/api/base44Client';
 import { NAV_ITEMS } from '@/components/mockData';
 import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun } from 'lucide-react';
 
+export const ThemeContext = React.createContext();
+
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -51,6 +53,7 @@ export default function Layout({ children, currentPageName }) {
   const isLanding = currentPageName === 'Landing';
   
   return (
+    <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased pb-32 relative transition-colors duration-200">
       <div className="fixed bottom-24 right-6 z-[60] flex flex-col gap-2">
         <button
@@ -127,5 +130,6 @@ export default function Layout({ children, currentPageName }) {
         )}
       </div>
     </div>
+    </ThemeContext.Provider>
   );
 }
