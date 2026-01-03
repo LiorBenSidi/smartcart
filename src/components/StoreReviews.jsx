@@ -111,32 +111,32 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                         <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
                     </div>
                 ) : reviews.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                        <Star className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                        <Star className="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                         <p>No reviews yet. Be the first to review!</p>
                     </div>
                 ) : (
                     <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
                         {reviews.map((review) => (
-                            <div key={review.id} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                            <div key={review.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold text-xs">
+                                        <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-xs">
                                             {review.user_display_name?.[0]?.toUpperCase() || <User className="w-4 h-4" />}
                                         </div>
                                         <div>
-                                            <div className="font-semibold text-sm text-gray-900">{review.user_display_name || 'Anonymous'}</div>
-                                            <div className="text-xs text-gray-500">{format(new Date(review.created_date), 'PPP')}</div>
+                                            <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{review.user_display_name || 'Anonymous'}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(review.created_date), 'PPP')}</div>
                                         </div>
                                     </div>
                                     <div className="flex text-yellow-400">
                                         {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-current' : 'text-gray-200'}`} />
+                                            <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-current' : 'text-gray-200 dark:text-gray-600'}`} />
                                         ))}
                                     </div>
                                 </div>
                                 {review.comment && (
-                                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">{review.comment}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed">{review.comment}</p>
                                 )}
                             </div>
                         ))}
