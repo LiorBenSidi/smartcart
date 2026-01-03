@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, Camera } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, Camera, X } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 
@@ -252,17 +252,28 @@ export default function Upload() {
           ) : (
             <div className="relative">
               <img src={preview} alt="Receipt" className="w-full object-cover max-h-80 opacity-90" />
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="absolute top-4 right-4 bg-white/90 backdrop-blur shadow-sm hover:bg-white"
-                onClick={() => {
-                    setPreview(null);
-                    setFile(null);
-                }}
-              >
-                Retake
-              </Button>
+              <div className="absolute top-4 right-4 flex gap-2">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="bg-white/90 backdrop-blur shadow-sm hover:bg-white"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Retake
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="icon" 
+                  className="bg-white/90 backdrop-blur shadow-sm hover:bg-white text-gray-500"
+                  onClick={() => {
+                      setPreview(null);
+                      setFile(null);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
           <Input 
