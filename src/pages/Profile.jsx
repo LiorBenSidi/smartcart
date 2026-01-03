@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, UserCircle, Settings, Check, RefreshCw } from 'lucide-react';
+import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2 } from 'lucide-react';
 import Onboarding from '../components/Onboarding';
 
 export default function Profile() {
@@ -16,16 +17,20 @@ export default function Profile() {
     household_size: 1,
     age_range: '',
     user_role: '',
-    allergen_avoid_list: []
+    allergen_avoid_list: [],
+    profile_picture: ''
   });
   const [user, setUser] = useState(null);
+  const [fullName, setFullName] = useState('');
   const [isSaved, setIsSaved] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const loadProfile = async () => {
     try {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
+        setFullName(currentUser?.full_name || '');
         
         if (currentUser) {
             const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
@@ -45,6 +50,13 @@ export default function Profile() {
   const handleSave = async () => {
     // Save or Update logic
     try {
+        // Update user name if changed
+        if (user && fullName !== user.full_name) {
+            await base44.auth.updateMe({ full_name: fullName });
+            // Update local user state
+            setUser({ ...user, full_name: fullName });
+        }
+
         // Check if profile exists to decide update vs create
         const existing = await base44.entities.UserProfile.filter({ created_by: user.email });
         if (existing.length > 0) {
@@ -54,8 +66,27 @@ export default function Profile() {
         }
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 2000);
+        // Force reload to update header instantly if needed, or rely on react state if layout was listening (Layout listens to user/profile on mount, might need refresh)
+        window.location.reload(); 
     } catch(e) {
         console.error("Error saving profile", e);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+        const result = await base44.integrations.Core.UploadFile({ file });
+        if (result && result.file_url) {
+            setProfile(prev => ({ ...prev, profile_picture: result.file_url }));
+        }
+    } catch (error) {
+        console.error("Upload failed", error);
+    } finally {
+        setIsUploading(false);
     }
   };
 
@@ -69,13 +100,43 @@ export default function Profile() {
   return (
     <div className="space-y-8">
       {/* User Header */}
-      <div className="flex items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
-            <UserCircle className="w-8 h-8" />
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="relative group">
+            <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 overflow-hidden border-2 border-indigo-50">
+                {profile.profile_picture ? (
+                    <img src={profile.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                    <UserCircle className="w-12 h-12" />
+                )}
+                {isUploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                )}
+            </div>
+            <label className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-indigo-700 transition-all hover:scale-105">
+                <Camera className="w-4 h-4" />
+                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+            </label>
         </div>
-        <div>
-            <h2 className="text-xl font-bold text-gray-900">{user?.full_name || 'User'}</h2>
-            <p className="text-sm text-gray-500">{user?.email}</p>
+        
+        <div className="flex-1 space-y-3 w-full">
+            <div className="space-y-1">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input 
+                    id="fullName" 
+                    value={fullName} 
+                    onChange={(e) => setFullName(e.target.value)} 
+                    className="max-w-md"
+                    placeholder="Enter your full name"
+                />
+            </div>
+            <div className="space-y-1">
+                <Label>Email</Label>
+                <div className="text-sm text-gray-500 font-medium px-3 py-2 bg-gray-50 rounded-md border border-gray-200 max-w-md truncate">
+                    {user?.email}
+                </div>
+            </div>
         </div>
       </div>
 
