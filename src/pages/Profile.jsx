@@ -102,7 +102,7 @@ export default function Profile() {
   return (
     <div className="space-y-8">
       {/* User Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="bg-white px-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center gap-6 dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="relative group">
             <div className="w-24 h-24 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300 overflow-hidden border-2 border-indigo-50 dark:border-indigo-800">
                 {profile.profile_picture ?
