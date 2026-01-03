@@ -592,10 +592,10 @@ export default function SmartCart() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Current Best</p>
-                                <p className="text-2xl font-bold text-gray-900 mt-1">₪{optimizedCart.originalCost.toFixed(2)}</p>
-                                <p className="text-xs text-gray-400 mt-1">Single Store</p>
+                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold">Current Best</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">₪{optimizedCart.originalCost.toFixed(2)}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Single Store</p>
                             </div>
                             <div className="p-4 rounded-xl bg-violet-50 border border-violet-100 ring-2 ring-violet-200 ring-offset-2">
                                 <p className="text-xs text-violet-600 uppercase tracking-wide font-semibold">Optimized</p>
