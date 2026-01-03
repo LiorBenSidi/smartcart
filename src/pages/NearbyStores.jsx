@@ -98,8 +98,49 @@ export default function NearbyStores() {
 
   const createMarkerIcon = (store, isClosest) => {
       const color = getChainColor(store.chain_id);
+      const size = isClosest ? 48 : 32;
+
+      if (store.chain_logo) {
+          const html = `
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="
+                    width: ${size}px; 
+                    height: ${size}px; 
+                    background-color: white; 
+                    border-radius: 50%; 
+                    border: 2px solid ${isClosest ? '#FCD34D' : color}; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center;
+                    overflow: hidden;
+                    position: relative;
+                ">
+                    <img src="${store.chain_logo}" style="width: 80%; height: 80%; object-fit: contain;" />
+                </div>
+                <div style="
+                    width: 0; 
+                    height: 0; 
+                    border-left: 6px solid transparent; 
+                    border-right: 6px solid transparent; 
+                    border-top: 8px solid ${isClosest ? '#FCD34D' : color}; 
+                    margin-top: -1px;
+                "></div>
+                ${isClosest ? `<div style="margin-top: -${size+15}px; background: #F59E0B; color: white; font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);">Closest</div>` : ''}
+            </div>
+          `;
+          
+          return L.divIcon({
+              className: 'custom-logo-marker',
+              html: html,
+              iconSize: [size, size + 10],
+              iconAnchor: [size / 2, size + 8],
+              popupAnchor: [0, -size],
+          });
+      }
+
       const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${isClosest ? 48 : 32}" height="${isClosest ? 48 : 32}">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">
           <path fill="${color}" d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8z" stroke="white" stroke-width="1.5"/>
           <circle cx="12" cy="8" r="3.5" fill="white"/>
           ${isClosest ? `<circle cx="12" cy="8" r="1.5" fill="${color}"/><path d="M12 -4 L12 -12" stroke="${color}" stroke-width="2" />` : ''}
@@ -108,9 +149,9 @@ export default function NearbyStores() {
       return L.divIcon({
           className: 'custom-marker-icon',
           html: svg,
-          iconSize: [isClosest ? 48 : 32, isClosest ? 48 : 32],
-          iconAnchor: [isClosest ? 24 : 16, isClosest ? 48 : 32],
-          popupAnchor: [0, isClosest ? -48 : -32],
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size],
+          popupAnchor: [0, -size],
       });
   };
 
