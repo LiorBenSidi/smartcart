@@ -11,6 +11,8 @@ import SystemValidationPanel from '../components/SystemValidationPanel';
 export default function Admin() {
   const [users, setUsers] = useState([]);
   const [receipts, setReceipts] = useState([]);
+  const [productCount, setProductCount] = useState(0);
+  const [storeCount, setStoreCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -35,6 +37,12 @@ export default function Admin() {
             // Fetch real data
             const allReceipts = await base44.entities.Receipt.list();
             setReceipts(allReceipts);
+
+            const allProducts = await base44.entities.Product.list();
+            setProductCount(allProducts.length);
+
+            const allStores = await base44.entities.Store.list();
+            setStoreCount(allStores.length);
 
             // Fetch real users (admin only operation)
             const allUsers = await base44.entities.User.list();
@@ -148,13 +156,13 @@ export default function Admin() {
             <Card className="border-none shadow-sm bg-white">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 uppercase font-bold mb-1">Products</p>
-                    <h3 className="text-2xl font-bold text-slate-800">--</h3>
+                    <h3 className="text-2xl font-bold text-slate-800">{productCount}</h3>
                 </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-white">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 uppercase font-bold mb-1">Stores</p>
-                    <h3 className="text-2xl font-bold text-slate-800">--</h3>
+                    <h3 className="text-2xl font-bold text-slate-800">{storeCount}</h3>
                 </CardContent>
             </Card>
         </div>
