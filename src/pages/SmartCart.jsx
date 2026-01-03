@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight } from 'lucide-react';
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
   const [stores, setStores] = useState([]);
   const [products, setProducts] = useState([]);
   const [storeComparisons, setStoreComparisons] = useState([]);
+  const [optimizedCart, setOptimizedCart] = useState(null);
   const [loadingComparisons, setLoadingComparisons] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [savedCarts, setSavedCarts] = useState([]);
@@ -64,11 +65,12 @@ export default function SmartCart() {
         cartItems: cartItems.map((item) => ({ gtin: item.gtin, quantity: item.quantity })),
         userLat: userLocation?.lat,
         userLon: userLocation?.lon
-      });
-      setStoreComparisons(response.data.topStores || []);
-    } catch (error) {
-      console.error('Failed to load comparisons', error);
-    } finally {
+        });
+        setStoreComparisons(response.data.topStores || []);
+        setOptimizedCart(response.data.optimizedCart || null);
+        } catch (error) {
+        console.error('Failed to load comparisons', error);
+        } finally {
       setLoadingComparisons(false);
     }
   };
@@ -411,10 +413,55 @@ export default function SmartCart() {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
+                  </Card>
+                  ))}
+
+                  {/* Optimization Suggestion */}
+                  {optimizedCart && (
+                  <div className="mt-8">
+                  <div className="bg-gradient-to-r from-purple-100 to-indigo-100 p-6 rounded-2xl border border-purple-200">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-white p-2 rounded-full shadow-sm">
+                        <Split className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">Smart Split Optimization</h3>
+                        <p className="text-sm text-gray-600">Save more by splitting your shopping trip</p>
+                      </div>
+                      <div className="ml-auto text-right">
+                        <div className="text-2xl font-bold text-green-600">Save ₪{optimizedCart.savings.toFixed(2)}</div>
+                        <div className="text-xs text-gray-500">vs best single store</div>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="bg-white/50 rounded-xl p-4">
+                        <div className="text-sm text-gray-500 mb-1">Current Best Total</div>
+                        <div className="text-xl font-semibold text-gray-900">₪{optimizedCart.originalCost.toFixed(2)}</div>
+                      </div>
+                      <div className="bg-white rounded-xl p-4 border border-purple-200 shadow-sm">
+                        <div className="text-sm text-purple-600 mb-1 font-medium">Optimized Total</div>
+                        <div className="text-xl font-bold text-gray-900">₪{optimizedCart.totalCost.toFixed(2)}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                       <h4 className="font-semibold text-gray-900 mb-2 text-sm">How to split your cart:</h4>
+                       <div className="space-y-2 max-h-40 overflow-y-auto">
+                         {Array.from(new Set(optimizedCart.items.map(i => i.store?.name))).map(storeName => (
+                            <div key={storeName} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-gray-100">
+                                <span>{storeName}</span>
+                                <span className="text-gray-500">{optimizedCart.items.filter(i => i.store?.name === storeName).length} items</span>
+                            </div>
+                         ))}
+                       </div>
+                    </div>
+                  </div>
+                  </div>
+                  )}
+
+                  </div>
+                  ) : (
             <Card>
               <CardContent className="p-10 text-center text-gray-400">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />

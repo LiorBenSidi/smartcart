@@ -145,6 +145,72 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Smart Cart Optimization: Split Cart Strategy ---
+    // Calculate cheapest possible cost if we buy each item at its cheapest store
+    let splitCartTotal = 0;
+    let splitCartAvailableItems = 0;
+    const splitCartItems = []; // { gtin, store, price, quantity }
+
+    for (const cartItem of cartItems) {
+      let bestPrice = Infinity;
+      let bestStore = null;
+
+      // Scan all stores for this item
+      for (const [storeId, storePrices] of pricesByStore) {
+        if (storePrices.has(cartItem.gtin)) {
+           const price = storePrices.get(cartItem.gtin).current_price;
+           if (price < bestPrice) {
+             bestPrice = price;
+             bestStore = storesById.get(storeId);
+           }
+        }
+      }
+
+      // Fallback to chain prices if no specific store price
+      if (bestPrice === Infinity) {
+          for (const [chainId, chainPrices] of pricesByChain) {
+              if (chainPrices.has(cartItem.gtin)) {
+                  const price = chainPrices.get(cartItem.gtin).current_price;
+                  if (price < bestPrice) {
+                      bestPrice = price;
+                      // Just pick first store of this chain as representative?
+                      // Or indicate it's a chain-level price.
+                      const chain = chainsById.get(chainId);
+                      bestStore = { name: chain.name + " (Any Branch)", id: "chain_" + chainId };
+                  }
+              }
+          }
+      }
+
+      if (bestPrice !== Infinity) {
+        splitCartTotal += bestPrice * cartItem.quantity;
+        splitCartAvailableItems++;
+        splitCartItems.push({
+          gtin: cartItem.gtin,
+          store: bestStore,
+          price: bestPrice,
+          quantity: cartItem.quantity
+        });
+      }
+    }
+    
+    // Only suggest split cart if it offers savings > 5% compared to best single store
+    // and if we have a best single store to compare with
+    let optimizedCart = null;
+    if (topStores.length > 0) {
+        const bestSingleStoreTotal = topStores[0].totalCost;
+        if (splitCartTotal < bestSingleStoreTotal * 0.95 && splitCartAvailableItems === cartItems.length) {
+            optimizedCart = {
+                type: "SPLIT_CART",
+                totalCost: splitCartTotal,
+                originalCost: bestSingleStoreTotal,
+                savings: bestSingleStoreTotal - splitCartTotal,
+                items: splitCartItems
+            };
+        }
+    }
+
+
     // Enrich with Google Maps real distance/duration if API key is present
     const googleApiKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
     if (googleApiKey && userLat && userLon && topStores.length > 0) {
@@ -203,7 +269,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ topStores });
+    return Response.json({ topStores, optimizedCart });
 
   } catch (error) {
     console.error("Cart recommendations error:", error);

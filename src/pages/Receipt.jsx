@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles, TrendingDown, ArrowDownRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PriceComparisonReview from '../components/PriceComparisonReview';
@@ -56,10 +56,22 @@ export default function Receipt() {
     }
   };
 
-  const handleReviewConfirm = (confirmedReceipt) => {
+  const handleReviewConfirm = async (confirmedReceipt) => {
       setReceipt(confirmedReceipt);
-      // After confirmation, we can trigger insights or price comparison if needed
-      // For now, just showing the details page is enough as per requirements
+      
+      // Trigger economic analysis
+      try {
+          const analysisRes = await base44.functions.invoke('analyzeReceiptEconomics', { receiptId: confirmedReceipt.id });
+          if (analysisRes.data.success) {
+               // Reload receipt to get new insights
+               const refreshed = await base44.entities.Receipt.filter({ id: confirmedReceipt.id });
+               if (refreshed.length > 0) {
+                   setReceipt(refreshed[0]);
+               }
+          }
+      } catch (e) {
+          console.error("Analysis failed", e);
+      }
   };
 
   const handleItemChange = (index, field, value) => {
@@ -652,7 +664,24 @@ export default function Receipt() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="lg:col-span-2 space-y-6">
+          
+          {/* Overpay Alert */}
+          {receipt.insights?.some(i => i.type === 'OVERPAY_RECEIPT') && (
+              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-4">
+                  <div className="bg-red-100 p-2 rounded-full">
+                      <TrendingDown className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                      <h3 className="font-bold text-red-900">Overpayment Detected</h3>
+                      <p className="text-red-700 text-sm">
+                          {receipt.insights.find(i => i.type === 'OVERPAY_RECEIPT').message}
+                      </p>
+                  </div>
+              </div>
+          )}
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -688,7 +717,15 @@ export default function Receipt() {
                                           </div>
                                       </div>
                                   </div>
-                                  <span className="font-semibold text-gray-900">₪{item.total.toFixed(2)}</span>
+                                  <div className="text-right">
+                                    <div className="font-semibold text-gray-900">₪{item.total.toFixed(2)}</div>
+                                    {receipt.insights?.find(insight => insight.type === 'OVERPAY_ITEM' && insight.message.includes(item.name)) && (
+                                        <div className="text-xs text-red-500 flex items-center justify-end gap-1">
+                                            <ArrowDownRight className="w-3 h-3" />
+                                            Overpaid
+                                        </div>
+                                    )}
+                                  </div>
                               </div>
                           ))}
                       </div>
