@@ -80,7 +80,7 @@ export default function SystemValidationPanel() {
             <CardHeader className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 pb-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
+                        <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100">
                             System Validation
                             {latestResult && (
                                 <Badge variant="outline" className={getStatusColor(latestResult.status)}>
