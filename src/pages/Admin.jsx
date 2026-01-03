@@ -216,7 +216,7 @@ export default function Admin() {
                     <TableRow className="dark:border-gray-700">
                         <TableHead className="dark:text-gray-400">Email</TableHead>
                         <TableHead className="dark:text-gray-400">Role</TableHead>
-                        <TableHead className="text-right dark:text-gray-400">Receipts</TableHead>
+                        <TableHead className="text-left dark:text-gray-400">Receipts</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -228,7 +228,7 @@ export default function Admin() {
                                     {user.role}
                                 </span>
                             </TableCell>
-                            <TableCell className="text-right text-gray-900 dark:text-gray-300">{user.receipts}</TableCell>
+                            <TableCell className="text-left text-gray-900 dark:text-gray-300">{user.receipts}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
