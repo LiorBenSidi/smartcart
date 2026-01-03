@@ -597,10 +597,10 @@ export default function SmartCart() {
                                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">₪{optimizedCart.originalCost.toFixed(2)}</p>
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Single Store</p>
                             </div>
-                            <div className="p-4 rounded-xl bg-violet-50 border border-violet-100 ring-2 ring-violet-200 ring-offset-2">
-                                <p className="text-xs text-violet-600 uppercase tracking-wide font-semibold">Optimized</p>
-                                <p className="text-2xl font-bold text-violet-700 mt-1">₪{optimizedCart.totalCost.toFixed(2)}</p>
-                                <p className="text-xs text-violet-400 mt-1">Multi-Store Split</p>
+                            <div className="p-4 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 ring-2 ring-violet-200 dark:ring-violet-800 ring-offset-2 dark:ring-offset-gray-900">
+                                <p className="text-xs text-violet-600 dark:text-violet-400 uppercase tracking-wide font-semibold">Optimized</p>
+                                <p className="text-2xl font-bold text-violet-700 dark:text-violet-300 mt-1">₪{optimizedCart.totalCost.toFixed(2)}</p>
+                                <p className="text-xs text-violet-400 dark:text-violet-500 mt-1">Multi-Store Split</p>
                             </div>
                         </div>
 
