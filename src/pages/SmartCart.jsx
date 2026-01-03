@@ -575,9 +575,9 @@ export default function SmartCart() {
                   {optimizedCart && (
                   <div className="mt-8">
                   <div className="bg-gradient-to-br from-violet-600 to-indigo-700 text-white p-1 rounded-2xl shadow-xl">
-                      <div className="bg-white rounded-xl p-6">
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="h-12 w-12 bg-violet-100 rounded-full flex items-center justify-center">
+                            <div className="h-12 w-12 bg-violet-100 dark:bg-violet-900/50 rounded-full flex items-center justify-center">
                                 <Split className="w-6 h-6 text-violet-600" />
                             </div>
                             <div>
