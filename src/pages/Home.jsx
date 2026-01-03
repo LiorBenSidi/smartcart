@@ -237,11 +237,11 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
-        <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-6 text-indigo-600">
+        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6 text-indigo-600 dark:text-indigo-400">
           <ShoppingBag className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-        <p className="text-gray-500 mb-8 max-w-xs">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Welcome Back</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-xs">
           Please sign in to view your dashboard and grocery insights.
         </p>
         <Button 
@@ -292,10 +292,10 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-none shadow-sm">
+        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
           <CardContent className="p-5">
             <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total Receipts</p>
-            <h2 className="text-2xl font-bold text-gray-900 mt-1">{receipts.length}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{receipts.length}</h2>
             <div className="flex items-center mt-2 text-gray-400 text-xs">
               <Plus className="w-3 h-3 mr-1" />
               <span>{thisMonthReceipts.length} new this month</span>
@@ -307,26 +307,26 @@ export default function Home() {
       {/* Top Insights Section */}
       {insights.length > 0 && (
           <section>
-              <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-4 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-indigo-600" />
                   Top Savings Opportunities
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {insights.map((insight, idx) => (
                       <Link key={idx} to={`${createPageUrl('Receipt')}?id=${insight.receiptId}`}>
-                          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 h-full flex flex-col">
+                          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 h-full flex flex-col">
                               <div className="flex items-start justify-between mb-3">
                                   <div className={`p-2 rounded-lg ${
                                       insight.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
                                   }`}>
                                       {insight.type === 'warning' ? <AlertCircle className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                   </div>
-                                  <span className="text-xs text-gray-400">{insight.store} • {format(new Date(insight.receiptDate), 'MMM d')}</span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">{insight.store} • {format(new Date(insight.receiptDate), 'MMM d')}</span>
                               </div>
-                              <h4 className="font-bold text-gray-900 mb-1">{insight.message}</h4>
-                              <p className="text-xs text-gray-500 line-clamp-2 mb-4 flex-1">{insight.explanation_text}</p>
+                              <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-1">{insight.message}</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-1">{insight.explanation_text}</p>
                               
-                              <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
+                              <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-700">
                                   {insight.potential_savings > 0 ? (
                                       <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
                                           Save ₪{insight.potential_savings.toFixed(2)}
@@ -348,9 +348,9 @@ export default function Home() {
         {chartData.length > 0 && (
         <section className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-gray-900 text-lg">Spending by Category</h3>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Spending by Category</h3>
           </div>
-          <Card className="border-none shadow-sm bg-white overflow-hidden h-[300px] lg:h-[400px]">
+          <Card className="border-none shadow-sm bg-white dark:bg-gray-800 overflow-hidden h-[300px] lg:h-[400px]">
             <CardContent className="p-4 pt-8 h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} barGap={8}>
@@ -390,7 +390,7 @@ export default function Home() {
         {/* Recent Receipts */}
         <section className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-gray-900 text-lg">Recent Receipts</h3>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Recent Receipts</h3>
             <Link to={createPageUrl('upload')} className="text-xs text-indigo-600 font-semibold hover:underline flex items-center">
               <Plus className="w-3 h-3 mr-1" /> Scan New
             </Link>
@@ -398,9 +398,9 @@ export default function Home() {
           
           <div className="space-y-3">
             {recentReceipts.length === 0 ? (
-               <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
-                  <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">No receipts scanned yet.</p>
+               <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                  <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">No receipts scanned yet.</p>
                </div>
             ) : (
               recentReceipts.map((receipt) => {
@@ -409,16 +409,16 @@ export default function Home() {
 
                   return (
                     <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
-                        <div className={`bg-white p-4 rounded-xl shadow-sm border flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99] ${
-                            isPending ? 'border-indigo-200 bg-indigo-50/30' : 
-                            isFailed ? 'border-red-200 bg-red-50/30' : 
-                            'border-gray-100'
+                        <div className={`bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99] ${
+                            isPending ? 'border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/20' : 
+                            isFailed ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/20' : 
+                            'border-gray-100 dark:border-gray-700'
                         }`}>
                             <div className="flex items-center gap-4">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                                    isPending ? 'bg-indigo-100 border-indigo-200' :
-                                    isFailed ? 'bg-red-100 border-red-200' :
-                                    'bg-gray-50 border-gray-100'
+                                    isPending ? 'bg-indigo-100 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700' :
+                                    isFailed ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700' :
+                                    'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600'
                                 }`}>
                                     {isPending ? (
                                         <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
@@ -429,7 +429,7 @@ export default function Home() {
                                     )}
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-gray-900 text-sm">
+                                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
                                         {isPending ? 'Processing...' : receipt.storeName}
                                     </h4>
                                     <p className={`text-xs ${
@@ -454,7 +454,7 @@ export default function Home() {
                                     </span>
                                 ) : (
                                     <>
-                                        <span className="font-bold text-gray-900">₪{receipt.totalAmount?.toFixed(2)}</span>
+                                        <span className="font-bold text-gray-900 dark:text-gray-100">₪{receipt.totalAmount?.toFixed(2)}</span>
                                         <ChevronRight className="w-4 h-4 text-gray-300" />
                                     </>
                                 )}
