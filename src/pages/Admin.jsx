@@ -19,47 +19,47 @@ export default function Admin() {
 
   useEffect(() => {
     const fetchAdminData = async () => {
-        try {
-            const user = await base44.auth.me();
-            
-            // Check admin status via UserProfile
-            let isAdmin = user.role === 'admin';
-            if (!isAdmin) {
-                const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-                isAdmin = profiles.length > 0 && profiles[0].is_admin;
-            }
+      try {
+        const user = await base44.auth.me();
 
-            if (!isAdmin) {
-                window.location.href = '/'; // Redirect if not admin
-                return;
-            }
-
-            // Fetch real data
-            const allReceipts = await base44.entities.Receipt.list();
-            setReceipts(allReceipts);
-
-            const allProducts = await base44.entities.Product.list();
-            setProductCount(allProducts.length);
-
-            const allStores = await base44.entities.Store.list();
-            setStoreCount(allStores.length);
-
-            // Fetch real users (admin only operation)
-            const allUsers = await base44.entities.User.list();
-            
-            // Calculate stats
-            const usersWithStats = allUsers.map(u => ({
-                ...u,
-                receipts: allReceipts.filter(r => r.created_by === u.email).length
-            }));
-            setUsers(usersWithStats);
-
-        } catch (e) {
-            console.error("Admin access denied or error", e);
-            setIsLoading(false);
-        } finally {
-            setIsLoading(false);
+        // Check admin status via UserProfile
+        let isAdmin = user.role === 'admin';
+        if (!isAdmin) {
+          const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+          isAdmin = profiles.length > 0 && profiles[0].is_admin;
         }
+
+        if (!isAdmin) {
+          window.location.href = '/'; // Redirect if not admin
+          return;
+        }
+
+        // Fetch real data
+        const allReceipts = await base44.entities.Receipt.list();
+        setReceipts(allReceipts);
+
+        const allProducts = await base44.entities.Product.list();
+        setProductCount(allProducts.length);
+
+        const allStores = await base44.entities.Store.list();
+        setStoreCount(allStores.length);
+
+        // Fetch real users (admin only operation)
+        const allUsers = await base44.entities.User.list();
+
+        // Calculate stats
+        const usersWithStats = allUsers.map((u) => ({
+          ...u,
+          receipts: allReceipts.filter((r) => r.created_by === u.email).length
+        }));
+        setUsers(usersWithStats);
+
+      } catch (e) {
+        console.error("Admin access denied or error", e);
+        setIsLoading(false);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchAdminData();
   }, []);
@@ -74,9 +74,9 @@ export default function Admin() {
       });
       setReceipts([]);
       setShowConfirm(false);
-      
+
       // Update user stats
-      const updatedUsers = users.map(u => ({ ...u, receipts: 0 }));
+      const updatedUsers = users.map((u) => ({ ...u, receipts: 0 }));
       setUsers(updatedUsers);
     } catch (error) {
       console.error('Failed to delete receipts', error);
@@ -91,35 +91,35 @@ export default function Admin() {
       // Delete in order to respect dependencies
       const allReceipts = await base44.entities.Receipt.list();
       for (const r of allReceipts) await base44.entities.Receipt.delete(r.id);
-      
+
       const receiptItems = await base44.entities.ReceiptItem.list();
       for (const r of receiptItems) await base44.entities.ReceiptItem.delete(r.id);
-      
+
       const receiptInsights = await base44.entities.ReceiptInsight.list();
       for (const r of receiptInsights) await base44.entities.ReceiptInsight.delete(r.id);
-      
+
       const savedCarts = await base44.entities.SavedCart.list();
       for (const r of savedCarts) await base44.entities.SavedCart.delete(r.id);
-      
+
       const productPrices = await base44.entities.ProductPrice.list();
       for (const r of productPrices) await base44.entities.ProductPrice.delete(r.id);
-      
+
       const products = await base44.entities.Product.list();
       for (const r of products) await base44.entities.Product.delete(r.id);
-      
+
       const promotions = await base44.entities.Promotion.list();
       for (const r of promotions) await base44.entities.Promotion.delete(r.id);
-      
+
       const stores = await base44.entities.Store.list();
       for (const r of stores) await base44.entities.Store.delete(r.id);
-      
+
       const chains = await base44.entities.Chain.list();
       for (const r of chains) await base44.entities.Chain.delete(r.id);
-      
+
       setReceipts([]);
       setShowConfirm(false);
-      
-      const updatedUsers = users.map(u => ({ ...u, receipts: 0 }));
+
+      const updatedUsers = users.map((u) => ({ ...u, receipts: 0 }));
       setUsers(updatedUsers);
     } catch (error) {
       console.error('Failed to delete all data', error);
@@ -179,35 +179,35 @@ export default function Admin() {
 
         <SystemValidationPanel />
 
-        {showConfirm && (
-            <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+        {showConfirm &&
+      <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
                 <CardContent className="p-4 space-y-3">
                     <h3 className="font-bold text-red-900 dark:text-red-300">⚠️ Confirm Deletion</h3>
                     <p className="text-sm text-red-700 dark:text-red-400">
                         Are you sure you want to delete all {receipts.length} receipts? This action cannot be undone.
                     </p>
                     <div className="flex gap-2">
-                        <Button 
-                            variant="outline" 
-                            className="flex-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300" 
-                            onClick={() => setShowConfirm(false)}
-                            disabled={isDeleting}
-                        >
+                        <Button
+              variant="outline"
+              className="flex-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
+              onClick={() => setShowConfirm(false)}
+              disabled={isDeleting}>
+
                             Cancel
                         </Button>
-                        <Button 
-                            className="flex-1 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600" 
-                            onClick={handleDeleteAllReceipts}
-                            disabled={isDeleting}
-                        >
+                        <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+              onClick={handleDeleteAllReceipts}
+              disabled={isDeleting}>
+
                             {isDeleting ? 'Deleting...' : 'Delete All'}
                         </Button>
                     </div>
                 </CardContent>
             </Card>
-        )}
+      }
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden text-[7px]">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="font-bold text-sm text-gray-700 dark:text-gray-200">User Database</h3>
             </div>
@@ -216,24 +216,24 @@ export default function Admin() {
                     <TableRow className="dark:border-gray-700">
                         <TableHead className="dark:text-gray-400">Email</TableHead>
                         <TableHead className="dark:text-gray-400">Role</TableHead>
-                        <TableHead className="text-left dark:text-gray-400">Receipts</TableHead>
+                        <TableHead className="text-muted-foreground font-medium text-left h-10 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-gray-400">Receipts</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {users.map((user) => (
-                        <TableRow key={user.id} className="dark:border-gray-700">
+                    {users.map((user) =>
+            <TableRow key={user.id} className="dark:border-gray-700">
                             <TableCell className="font-medium text-gray-900 dark:text-gray-200">{user.email}</TableCell>
                             <TableCell>
                                 <span className={`text-xs px-2 py-1 rounded-full font-bold ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                     {user.role}
                                 </span>
                             </TableCell>
-                            <TableCell className="text-left text-gray-900 dark:text-gray-300">{user.receipts}</TableCell>
+                            <TableCell className="text-right text-gray-900 dark:text-gray-300">{user.receipts}</TableCell>
                         </TableRow>
-                    ))}
+            )}
                 </TableBody>
             </Table>
         </div>
-    </div>
-  );
+    </div>);
+
 }
