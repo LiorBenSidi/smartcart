@@ -38,7 +38,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white flex flex-col">
-      <div className="bg-slate-700 mx-auto p-8 text-center flex-1 flex flex-col items-center justify-center max-w-md w-full">
+      <div className="bg-slate-800 mx-auto p-8 text-center flex-1 flex flex-col items-center justify-center max-w-md w-full">
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -55,11 +55,11 @@ export default function Landing() {
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
+          transition={{ delay: 0.2, duration: 0.6 }} className="text-indigo-600 mb-4 text-4xl font-extrabold tracking-tight">Smart Grocery
+Assistant
 
-          Smart Grocery <br />
-          <span className="text-indigo-600">Assistant</span>
+
+
         </motion.h1>
 
         <motion.p
@@ -147,8 +147,8 @@ export default function Landing() {
             </>
           }
           
-          <p className="text-xs text-gray-400 mt-6">Step 1 Prototype • Powered by Gemini Pro 3
-
+          <p className="text-xs text-gray-400 mt-6">Demo • Powered by Gemini 3 Pro
+Lior Ben Sidi & Yarin Katan
           </p>
         </motion.div>
 
