@@ -581,8 +581,8 @@ export default function SmartCart() {
                                 <Split className="w-6 h-6 text-violet-600" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900">Smart Cart Optimization</h3>
-                                <p className="text-sm text-gray-500">Split your cart to maximize savings</p>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Smart Cart Optimization</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Split your cart to maximize savings</p>
                             </div>
                             <div className="ml-auto">
                                 <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200 text-sm px-3 py-1">
