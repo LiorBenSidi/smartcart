@@ -228,7 +228,7 @@ export default function Admin() {
                                     {user.role}
                                 </span>
                             </TableCell>
-                            <TableCell className="text-right dark:text-gray-300">{user.receipts}</TableCell>
+                            <TableCell className="text-right text-gray-900 dark:text-gray-300">{user.receipts}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
