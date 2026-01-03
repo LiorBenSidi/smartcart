@@ -147,9 +147,8 @@ export default function Landing() {
             </>
           }
           
-          <p className="text-xs text-gray-400 mt-6">Step 1 Prototype • Powered by Gemini Pro 3
-
-          </p>
+          <p className="text-xs text-gray-400 mt-6">Demo • Powered by Gemini 3 Pro</p>
+          <p className="text-xs text-gray-400 mt-6">Lior Ben Sidi & Yarin Katan</p>
         </motion.div>
 
         <div className="mt-16 grid grid-cols-2 gap-4 w-full">
