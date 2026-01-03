@@ -28,10 +28,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
-    // Fetch all stores and chains
+    // Fetch all stores and chains (limit 1000 for both to cover everything)
     const [stores, chains] = await Promise.all([
         base44.entities.Store.list('-created_date', 1000),
-        base44.entities.Chain.list()
+        base44.entities.Chain.list('-created_date', 1000)
     ]);
 
     const chainMap = new Map(chains.map(c => [c.id, c]));
@@ -40,24 +40,21 @@ Deno.serve(async (req) => {
     const nearbyStores = stores
       .filter(store => store.latitude && store.longitude)
       .map(store => {
-        const chain = chainMap.get(store.chain_id);
+        // Handle case where chain_id might be an object (expanded relation) or string
+        const chainId = typeof store.chain_id === 'object' && store.chain_id !== null 
+            ? store.chain_id.id 
+            : store.chain_id;
+            
+        const chain = chainMap.get(chainId);
+        
         return { 
             ...store, 
             distance: calculateDistance(latitude, longitude, store.latitude, store.longitude),
             chain_name: chain?.name || 'Unknown Chain',
-            chain_logo: chain?.logo_url
+            chain_logo: chain?.logo_url,
+            // Keep original chain_id for consistent reference
+            chain_id: chainId
         };
-      })
-      .map(store => { // Legacy mapping structure kept for safety, but enriched above
-        return store; 
-      })
-        const distance = calculateDistance(
-          latitude, 
-          longitude, 
-          store.latitude, 
-          store.longitude
-        );
-        return { ...store, distance };
       })
       .filter(store => !radius || store.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
@@ -74,7 +71,9 @@ Deno.serve(async (req) => {
       let score = 0;
       
       // Proximity score (closer is better)
-      score += (radius - store.distance) / radius * 30;
+      // Assuming 5km radius logic for scoring, but valid for larger if radius not set
+      const scoreRadius = radius || 10;
+      score += Math.max(0, (scoreRadius - store.distance) / scoreRadius * 30);
 
       // User preference score (if they've shopped there before)
       const storeReceipts = receipts.filter(r => r.store_id === store.id);
@@ -104,6 +103,7 @@ Deno.serve(async (req) => {
     const recommendedStore = storesWithScores[0];
 
     // Enrich with OSRM real distance/duration
+    // Only fetch for top 10 stores to avoid overloading OSRM or timeout
     const storesToEnrich = storesWithScores.slice(0, 10);
     
     // Process in parallel
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       nearbyStores: storesWithScores,
-      recommendedStore: storesWithScores[0], // re-assign in case it was enriched (it's the first element)
+      recommendedStore: storesWithScores[0],
       totalFound: storesWithScores.length
     });
 
