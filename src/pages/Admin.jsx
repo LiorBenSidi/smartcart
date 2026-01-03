@@ -165,13 +165,7 @@ export default function Admin() {
                     <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
                 </Button>
             </Link>
-            <Button 
-                className="w-full bg-red-600 hover:bg-red-700" 
-                onClick={() => setShowConfirm(true)}
-                disabled={receipts.length === 0}
-            >
-                <Trash2 className="w-4 h-4 mr-2" /> Delete All Receipts
-            </Button>
+
         </div>
 
 
