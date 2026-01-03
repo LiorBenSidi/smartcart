@@ -54,8 +54,8 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
 
     return (
         <div className="space-y-6">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="font-bold text-gray-900 mb-3">Write a Review for {storeName}</h3>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-3">Write a Review for {storeName}</h3>
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
