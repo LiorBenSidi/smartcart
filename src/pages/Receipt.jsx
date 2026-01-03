@@ -735,31 +735,61 @@ export default function Receipt() {
           </div>
 
           {/* Insights Section - Separate Card on Desktop */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
              {receipt.insights && receipt.insights.length > 0 ? (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
+                <>
+                {/* Savings & Overpay Insights */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="bg-gray-50 p-4 border-b border-gray-100">
                         <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
-                            <Tag className="w-3 h-3" /> AI Smart Insights
+                            <Coins className="w-3 h-3" /> Financial Insights
                         </h4>
                     </div>
                     <div className="p-4 space-y-3">
-                        {receipt.insights.map((insight, idx) => (
-                            <div 
-                                key={idx} 
-                                className={`p-3 rounded-lg border text-sm flex items-start gap-3 ${
-                                    insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-800' : 
-                                    insight.type === 'saving' ? 'bg-green-50 border-green-100 text-green-800' :
-                                    'bg-blue-50 border-blue-100 text-blue-800'
-                                }`}
-                            >
-                                {insight.type === 'warning' && <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
-                                {insight.type === 'saving' && <Coins className="w-4 h-4 mt-0.5 flex-shrink-0" />}
-                                <p>{insight.message}</p>
+                        {receipt.insights.filter(i => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving', 'warning'].includes(i.type)).map((insight, idx) => (
+                            <div key={idx} className={`p-3 rounded-lg border text-sm flex items-start gap-3 ${
+                                insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-800' :
+                                'bg-red-50 border-red-100 text-red-800'
+                            }`}>
+                                {insight.type === 'warning' ? <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> : <TrendingDown className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+                                <div>
+                                    <p className="font-bold">{insight.message}</p>
+                                    <p className="text-xs mt-1 opacity-90">{insight.explanation_text}</p>
+                                </div>
                             </div>
                         ))}
+                        {receipt.insights.filter(i => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving'].includes(i.type)).length === 0 && (
+                            <p className="text-sm text-gray-500 text-center py-2">No overpayments detected! Good job.</p>
+                        )}
                     </div>
                 </div>
+
+                {/* What-if / Swaps */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 border-b border-indigo-100">
+                        <h4 className="text-xs font-semibold text-indigo-700 uppercase tracking-wider flex items-center gap-2">
+                            <ArrowRightLeft className="w-3 h-3" /> "What If" Simulator
+                        </h4>
+                    </div>
+                    <div className="p-4 space-y-3">
+                        <p className="text-xs text-gray-500 mb-2">Hypothetical savings if you switched products:</p>
+                        {receipt.insights.filter(i => i.type === 'alternative').map((insight, idx) => (
+                            <div key={idx} className="p-3 rounded-lg border border-indigo-100 bg-indigo-50/50 text-indigo-900 text-sm">
+                                <div className="flex items-start gap-2">
+                                    <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-indigo-500" />
+                                    <div>
+                                        <p className="font-semibold">{insight.message}</p>
+                                        <p className="text-xs mt-1 text-indigo-700">{insight.explanation_text}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {receipt.insights.filter(i => i.type === 'alternative').length === 0 && (
+                            <p className="text-sm text-gray-400 text-center py-2">No swap opportunities found for this receipt.</p>
+                        )}
+                    </div>
+                </div>
+                </>
              ) : (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center text-gray-400 text-sm">
                     No specific insights for this receipt.
