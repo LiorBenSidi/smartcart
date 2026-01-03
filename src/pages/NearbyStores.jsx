@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal } from 'lucide-react';
+import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import StoreReviews from '@/components/StoreReviews';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -275,10 +277,31 @@ export default function NearbyStores() {
                         eventHandlers={{ click: () => setSelectedStore(store) }}
                     >
                         <Popup>
-                            <div className="p-1">
-                                <h4 className="font-bold text-sm">{store.name}</h4>
+                            <div className="p-1 min-w-[200px]">
+                                <div className="flex items-center justify-between mb-1">
+                                    <h4 className="font-bold text-sm">{store.name}</h4>
+                                    {store.average_rating > 0 && (
+                                        <div className="flex items-center text-xs text-yellow-600 font-bold">
+                                            <Star className="w-3 h-3 fill-current mr-0.5" />
+                                            {store.average_rating.toFixed(1)}
+                                        </div>
+                                    )}
+                                </div>
                                 <p className="text-xs text-gray-600 mb-2">{store.address_line}</p>
-                                <Button size="sm" className="w-full h-6 text-xs bg-indigo-600" onClick={() => openDirections(store)}>Navigate</Button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button size="sm" className="h-7 text-xs bg-indigo-600" onClick={() => openDirections(store)}>Navigate</Button>
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button size="sm" variant="outline" className="h-7 text-xs">Reviews</Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                            <DialogHeader>
+                                                <DialogTitle>Reviews for {store.name}</DialogTitle>
+                                            </DialogHeader>
+                                            <StoreReviews storeId={store.id} storeName={store.name} />
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
                             </div>
                         </Popup>
                     </Marker>
@@ -325,8 +348,16 @@ export default function NearbyStores() {
                       <div className="bg-gray-50 border-t border-gray-100 p-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
                           {chain.stores.map(store => (
                               <div key={store.id} className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between items-center group hover:border-indigo-200">
-                                  <div className="cursor-pointer" onClick={() => { setSelectedStore(store); window.scrollTo({ top: 300, behavior: 'smooth' }); }}>
-                                      <div className="font-medium text-sm text-gray-900 group-hover:text-indigo-600 transition-colors">{store.name}</div>
+                                  <div className="cursor-pointer flex-1" onClick={() => { setSelectedStore(store); window.scrollTo({ top: 300, behavior: 'smooth' }); }}>
+                                      <div className="flex items-center justify-between pr-2">
+                                          <div className="font-medium text-sm text-gray-900 group-hover:text-indigo-600 transition-colors">{store.name}</div>
+                                          {store.average_rating > 0 && (
+                                              <div className="flex items-center gap-0.5 text-xs text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">
+                                                  <Star className="w-3 h-3 fill-current" />
+                                                  <span className="font-bold">{store.average_rating.toFixed(1)}</span>
+                                              </div>
+                                          )}
+                                      </div>
                                       <div className="text-xs text-gray-500">{store.address_line}, {store.city}</div>
                                       <div className="flex items-center gap-2 mt-1">
                                           {store.drivingInfo ? (
@@ -340,9 +371,24 @@ export default function NearbyStores() {
                                           )}
                                       </div>
                                   </div>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDirections(store)}>
-                                      <Navigation className="w-4 h-4 text-indigo-600" />
-                                  </Button>
+                                  <div className="flex items-center gap-1">
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MessageSquare className="w-4 h-4 text-gray-400 hover:text-indigo-600" />
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                            <DialogHeader>
+                                                <DialogTitle>Reviews for {store.name}</DialogTitle>
+                                            </DialogHeader>
+                                            <StoreReviews storeId={store.id} storeName={store.name} />
+                                        </DialogContent>
+                                    </Dialog>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDirections(store)}>
+                                        <Navigation className="w-4 h-4 text-indigo-600" />
+                                    </Button>
+                                  </div>
                               </div>
                           ))}
                       </div>
