@@ -79,19 +79,19 @@ export default function ReceiptReview({ receipt, onConfirm }) {
 
     return (
         <div className="space-y-6">
-            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-600 p-4 rounded-r-lg">
                 <div className="flex items-center">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-                    <h3 className="text-amber-800 font-bold">Review Required</h3>
+                    <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400 mr-2" />
+                    <h3 className="text-amber-800 dark:text-amber-200 font-bold">Review Required</h3>
                 </div>
-                <p className="text-amber-700 text-sm mt-1">
+                <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
                     Please review the extracted data below. Confirm the store details and check any items marked with a warning.
                 </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Image Panel */}
-                <div className="bg-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200 sticky top-4 h-[80vh]">
+                <div className="bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-800 sticky top-4 h-[80vh]">
                      <img 
                         src={data.raw_receipt_image_url} 
                         alt="Receipt" 
@@ -103,49 +103,50 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                 <div className="space-y-6 overflow-y-auto h-[80vh] pr-2">
                     
                     {/* Metadata Section */}
-                    <Card className={metadataWarning ? "border-amber-300 shadow-amber-50" : ""}>
+                    <Card className={`${metadataWarning ? "border-amber-300 dark:border-amber-700 shadow-amber-50 dark:shadow-none" : "dark:border-gray-700"} dark:bg-gray-800`}>
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-base flex justify-between items-center">
+                            <CardTitle className="text-base flex justify-between items-center dark:text-gray-100">
                                 Receipt Details
-                                {metadataWarning && <Badge variant="outline" className="text-amber-600 border-amber-300">Check Info</Badge>}
+                                {metadataWarning && <Badge variant="outline" className="text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-600">Check Info</Badge>}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Store Name</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Store Name</label>
                                     <Input 
                                         value={data.storeName || ''} 
                                         onChange={(e) => handleMetadataChange('storeName', e.target.value)}
-                                        className={!data.storeName ? "border-red-300 bg-red-50" : ""}
+                                        className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.storeName ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`}
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Date</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Date</label>
                                     <Input 
                                         type="date"
                                         value={data.date || ''} 
                                         onChange={(e) => handleMetadataChange('date', e.target.value)}
-                                        className={!data.date ? "border-red-300 bg-red-50" : ""}
+                                        className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.date ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`}
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Total Amount</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Total Amount</label>
                                     <div className="relative">
                                         <Input 
                                             type="number"
                                             value={data.totalAmount || ''} 
                                             onChange={(e) => handleMetadataChange('totalAmount', parseFloat(e.target.value))}
-                                            className={!data.totalAmount ? "border-red-300 bg-red-50" : "font-bold"}
+                                            className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.totalAmount ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : "font-bold"}`}
                                         />
-                                        <span className="absolute right-3 top-2 text-gray-400 text-xs">{data.currency || 'ILS'}</span>
+                                        <span className="absolute right-3 top-2 text-gray-400 dark:text-gray-500 text-xs">{data.currency || 'ILS'}</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Currency</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Currency</label>
                                     <Input 
                                         value={data.currency || 'ILS'} 
                                         onChange={(e) => handleMetadataChange('currency', e.target.value)}
+                                        className="dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                                     />
                                 </div>
                             </div>
@@ -153,14 +154,14 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                     </Card>
 
                     {/* Items Section */}
-                    <Card>
+                    <Card className="dark:bg-gray-800 dark:border-gray-700">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Line Items</CardTitle>
+                            <CardTitle className="text-base dark:text-gray-100">Line Items</CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 text-gray-500 border-b">
+                                    <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
                                         <tr>
                                             <th className="py-2 px-3 text-left">Item / Raw Text</th>
                                             <th className="py-2 px-2 text-center w-16">Qty</th>
@@ -169,17 +170,17 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                             <th className="py-2 px-2 w-10"></th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y">
+                                    <tbody className="divide-y dark:divide-gray-700">
                                         {data.items.map((item, idx) => (
-                                            <tr key={idx} className={item.needs_review ? "bg-amber-50/50" : ""}>
+                                            <tr key={idx} className={item.needs_review ? "bg-amber-50/50 dark:bg-amber-900/10" : ""}>
                                                 <td className="p-2">
                                                     <Input 
                                                         value={item.name || ''} 
                                                         onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                        className={`h-7 text-sm ${item.needs_review ? "border-amber-300 focus:border-amber-500" : "border-transparent hover:border-gray-200"}`}
+                                                        className={`h-7 text-sm dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 ${item.needs_review ? "border-amber-300 dark:border-amber-700 focus:border-amber-500" : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 dark:border-transparent"}`}
                                                     />
                                                     {item.raw_text && item.raw_text !== item.name && (
-                                                        <div className="text-[10px] text-gray-400 mt-1 truncate max-w-[200px]" title={item.raw_text}>
+                                                        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 truncate max-w-[200px]" title={item.raw_text}>
                                                             OCR: {item.raw_text}
                                                         </div>
                                                     )}
@@ -189,7 +190,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                         type="number"
                                                         value={item.quantity || ''} 
                                                         onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                        className="h-7 text-center px-1"
+                                                        className="h-7 text-center px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                                                     />
                                                 </td>
                                                 <td className="p-2">
@@ -197,23 +198,23 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                         type="number"
                                                         value={item.price || ''} 
                                                         onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                                                        className="h-7 text-right px-1"
+                                                        className="h-7 text-right px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                                                     />
                                                 </td>
-                                                <td className="p-2 text-right font-medium">
+                                                <td className="p-2 text-right font-medium dark:text-gray-200">
                                                     {(item.total || 0).toFixed(2)}
                                                 </td>
                                                 <td className="p-2 text-center">
                                                     {item.needs_review ? (
                                                         <button 
                                                             onClick={() => toggleItemConfirm(idx)}
-                                                            className="text-amber-500 hover:text-amber-700"
+                                                            className="text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
                                                             title="Review needed"
                                                         >
                                                             <AlertCircle className="w-4 h-4" />
                                                         </button>
                                                     ) : (
-                                                        <CheckCircle2 className="w-4 h-4 text-green-500 mx-auto" />
+                                                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400 mx-auto" />
                                                     )}
                                                 </td>
                                             </tr>

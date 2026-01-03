@@ -340,24 +340,24 @@ export default function Receipt() {
         <div className="flex items-center gap-2 mb-4">
           <Link to={createPageUrl('Home')}>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </Button>
           </Link>
-          <h2 className="font-bold text-lg text-gray-900">Review Receipt</h2>
+          <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">Review Receipt</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[calc(100vh-12rem)]">
           {/* Receipt Image */}
           {receipt.raw_receipt_image_url && (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden h-fit sticky top-4">
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700">Scanned Receipt</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden h-fit sticky top-4">
+              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Scanned Receipt</h3>
               </div>
               <div className="p-4">
                 <img 
                   src={receipt.raw_receipt_image_url} 
                   alt="Receipt" 
-                  className="w-full rounded-lg border border-gray-200"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -365,8 +365,8 @@ export default function Receipt() {
 
           {/* Edit Form */}
           <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-indigo-600 px-6 py-6 text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="bg-indigo-600 dark:bg-indigo-900 px-6 py-6 text-white">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-indigo-200 text-xs block mb-1">Store</label>
@@ -424,7 +424,7 @@ export default function Receipt() {
           
           <div className="p-4 max-h-96 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="text-gray-400 border-b border-gray-100">
+              <thead className="text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                 <tr>
                   <th className="text-left font-medium pb-2 pl-2">Code & Item</th>
                   <th className="text-center font-medium pb-2 w-16">Qty</th>
@@ -433,7 +433,7 @@ export default function Receipt() {
                   <th className="w-8"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                 {editData.items.map((item, i) => {
                   const dbProduct = item.code ? productMap.get(item.code?.toString().trim()) : null;
                   const productNotFound = item.code && !dbProduct;
@@ -446,7 +446,7 @@ export default function Receipt() {
                         <Input 
                           value={displayName} 
                           onChange={(e) => handleItemChange(i, 'name', e.target.value)}
-                          className="h-8 text-sm border-gray-200 focus:border-indigo-300 flex-1"
+                          className="h-8 text-sm border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-indigo-300 flex-1"
                           placeholder="Item name"
                           disabled={!!dbProduct}
                         />
@@ -455,7 +455,7 @@ export default function Receipt() {
                             size="icon"
                             variant="ghost"
                             onClick={() => setShowAddProduct(item)}
-                            className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
                             title="Add product to database"
                           >
                             <PackagePlus className="w-4 h-4" />
@@ -463,7 +463,7 @@ export default function Receipt() {
                         )}
                       </div>
                       {productNotFound && (
-                        <div className="text-[10px] text-amber-600 mb-1 flex items-center gap-1">
+                        <div className="text-[10px] text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           Product not found in database
                         </div>
@@ -472,13 +472,13 @@ export default function Receipt() {
                         <Input 
                           value={item.code || ''} 
                           onChange={(e) => handleItemChange(i, 'code', e.target.value)}
-                          className="h-6 w-28 text-[10px] text-gray-500 border-gray-100 bg-gray-50"
+                          className="h-6 w-28 text-[10px] text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
                           placeholder="Code"
                         />
                         <Input 
                           value={item.category} 
                           onChange={(e) => handleItemChange(i, 'category', e.target.value)}
-                          className="h-6 flex-1 text-[10px] text-gray-500 border-transparent bg-gray-50 hover:bg-white hover:border-gray-200 focus:border-indigo-300 transition-all"
+                          className="h-6 flex-1 text-[10px] text-gray-500 dark:text-gray-400 border-transparent bg-gray-50 dark:bg-gray-900 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700 focus:border-indigo-300 transition-all"
                           placeholder="Category"
                         />
                       </div>
@@ -488,7 +488,7 @@ export default function Receipt() {
                         type="number"
                         value={item.quantity} 
                         onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
-                        className="h-8 text-sm text-center px-1 border-gray-200 focus:border-indigo-300"
+                        className="h-8 text-sm text-center px-1 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-indigo-300"
                         placeholder="Qty"
                       />
                     </td>
@@ -497,19 +497,19 @@ export default function Receipt() {
                         type="number"
                         value={item.price} 
                         onChange={(e) => handleItemChange(i, 'price', e.target.value)}
-                        className="h-8 text-sm text-right px-1 border-gray-200 focus:border-indigo-300"
+                        className="h-8 text-sm text-right px-1 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-indigo-300"
                         placeholder="Price"
                       />
                     </td>
                     <td className="py-3 px-1 align-top">
-                      <div className="h-8 flex items-center justify-end px-1 text-sm font-bold text-gray-700">
+                      <div className="h-8 flex items-center justify-end px-1 text-sm font-bold text-gray-700 dark:text-gray-200">
                         ₪{(item.total || 0).toFixed(2)}
                       </div>
                     </td>
                     <td className="py-3 pr-1 align-top text-right">
                       <button 
                         onClick={() => handleDeleteItem(i)}
-                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -523,7 +523,7 @@ export default function Receipt() {
                 variant="outline" 
                 size="sm" 
                 onClick={handleAddItem}
-                className="w-full text-gray-500 border-dashed border-gray-300 hover:border-indigo-300 hover:text-indigo-600"
+                className="w-full text-gray-500 dark:text-gray-400 border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400 dark:hover:bg-gray-800"
               >
                 <Plus className="w-4 h-4 mr-1" /> Add Missing Item
               </Button>
@@ -532,11 +532,11 @@ export default function Receipt() {
         </div>
 
         {hasMismatch && (
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-bold text-amber-800 text-sm">Total Mismatch Detected</h4>
-              <p className="text-xs text-amber-700 mt-1">
+              <h4 className="font-bold text-amber-800 dark:text-amber-200 text-sm">Total Mismatch Detected</h4>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                 Sum of items (₪{calculatedSum.toFixed(2)}) does not match the receipt total (₪{(editData.totalAmount || 0).toFixed(2)}).
                 Please review your items or update the total amount.
               </p>
