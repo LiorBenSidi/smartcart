@@ -226,38 +226,38 @@ export default function NearbyStores() {
     <div className="space-y-8 pb-20">
       <div className="flex items-center justify-between">
         <div>
-           <h2 className="text-2xl font-bold text-gray-900">Nearby Stores</h2>
-           <p className="text-sm text-gray-500">{stores.length} locations found</p>
+           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Nearby Stores</h2>
+           <p className="text-sm text-gray-500 dark:text-gray-400">{stores.length} locations found</p>
         </div>
-        <Button variant="outline" size="sm" onClick={getUserLocation}><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
+        <Button variant="outline" size="sm" onClick={getUserLocation} className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
       </div>
 
       {/* Top 3 Podium */}
       {top3Stores.length > 0 && (
           <div className="grid grid-cols-3 gap-3">
               {top3Stores.map((store, idx) => {
-                  const medalColor = idx === 0 ? 'bg-yellow-100 border-yellow-300 text-yellow-800' : 
-                                     idx === 1 ? 'bg-slate-100 border-slate-300 text-slate-700' : 
-                                     'bg-orange-100 border-orange-300 text-orange-800';
-                  const iconColor = idx === 0 ? 'text-yellow-600' : idx === 1 ? 'text-slate-500' : 'text-orange-600';
-                  
+                  const medalColor = idx === 0 ? 'bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/40 dark:border-yellow-700 dark:text-yellow-200' : 
+                                     idx === 1 ? 'bg-slate-100 border-slate-300 text-slate-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300' : 
+                                     'bg-orange-100 border-orange-300 text-orange-800 dark:bg-orange-900/40 dark:border-orange-700 dark:text-orange-200';
+                  const iconColor = idx === 0 ? 'text-yellow-600 dark:text-yellow-400' : idx === 1 ? 'text-slate-500 dark:text-slate-400' : 'text-orange-600 dark:text-orange-400';
+
                   return (
-                      <Card key={store.id} className={`relative overflow-hidden border-2 ${idx === 0 ? 'border-yellow-400 shadow-md ring-1 ring-yellow-200' : idx === 1 ? 'border-slate-300' : 'border-orange-300'} transition-all hover:scale-105 cursor-pointer`} onClick={() => setSelectedStore(store)}>
+                      <Card key={store.id} className={`relative overflow-hidden border-2 dark:bg-gray-800 ${idx === 0 ? 'border-yellow-400 shadow-md ring-1 ring-yellow-200 dark:border-yellow-600 dark:ring-yellow-900' : idx === 1 ? 'border-slate-300 dark:border-slate-600' : 'border-orange-300 dark:border-orange-600'} transition-all hover:scale-105 cursor-pointer`} onClick={() => setSelectedStore(store)}>
                           <div className={`absolute top-0 left-0 w-full h-1 ${idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-slate-400' : 'bg-orange-500'}`} />
                           <CardContent className="p-3 flex flex-col items-center text-center">
                               <Trophy className={`w-6 h-6 mb-2 ${iconColor}`} />
                               <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 uppercase tracking-wide ${medalColor}`}>
                                   {idx === 0 ? '1st Place' : idx === 1 ? '2nd Place' : '3rd Place'}
                               </div>
-                              <h3 className="font-bold text-sm text-gray-900 truncate w-full">{store.name}</h3>
+                              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate w-full">{store.name}</h3>
                               {store.average_rating > 0 && (
-                                  <div className="flex items-center justify-center gap-0.5 text-[10px] text-yellow-600 font-bold mb-1">
+                                  <div className="flex items-center justify-center gap-0.5 text-[10px] text-yellow-600 dark:text-yellow-400 font-bold mb-1">
                                       <Star className="w-3 h-3 fill-current" />
-                                      {store.average_rating.toFixed(1)} <span className="text-gray-400 font-normal">({store.review_count})</span>
+                                      {store.average_rating.toFixed(1)} <span className="text-gray-400 dark:text-gray-500 font-normal">({store.review_count})</span>
                                   </div>
                               )}
-                              <p className="text-xs text-gray-500 truncate w-full mb-2">{store.chain_name}</p>
-                              <div className="flex items-center gap-1 text-xs font-semibold text-gray-700 bg-gray-50 px-2 py-1 rounded">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate w-full mb-2">{store.chain_name}</p>
+                              <div className="flex items-center gap-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
                                   <Car className="w-3 h-3" />
                                   {store.drivingInfo?.duration || `${store.distance.toFixed(1)} km`}
                               </div>
@@ -269,7 +269,7 @@ export default function NearbyStores() {
       )}
 
       {/* Map */}
-      <Card className="overflow-hidden shadow-lg border-2 border-indigo-100 h-[350px] relative z-0">
+      <Card className="overflow-hidden shadow-lg border-2 border-indigo-100 dark:border-indigo-900 h-[350px] relative z-0 dark:bg-gray-800">
          {typeof window !== 'undefined' && (
              <MapContainer center={userLocation || [32.0853, 34.7818]} zoom={12} style={{ width: '100%', height: '100%' }} scrollWheelZoom={false}>
                 <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -319,13 +319,13 @@ export default function NearbyStores() {
 
       {/* Chain List */}
       <div className="space-y-4">
-          <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-              <Layers className="w-5 h-5 text-indigo-600" /> Stores by Chain
+          <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg flex items-center gap-2">
+              <Layers className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Stores by Chain
           </h3>
           {groupedChains.map(chain => (
-              <Card key={chain.id} className="overflow-hidden border border-gray-200 transition-all hover:border-indigo-200">
+              <Card key={chain.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 transition-all hover:border-indigo-200 dark:hover:border-indigo-700 dark:bg-gray-800">
                   <div 
-                      className="p-4 flex items-center justify-between cursor-pointer bg-white hover:bg-gray-50"
+                      className="p-4 flex items-center justify-between cursor-pointer bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                       onClick={() => setExpandedChain(expandedChain === chain.id ? null : chain.id)}
                   >
                       <div className="flex items-center gap-3">
@@ -333,7 +333,7 @@ export default function NearbyStores() {
                               <img 
                                   src={chain.logo} 
                                   alt={chain.name} 
-                                  className="w-8 h-8 rounded-full object-contain bg-white shadow-sm border border-gray-100"
+                                  className="w-8 h-8 rounded-full object-contain bg-white shadow-sm border border-gray-100 dark:border-gray-600"
                               />
                           ) : (
                               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm" style={{ background: chain.color }}>
@@ -341,37 +341,37 @@ export default function NearbyStores() {
                               </div>
                           )}
                           <div>
-                              <h4 className="font-bold text-gray-900">{chain.name}</h4>
-                              <p className="text-xs text-gray-500">{chain.stores.length} locations nearby</p>
+                              <h4 className="font-bold text-gray-900 dark:text-gray-100">{chain.name}</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{chain.stores.length} locations nearby</p>
                           </div>
                       </div>
                       <div className="flex items-center gap-2">
                            {expandedChain === chain.id ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                       </div>
                   </div>
-                  
+
                   {expandedChain === chain.id && (
-                      <div className="bg-gray-50 border-t border-gray-100 p-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                      <div className="bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 p-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
                           {chain.stores.map(store => (
-                              <div key={store.id} className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between items-center group hover:border-indigo-200">
+                              <div key={store.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center group hover:border-indigo-200 dark:hover:border-indigo-700">
                                   <div className="cursor-pointer flex-1" onClick={() => { setSelectedStore(store); window.scrollTo({ top: 300, behavior: 'smooth' }); }}>
                                       <div className="flex items-center justify-between pr-2">
-                                          <div className="font-medium text-sm text-gray-900 group-hover:text-indigo-600 transition-colors">{store.name}</div>
+                                          <div className="font-medium text-sm text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{store.name}</div>
                                           {store.average_rating > 0 && (
-                                              <div className="flex items-center gap-0.5 text-xs text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">
+                                              <div className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded">
                                                   <Star className="w-3 h-3 fill-current" />
                                                   <span className="font-bold">{store.average_rating.toFixed(1)}</span>
                                               </div>
                                           )}
                                       </div>
-                                      <div className="text-xs text-gray-500">{store.address_line}, {store.city}</div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">{store.address_line}, {store.city}</div>
                                       <div className="flex items-center gap-2 mt-1">
                                           {store.drivingInfo ? (
-                                              <span className="text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                              <span className="text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center gap-1">
                                                   <Car className="w-3 h-3" /> {store.drivingInfo.duration}
                                               </span>
                                           ) : (
-                                              <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                              <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
                                                   {store.distance.toFixed(1)} km
                                               </span>
                                           )}
@@ -381,7 +381,7 @@ export default function NearbyStores() {
                                     <Dialog>
                                         <DialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MessageSquare className="w-4 h-4 text-gray-400 hover:text-indigo-600" />
+                                                <MessageSquare className="w-4 h-4 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400" />
                                             </Button>
                                         </DialogTrigger>
                                         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -392,7 +392,7 @@ export default function NearbyStores() {
                                         </DialogContent>
                                     </Dialog>
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDirections(store)}>
-                                        <Navigation className="w-4 h-4 text-indigo-600" />
+                                        <Navigation className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                                     </Button>
                                   </div>
                               </div>
