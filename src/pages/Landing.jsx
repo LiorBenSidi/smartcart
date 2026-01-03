@@ -16,8 +16,8 @@ export default function Landing() {
         const auth = await base44.auth.isAuthenticated();
         setIsAuthenticated(auth);
         if (auth) {
-          const userData = await base44.auth.me();
-          setUser(userData);
+            const userData = await base44.auth.me();
+            setUser(userData);
         }
       } catch (e) {
         console.error(e);
@@ -37,8 +37,8 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white flex flex-col">
-      <div className="bg-slate-800 mx-auto p-8 text-center flex-1 flex flex-col items-center justify-center max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 flex flex-col">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto w-full">
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -55,18 +55,18 @@ export default function Landing() {
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }} className="text-indigo-600 mb-4 text-4xl font-extrabold tracking-tight">Smart Grocery
-Assistant
+          transition={{ delay: 0.2, duration: 0.6 }}
+          className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
 
-
-
+          Smart Grocery <br />
+          <span className="text-indigo-600 dark:text-indigo-400">Assistant</span>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
-          className="text-gray-500 text-lg mb-10 leading-relaxed">
+          className="text-gray-500 dark:text-gray-400 text-lg mb-10 leading-relaxed">
 
           Scan receipts, track spending, and get AI-powered insights to save money and eat healthier.
         </motion.p>
@@ -79,13 +79,13 @@ Assistant
 
           {!isLoading &&
           <>
-              {isAuthenticated ?
+              {isAuthenticated ? (
             <div className="w-full space-y-4">
-                {user &&
-              <div className="bg-indigo-50 text-indigo-900 px-4 py-3 rounded-xl font-medium text-sm border border-indigo-100">
+                {user && (
+                    <div className="bg-indigo-50 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-200 px-4 py-3 rounded-xl font-medium text-sm border border-indigo-100 dark:border-indigo-800">
                         👋 Hello, {user.email}
                     </div>
-              }
+                )}
                 <Button
                 onClick={handleNavigation}
                 className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all">
@@ -94,39 +94,39 @@ Assistant
                     <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
 
-                <a
-                href={(() => {
-                  const urlStr = base44.agents.getWhatsAppConnectURL('grocery_bot');
-                  if (!user?.email || !urlStr) return urlStr || '#';
-                  try {
-                    const url = new URL(urlStr);
-                    const text = url.searchParams.get('text');
-                    if (text) {
-                      // Ensure we decode first to avoid double encoding issues, though searchParams handles it
-                      // We replace the start of the text if it doesn't have the greeting
-                      const decodedText = decodeURIComponent(text);
-                      if (!decodedText.startsWith('👋 Hello')) {
-                        url.searchParams.set('text', `👋 Hello, ${user.email}\n\n${text}`);
-                      }
-                      return url.toString();
-                    }
-                    return urlStr;
-                  } catch (e) {return urlStr;}
-                })()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full">
-
+                <a 
+                  href={(() => {
+                      const urlStr = base44.agents.getWhatsAppConnectURL('grocery_bot');
+                      if (!user?.email || !urlStr) return urlStr || '#';
+                      try {
+                          const url = new URL(urlStr);
+                          const text = url.searchParams.get('text');
+                          if (text) {
+                              // Ensure we decode first to avoid double encoding issues, though searchParams handles it
+                              // We replace the start of the text if it doesn't have the greeting
+                              const decodedText = decodeURIComponent(text); 
+                              if (!decodedText.startsWith('👋 Hello')) {
+                                  url.searchParams.set('text', `👋 Hello, ${user.email}\n\n${text}`);
+                              }
+                              return url.toString();
+                          }
+                          return urlStr;
+                      } catch (e) { return urlStr; }
+                  })()}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block w-full"
+                >
                   <Button
-                  variant="outline"
-                  className="w-full h-14 text-lg border-green-500 text-green-600 hover:bg-green-50 rounded-xl border-2">
-
+                    variant="outline"
+                    className="w-full h-14 text-lg border-green-500 text-green-600 hover:bg-green-50 rounded-xl border-2"
+                  >
                     <MessageCircle className="mr-2 w-5 h-5" /> 
                     Chat on WhatsApp
                   </Button>
                 </a>
-            </div> :
-
+            </div>
+            ) :
 
             <div className="space-y-3">
                    <Button
@@ -138,7 +138,7 @@ Assistant
                   <Button
                 onClick={handleAuth}
                 variant="outline"
-                className="w-full h-12 text-base border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                className="w-full h-12 text-base border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950">
 
                     <LogIn className="mr-2 w-4 h-4" /> Log In
                   </Button>
@@ -147,30 +147,21 @@ Assistant
             </>
           }
           
-          <p className="text-xs text-gray-400 mt-6">Demo • Powered by Gemini 3 Pro</p>
-          <p className="text-xs text-gray-400 mt-6">Lior Ben Sidi & Yarin Katan</p>
+          <p className="text-xs text-gray-400 mt-6">Step 1 Prototype • Powered by Gemini Pro 3
+
+          </p>
         </motion.div>
 
         <div className="mt-16 grid grid-cols-2 gap-4 w-full">
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-left">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 text-left">
                 <TrendingUp className="w-6 h-6 text-green-500 mb-2" />
-                <h3 className="font-bold text-gray-900">Track Costs</h3>
-                <p className="text-xs text-gray-500">Monthly analytics</p>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100">Track Costs</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Monthly analytics</p>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-left">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 text-left">
                 <Leaf className="w-6 h-6 text-emerald-500 mb-2" />
-                <h3 className="font-bold text-gray-900">Eat Better</h3>
-                <p className="text-xs text-gray-500">Health insights</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-left">
-                <Leaf className="w-6 h-6 text-emerald-500 mb-2" />
-                <h3 className="font-bold text-gray-900">Plafe holder</h3>
-                <p className="text-xs text-gray-500">Plafe holder</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-left">
-                <Leaf className="w-6 h-6 text-emerald-500 mb-2" />
-                <h3 className="font-bold text-gray-900">Plafe holder</h3>
-                <p className="text-xs text-gray-500">Plafe holder</p>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100">Eat Better</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Health insights</p>
             </div>
         </div>
       </div>
