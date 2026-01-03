@@ -71,12 +71,12 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                                     className={`w-8 h-8 ${
                                         (hoverRating || rating) >= star 
                                             ? 'fill-yellow-400 text-yellow-400' 
-                                            : 'text-gray-300'
+                                            : 'text-gray-300 dark:text-gray-600'
                                     }`} 
                                 />
                             </button>
                         ))}
-                        <span className="ml-2 text-sm text-gray-500 font-medium">
+                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 font-medium">
                             {rating > 0 ? ['Terrible', 'Bad', 'Okay', 'Good', 'Excellent'][rating - 1] : 'Select rating'}
                         </span>
                     </div>
