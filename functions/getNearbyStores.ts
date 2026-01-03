@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
-    // Fetch all stores
-    const stores = await base44.entities.Store.list();
+    // Fetch all stores (up to 1000)
+    const stores = await base44.entities.Store.list('-created_date', 1000);
 
     // Filter stores within radius (if provided) and calculate distance
     const nearbyStores = stores

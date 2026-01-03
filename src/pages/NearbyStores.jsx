@@ -119,15 +119,33 @@ export default function NearbyStores() {
     );
   };
 
-  // Generate distinct colors for chains
+  // Fixed color palette for chains to ensure distinct and pleasing colors
+  const CHAIN_COLORS = [
+    '#EF4444', // Red
+    '#F59E0B', // Amber
+    '#10B981', // Emerald
+    '#3B82F6', // Blue
+    '#8B5CF6', // Violet
+    '#EC4899', // Pink
+    '#6366F1', // Indigo
+    '#84CC16', // Lime
+    '#14B8A6', // Teal
+    '#F97316', // Orange
+    '#06B6D4', // Cyan
+    '#D946EF', // Fuchsia
+  ];
+
   const getChainColor = (chainId) => {
-    if (!chainId) return '#6b7280'; // gray
+    if (!chainId) return '#6b7280'; // Gray for unknown
+    
+    // Simple hash to index
     let hash = 0;
     for (let i = 0; i < chainId.length; i++) {
       hash = chainId.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-    return '#' + '00000'.substring(0, 6 - c.length) + c;
+    
+    const index = Math.abs(hash) % CHAIN_COLORS.length;
+    return CHAIN_COLORS[index];
   };
 
   const createMarkerIcon = (store, isClosest) => {
