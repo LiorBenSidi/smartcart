@@ -55,16 +55,7 @@ export default function Layout({ children, currentPageName }) {
   return (
     <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased pb-32 relative transition-colors duration-200">
-      <div className="fixed bottom-24 right-6 z-[60] flex flex-col gap-2">
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="bg-gray-900 dark:bg-gray-700 text-white p-3 rounded-full shadow-xl hover:bg-gray-800 dark:hover:bg-gray-600 transition-all hover:scale-105"
-          title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-        >
-          {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
 
-      </div>
 
       {/* Content wrapper */}
       <div className={`${isWebView ? 'w-full max-w-[1920px]' : 'max-w-md'} mx-auto bg-white dark:bg-gray-800 min-h-screen shadow-2xl relative overflow-hidden transition-all duration-300 ease-in-out`}>
