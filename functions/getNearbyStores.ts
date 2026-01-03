@@ -126,7 +126,9 @@ Deno.serve(async (req) => {
 
                 store.drivingInfo = {
                     distance: distKm,
-                    duration: durationText
+                    duration: durationText,
+                    rawDuration: res.data.duration, // seconds
+                    rawDistance: res.data.distance  // meters
                 };
             }
         } catch (e) {
