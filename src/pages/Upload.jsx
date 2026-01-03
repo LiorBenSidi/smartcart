@@ -90,7 +90,7 @@ export default function Upload() {
   };
 
   const uploadAndProcess = async () => {
-    if (!file || !selectedStore) return;
+    if (!file) return;
     setIsUploading(true);
     
     try {
@@ -100,14 +100,19 @@ export default function Upload() {
       });
       const fileUrl = uploadRes.file_url;
 
-      // 2. Create a pending receipt with store info
-      const pendingReceipt = await base44.entities.Receipt.create({
-        store_id: selectedStore.id,
+      // 2. Create a pending receipt with store info (if selected)
+      const receiptData = {
         purchased_at: new Date().toISOString(),
         total_amount: 0,
         raw_receipt_image_url: fileUrl,
         processing_status: 'pending'
-      });
+      };
+      
+      if (selectedStore) {
+        receiptData.store_id = selectedStore.id;
+      }
+
+      const pendingReceipt = await base44.entities.Receipt.create(receiptData);
 
       // 3. Redirect to the Receipt page - processing will happen there
       window.location.href = `${createPageUrl('Receipt')}?id=${pendingReceipt.id}`;
@@ -176,8 +181,27 @@ export default function Upload() {
 
 
 
-          {!selectedStore && chains.length > 0 && (
-            <p className="text-xs text-amber-600">⚠️ Please select chain and store before uploading</p>
+          {selectedChain && (
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Select Store (Optional)
+              </label>
+              <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find(s => s.id === id))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose store branch" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stores
+                    .filter(s => s.chain_id === selectedChain.id)
+                    .map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.name} - {store.address_line || store.city}
+                      </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -236,7 +260,7 @@ export default function Upload() {
         {preview && !isUploading && (
           <Button 
             onClick={uploadAndProcess} 
-            disabled={!selectedStore}
+            disabled={!file}
             className="w-full h-12 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-md disabled:opacity-50"
           >
             <ScanLine className="mr-2 w-5 h-5" /> Upload & Analyze
