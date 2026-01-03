@@ -78,7 +78,7 @@ export default function Layout({ children, currentPageName }) {
           </header>
           }
 
-        <main className="pt-6 pr-6 pb-32 pl-6">
+        <main className="bg-slate-700 pt-6 pr-6 pb-32 pl-6">
           {children}
         </main>
 
