@@ -215,7 +215,7 @@ export default function Admin() {
                 <TableHeader>
                     <TableRow className="dark:border-gray-700">
                         <TableHead className="dark:text-gray-400">Email</TableHead>
-                        <TableHead className="dark:text-gray-400">Role</TableHead>
+                        <TableHead className="text-muted-foreground font-medium text-left h-10 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-gray-400">Role</TableHead>
                         <TableHead className="text-muted-foreground px-1 font-medium text-left h-10 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-gray-400">Receipts</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -223,7 +223,7 @@ export default function Admin() {
                     {users.map((user) =>
             <TableRow key={user.id} className="dark:border-gray-700">
                             <TableCell className="font-medium text-gray-900 dark:text-gray-200">{user.email}</TableCell>
-                            <TableCell>
+                            <TableCell className="align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]">
                                 <span className={`text-xs px-2 py-1 rounded-full font-bold ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                     {user.role}
                                 </span>
