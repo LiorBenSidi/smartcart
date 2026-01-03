@@ -30,6 +30,10 @@ Deno.serve(async (req) => {
 
     const svc = base44.asServiceRole;
 
+    // Load user profile for constraints
+    const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+    const profile = profiles.length > 0 ? profiles[0] : null;
+
     // Load all necessary data
     const [allProducts, allPrices, allStores, allChains] = await Promise.all([
       svc.entities.Product.list(),
@@ -105,8 +109,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Filter chains/stores based on profile constraints (e.g. Kosher)
+    const validChainResults = Array.from(chainResults.values()).filter(result => {
+        // If user requires kosher, ensure chain or its stores are likely kosher
+        // This is a heuristic since we don't have chain-level tags, but we can check if chain type is 'kosher_store'
+        // or check if we are filtering specific stores later. 
+        // Better to filter stores first, but we aggregated by chain.
+        // Let's filter the `chainResults` if the chain itself is incompatible? 
+        // Actually, let's filter the *stores* before aggregation if we want to be strict.
+        // But for now, let's just apply a simple filter if possible.
+        if (profile?.kashrut_level && profile.kashrut_level !== 'none') {
+             // If chain is explicitly non-kosher (e.g. Tiv Taam often is, but has kosher branches)
+             // We'll rely on store-level tags later.
+             return true; 
+        }
+        return true;
+    });
+
     // Sort chains by total cost and take top 3
-    const sortedChains = Array.from(chainResults.values())
+    const sortedChains = validChainResults
       .sort((a, b) => b.availableItems - a.availableItems || a.totalCost - b.totalCost)
       .slice(0, 3);
 
@@ -135,7 +156,32 @@ Deno.serve(async (req) => {
         nearestBranch = chainStores[0];
       }
 
-      topStores.push({
+      // Apply User Profile Constraints to the selected store
+      let passesConstraints = true;
+      if (profile && nearestBranch) {
+          // Kashrut Check
+          if (profile.kashrut_level && profile.kashrut_level !== 'none') {
+              // If user wants kosher, but store is not marked kosher_certified or religious_friendly
+              // (Assuming 'kosher_certified' tag exists)
+              const isKosher = nearestBranch.store_tags?.includes('kosher_certified') || nearestBranch.store_tags?.includes('religious_friendly');
+              if (!isKosher) passesConstraints = false;
+          }
+      }
+
+      if (passesConstraints) {
+          topStores.push({
+            chain: chainResult.chain,
+            store: nearestBranch,
+            nearestBranch,
+            totalCost: chainResult.totalCost,
+            availableItems: chainResult.availableItems,
+            distance: minDistance !== Infinity ? minDistance : null
+          });
+      }
+    }
+
+    // If we filtered out too many, we might want to fallback or show with warning. 
+    // For now, strict filtering.
         chain: chainResult.chain,
         store: nearestBranch,
         nearestBranch,

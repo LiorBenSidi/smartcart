@@ -20,17 +20,25 @@ export default Deno.serve(async (req) => {
         }
         const receipt = receiptRes[0];
         
-        // Fetch benchmark prices for the receipt date (or latest available)
-        // Simplification: Fetching benchmarks for "today" or latest.
-        // Ideally we query BenchmarkPrice where date = receipt.date
-        // Since we lack complex filtering in this snippet context, we'll fetch latest.
-        const benchmarks = await base44.asServiceRole.entities.BenchmarkPrice.list('-date', 1000); // fetching last 1000 benchmarks
+        const svc = base44.asServiceRole;
+        
+        // Fetch benchmark prices
+        const benchmarks = await svc.entities.BenchmarkPrice.list('-date', 1000); 
         const benchmarkMap = new Map();
         benchmarks.forEach(b => {
-             // only keep the first (latest) one for each product
              if (!benchmarkMap.has(b.product_id)) {
                  benchmarkMap.set(b.product_id, b);
              }
+        });
+
+        // Pre-fetch products for "Swap" simulation (optimization)
+        // We'll look for products in same categories as expensive items
+        const allProducts = await svc.entities.Product.list();
+        const productsByCategory = new Map();
+        allProducts.forEach(p => {
+            if (!p.category) return;
+            if (!productsByCategory.has(p.category)) productsByCategory.set(p.category, []);
+            productsByCategory.get(p.category).push(p);
         });
 
         const receiptItems = receipt.items || [];
@@ -92,6 +100,48 @@ export default Deno.serve(async (req) => {
                             })
                         });
                     }
+                }
+            }
+
+            // --- What-if Simulation: Alternative Product Swap ---
+            // If item is expensive (> 15 NIS), look for cheaper alternative in same category
+            const itemPrice = item.price || item.unit_price_final;
+            if (itemPrice > 15 && item.category && productsByCategory.has(item.category)) {
+                const categoryProducts = productsByCategory.get(item.category);
+                
+                // Find potential swaps (different brand/product, cheaper benchmark price)
+                let bestSwap = null;
+                let maxSwapSavings = 0;
+
+                for (const potentialProd of categoryProducts) {
+                    // Skip same product
+                    if (potentialProd.gtin === item.code) continue;
+                    
+                    const bench = benchmarkMap.get(potentialProd.gtin);
+                    if (bench && bench.avg_price < itemPrice * 0.8) { // at least 20% cheaper
+                        const saving = (itemPrice - bench.avg_price) * (item.quantity || 1);
+                        if (saving > maxSwapSavings) {
+                            maxSwapSavings = saving;
+                            bestSwap = { product: potentialProd, price: bench.avg_price };
+                        }
+                    }
+                }
+
+                if (bestSwap && maxSwapSavings > 5) {
+                     insights.push({
+                        receipt_id: receipt.id,
+                        type: "alternative", // Re-using 'alternative' or could use 'SWAP_OPPORTUNITY'
+                        message: `Swap Opportunity: ${bestSwap.product.canonical_name}`,
+                        explanation_text: `Switching from ${item.name} (₪${itemPrice}) to ${bestSwap.product.brand_name || ''} ${bestSwap.product.canonical_name} (avg ₪${bestSwap.price.toFixed(2)}) could have saved you ₪${maxSwapSavings.toFixed(2)}.`,
+                        potential_savings: maxSwapSavings,
+                        confidence: 0.8,
+                        related_product_id: bestSwap.product.id,
+                        evidence_json: JSON.stringify({
+                            original: item.name,
+                            swap: bestSwap.product.canonical_name,
+                            savings: maxSwapSavings
+                        })
+                    });
                 }
             }
         }

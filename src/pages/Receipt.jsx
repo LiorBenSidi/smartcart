@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles, TrendingDown, ArrowDownRight } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles, TrendingDown, ArrowDownRight, ArrowRightLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PriceComparisonReview from '../components/PriceComparisonReview';
