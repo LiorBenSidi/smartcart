@@ -223,14 +223,14 @@ export default function SmartCart() {
 
       {/* Suggested for Today */}
       {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 && (
-          <Card className="border-indigo-100 bg-indigo-50/30">
+          <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg flex items-center gap-2 text-indigo-900">
-                          <CalendarDays className="w-5 h-5 text-indigo-600" />
+                      <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                          <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                           Suggested for Today
                       </CardTitle>
-                      <Badge variant="outline" className="bg-white text-indigo-600 border-indigo-200">
+                      <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
                           {suggestions.items.length} items
                       </Badge>
                   </div>
@@ -238,11 +238,11 @@ export default function SmartCart() {
               <CardContent>
                   <div className="space-y-3">
                       {suggestions.items.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) => (
-                          <div key={idx} className="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
+                          <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
                               <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                          <span className="font-semibold text-gray-900">{item.product_name}</span>
+                                          <span className="font-semibold text-gray-900 dark:text-gray-100">{item.product_name}</span>
                                           <Badge className={`text-[10px] px-1.5 py-0 h-5 ${
                                               item.reason_type.includes('Weekly') ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                                           }`}>
@@ -341,15 +341,15 @@ export default function SmartCart() {
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500" />
 
           {filteredProducts.length > 0 &&
           <div className="space-y-2">
               {filteredProducts.map((product) =>
-            <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900">{product.canonical_name}</div>
-                    <div className="text-xs text-gray-500">{product.brand_name} • {product.gtin}</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{product.canonical_name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{product.brand_name} • {product.gtin}</div>
                   </div>
                   <Button size="sm" onClick={() => {addToCart(product);setSearchTerm('');}}>
                     <Plus className="w-4 h-4" />
@@ -362,7 +362,7 @@ export default function SmartCart() {
       </Card>
 
       {/* Cart Summary */}
-      <Card className="bg-indigo-50 border-indigo-200">
+      <Card className="bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -370,8 +370,8 @@ export default function SmartCart() {
                 {totalItems}
               </div>
               <div>
-                <div className="font-bold text-gray-900">Items in Cart</div>
-                <div className="text-xs text-gray-600">{cartItems.length} unique products</div>
+                <div className="font-bold text-gray-900 dark:text-gray-100">Items in Cart</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">{cartItems.length} unique products</div>
               </div>
             </div>
             {cartItems.length > 0 &&
@@ -432,14 +432,14 @@ export default function SmartCart() {
               <p className="text-center text-gray-400 py-6">No saved carts yet</p>
             ) : (
               savedCarts.map((cart) => (
-                <div key={cart.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div key={cart.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <div className="font-bold text-gray-900">{cart.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="font-bold text-gray-900 dark:text-gray-100">{cart.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {cart.store_name} • {new Date(cart.created_date).toLocaleDateString()} at {new Date(cart.created_date).toLocaleTimeString()}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                         {cart.total_items} items • ₪{cart.total_amount?.toFixed(2)}
                       </div>
                     </div>
@@ -479,14 +479,14 @@ export default function SmartCart() {
             </CardHeader>
             <CardContent className="space-y-3">
               {cartItems.map((item) => (
-                <div key={item.gtin} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={item.gtin} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-sm">
+                    <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
                       {item.quantity}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">{item.name}</div>
-                      <div className="text-xs text-gray-500">{item.gtin}</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{item.gtin}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -516,7 +516,7 @@ export default function SmartCart() {
                 Top 3 Cheapest Supermarkets
               </h3>
               {storeComparisons.map((comparison, idx) => (
-                <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50' : idx === 1 ? 'border-blue-400 bg-blue-50' : 'border-orange-400 bg-orange-50'}`}>
+                <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : idx === 1 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'}`}>
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
@@ -525,10 +525,10 @@ export default function SmartCart() {
                           {idx === 1 && <Badge className="bg-blue-600 text-white">2nd Best</Badge>}
                           {idx === 2 && <Badge className="bg-orange-600 text-white">3rd Best</Badge>}
                         </div>
-                        <h4 className="text-xl font-bold text-gray-900">{comparison.chain?.name || comparison.store?.name}</h4>
+                        <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">{comparison.chain?.name || comparison.store?.name}</h4>
                         {comparison.nearestBranch && (
                           <div className="mt-2 space-y-1">
-                            <div className="text-sm text-gray-600 flex items-center gap-1">
+                            <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                               <StoreIcon className="w-4 h-4" />
                               {comparison.nearestBranch.city || comparison.nearestBranch.address_line}
                               {!comparison.drivingInfo && comparison.distance && (
@@ -559,9 +559,9 @@ export default function SmartCart() {
                         )}
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold text-gray-900">₪{comparison.totalCost.toFixed(2)}</div>
+                        <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">₪{comparison.totalCost.toFixed(2)}</div>
                         {idx > 0 && storeComparisons[0] && (
-                          <div className="text-sm text-red-600 mt-1">
+                          <div className="text-sm text-red-600 dark:text-red-400 mt-1">
                             +₪{(comparison.totalCost - storeComparisons[0].totalCost).toFixed(2)} more
                           </div>
                         )}
