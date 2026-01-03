@@ -87,9 +87,58 @@ Deno.serve(async (req) => {
 
     const recommendedStore = storesWithScores[0];
 
+    // Enrich with Google Maps real distance/duration if API key is present
+    const googleApiKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
+    
+    // Only fetch for top 10 stores to avoid hitting API limits
+    const storesToEnrich = storesWithScores.slice(0, 10);
+    
+    if (googleApiKey && storesToEnrich.length > 0) {
+      try {
+        const destinations = storesToEnrich.map(s => `${s.latitude},${s.longitude}`).join('|');
+        const origin = `${latitude},${longitude}`;
+
+        // Fetch Driving
+        const driveUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=driving&key=${googleApiKey}`;
+        const driveRes = await fetch(driveUrl);
+        const driveData = await driveRes.json();
+
+        // Fetch Transit
+        const transitUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=transit&key=${googleApiKey}`;
+        const transitRes = await fetch(transitUrl);
+        const transitData = await transitRes.json();
+
+        if (driveData.status === 'OK') {
+          const elements = driveData.rows[0].elements;
+          storesToEnrich.forEach((store, index) => {
+             if (elements[index] && elements[index].status === 'OK') {
+               store.drivingInfo = {
+                 distance: elements[index].distance.text,
+                 duration: elements[index].duration.text
+               };
+             }
+          });
+        }
+
+        if (transitData.status === 'OK') {
+          const elements = transitData.rows[0].elements;
+          storesToEnrich.forEach((store, index) => {
+             if (elements[index] && elements[index].status === 'OK') {
+               store.transitInfo = {
+                 distance: elements[index].distance.text,
+                 duration: elements[index].duration.text
+               };
+             }
+          });
+        }
+      } catch (err) {
+        console.error("Google Maps API error:", err);
+      }
+    }
+
     return Response.json({
       nearbyStores: storesWithScores,
-      recommendedStore,
+      recommendedStore: storesWithScores[0], // re-assign in case it was enriched (it's the first element)
       totalFound: storesWithScores.length
     });
 

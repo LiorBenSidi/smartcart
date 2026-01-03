@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target } from 'lucide-react';
+import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 
 export default function NearbyStores() {
@@ -176,11 +176,27 @@ export default function NearbyStores() {
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{recommendedStore.address_line}, {recommendedStore.city}</p>
                 
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4 text-indigo-600" />
-                    <span className="font-semibold">{recommendedStore.distance.toFixed(1)} km</span>
-                  </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                  {!recommendedStore.drivingInfo && (
+                    <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-indigo-600" />
+                        <span className="font-semibold">{recommendedStore.distance.toFixed(1)} km</span>
+                    </div>
+                  )}
+                  {recommendedStore.drivingInfo && (
+                      <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1" title="Driving">
+                              <Car className="w-4 h-4 text-indigo-600" />
+                              <span className="font-semibold">{recommendedStore.drivingInfo.duration} ({recommendedStore.drivingInfo.distance})</span>
+                          </div>
+                          {recommendedStore.transitInfo && (
+                                <div className="flex items-center gap-1" title="Public Transport">
+                                  <Bus className="w-4 h-4 text-indigo-600" />
+                                  <span className="font-semibold">{recommendedStore.transitInfo.duration}</span>
+                              </div>
+                          )}
+                      </div>
+                  )}
                   {recommendedStore.phone_number && (
                     <div className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
@@ -233,11 +249,29 @@ export default function NearbyStores() {
                     <h4 className="font-semibold text-gray-900">{store.name}</h4>
                     <p className="text-xs text-gray-500 mt-1">{store.address_line}, {store.city}</p>
                     
-                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{store.distance.toFixed(1)} km away</span>
-                      </div>
+                    <div className="flex flex-col gap-1 mt-2 text-xs text-gray-600">
+                      {!store.drivingInfo && (
+                        <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span>{store.distance.toFixed(1)} km away</span>
+                        </div>
+                      )}
+                      
+                      {store.drivingInfo && (
+                           <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1" title="Driving">
+                                    <Car className="w-3 h-3 text-gray-500" />
+                                    <span>{store.drivingInfo.duration} ({store.drivingInfo.distance})</span>
+                                </div>
+                                {store.transitInfo && (
+                                     <div className="flex items-center gap-1" title="Public Transport">
+                                        <Bus className="w-3 h-3 text-gray-500" />
+                                        <span>{store.transitInfo.duration}</span>
+                                    </div>
+                                )}
+                            </div>
+                      )}
+
                       {store.phone_number && (
                         <div className="flex items-center gap-1">
                           <Phone className="w-3 h-3" />
