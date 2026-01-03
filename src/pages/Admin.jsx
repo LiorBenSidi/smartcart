@@ -131,17 +131,29 @@ export default function Admin() {
             <p className="text-slate-300 text-sm mt-1">System Overview</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-            <Card>
-                <CardContent className="p-4 text-center">
-                    <h3 className="text-3xl font-bold text-indigo-600">{users.length}</h3>
-                    <p className="text-xs text-gray-500 uppercase font-bold">Total Users</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="border-none shadow-sm bg-white">
+                <CardContent className="p-4">
+                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Total Users</p>
+                    <h3 className="text-2xl font-bold text-slate-800">{users.length}</h3>
                 </CardContent>
             </Card>
-            <Card>
-                <CardContent className="p-4 text-center">
-                    <h3 className="text-3xl font-bold text-indigo-600">{receipts.length}</h3>
-                    <p className="text-xs text-gray-500 uppercase font-bold">Total Receipts</p>
+            <Card className="border-none shadow-sm bg-white">
+                <CardContent className="p-4">
+                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Total Receipts</p>
+                    <h3 className="text-2xl font-bold text-slate-800">{receipts.length}</h3>
+                </CardContent>
+            </Card>
+            <Card className="border-none shadow-sm bg-white">
+                <CardContent className="p-4">
+                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Products</p>
+                    <h3 className="text-2xl font-bold text-slate-800">--</h3>
+                </CardContent>
+            </Card>
+            <Card className="border-none shadow-sm bg-white">
+                <CardContent className="p-4">
+                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Stores</p>
+                    <h3 className="text-2xl font-bold text-slate-800">--</h3>
                 </CardContent>
             </Card>
         </div>

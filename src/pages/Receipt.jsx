@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles, TrendingDown, ArrowDownRight, ArrowRightLeft } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles, TrendingDown, ArrowDownRight, ArrowRightLeft, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PriceComparisonReview from '../components/PriceComparisonReview';
@@ -22,6 +22,8 @@ export default function Receipt() {
   const [productMap, setProductMap] = useState(new Map());
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(null);
+  const [itemBenchmarks, setItemBenchmarks] = useState([]);
+  const [expandedInsight, setExpandedInsight] = useState(null);
 
   // Process pending receipt
   const processReceipt = async (r) => {
@@ -210,6 +212,15 @@ export default function Receipt() {
 
             if (data.length > 0) {
               setReceipt(data[0]);
+              
+              // Fetch benchmarks for this receipt
+              try {
+                  const benchmarks = await base44.entities.ReceiptItemBenchmark.filter({ receipt_id: id });
+                  setItemBenchmarks(benchmarks);
+              } catch (bmError) {
+                  console.error("Failed to load benchmarks", bmError);
+              }
+
               // If pending, trigger processing
               if (data[0].processing_status === 'pending') {
                 processReceipt(data[0]);
@@ -630,8 +641,12 @@ export default function Receipt() {
     ? receipt.items.reduce((sum, item) => sum + (item.total || (item.quantity * item.price) || 0), 0)
     : (receipt.totalAmount || receipt.total_amount || 0);
 
+  const totalPotentialSavings = receipt.insights
+    ? receipt.insights.reduce((sum, i) => sum + (i.potential_savings || 0), 0)
+    : 0;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
                 <Link to={createPageUrl('Home')}>
@@ -646,22 +661,49 @@ export default function Receipt() {
             </Button>
         </div>
 
-        {/* AI Summary Card */}
-        {receipt.summary && (
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-white" />
+        {/* Potential Savings Summary Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             {totalPotentialSavings > 0 ? (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-emerald-700 font-medium text-sm uppercase tracking-wide">Potential Savings Found</p>
+                        <h3 className="text-3xl font-bold text-emerald-900 mt-1">₪{totalPotentialSavings.toFixed(2)}</h3>
+                        <p className="text-emerald-600 text-xs mt-1">Based on market benchmark prices</p>
+                    </div>
+                    <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <Coins className="w-6 h-6 text-emerald-600" />
+                    </div>
+                </div>
+             ) : (
+                <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 font-medium text-sm uppercase tracking-wide">Market Price Analysis</p>
+                        <h3 className="text-2xl font-bold text-gray-900 mt-1">Fair Price</h3>
+                        <p className="text-gray-400 text-xs mt-1">No significant overpayments detected</p>
+                    </div>
+                    <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="w-6 h-6 text-gray-400" />
+                    </div>
+                </div>
+             )}
+
+            {/* AI Summary Card */}
+            {receipt.summary && (
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-indigo-900 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
+                      AI Summary
+                    </h3>
+                    <p className="text-indigo-800 text-sm leading-relaxed">{receipt.summary}</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-indigo-900 mb-1 flex items-center gap-2">
-                  AI Summary
-                </h3>
-                <p className="text-gray-700 leading-relaxed">{receipt.summary}</p>
-              </div>
-            </div>
-          </div>
-        )}
+            )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -701,33 +743,55 @@ export default function Receipt() {
 
                   {/* Items List */}
                   <div className="mt-6">
-                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Items Purchased</h4>
-                      <div className="space-y-3">
-                          {(receipt.items || []).map((item, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-sm">
-                                  <div className="flex items-center gap-3">
-                                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 font-medium">
-                                          {item.quantity}
-                                      </div>
-                                      <div>
-                                          <span className="font-medium text-gray-800">{item.name}</span>
-                                          <div className="text-xs text-gray-400">
-                                              <span className="font-mono mr-1 opacity-75">{item.code || 'null'}</span>
-                                              • {item.category}
-                                          </div>
+                      <div className="flex items-center justify-between mb-3">
+                         <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Items Purchased</h4>
+                         <span className="text-xs text-gray-400">{receipt.items?.length || 0} items</span>
+                      </div>
+                      
+                      {/* Table Header */}
+                      <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-400 border-b border-gray-100 pb-2 mb-2 px-2">
+                          <div className="col-span-5">ITEM</div>
+                          <div className="col-span-2 text-center">QTY</div>
+                          <div className="col-span-2 text-right">PAID</div>
+                          <div className="col-span-3 text-right">BENCHMARK</div>
+                      </div>
+
+                      <div className="space-y-1">
+                          {(receipt.items || []).map((item, idx) => {
+                              const benchmark = itemBenchmarks.find(b => b.receipt_line_item_id === item.code); // Assuming item.code links to benchmark line item id, or we might need robust linking
+                              const isOverpaid = benchmark && benchmark.overpay_amount > 0;
+                              const overpayPercent = benchmark ? ((benchmark.paid_price - benchmark.benchmark_min_price) / benchmark.benchmark_min_price * 100).toFixed(0) : 0;
+                              
+                              return (
+                              <div key={idx} className={`grid grid-cols-12 gap-2 items-center text-sm p-2 rounded-lg transition-colors ${isOverpaid ? 'bg-red-50/50' : 'hover:bg-gray-50'}`}>
+                                  <div className="col-span-5">
+                                      <span className={`font-medium block truncate ${isOverpaid ? 'text-red-900' : 'text-gray-800'}`}>{item.name}</span>
+                                      <div className="text-[10px] text-gray-400 truncate">
+                                          {item.category} • <span className="font-mono opacity-75">{item.code}</span>
                                       </div>
                                   </div>
-                                  <div className="text-right">
-                                    <div className="font-semibold text-gray-900">₪{item.total.toFixed(2)}</div>
-                                    {receipt.insights?.find(insight => insight.type === 'OVERPAY_ITEM' && insight.message.includes(item.name)) && (
-                                        <div className="text-xs text-red-500 flex items-center justify-end gap-1">
-                                            <ArrowDownRight className="w-3 h-3" />
-                                            Overpaid
-                                        </div>
-                                    )}
+                                  <div className="col-span-2 text-center text-gray-500 text-xs">
+                                      {item.quantity}
+                                  </div>
+                                  <div className="col-span-2 text-right font-medium text-gray-900">
+                                      ₪{item.price.toFixed(2)}
+                                  </div>
+                                  <div className="col-span-3 text-right">
+                                      {benchmark ? (
+                                          <div>
+                                              <div className="text-xs text-gray-500">₪{benchmark.benchmark_min_price.toFixed(2)}</div>
+                                              {isOverpaid && (
+                                                  <div className="text-[10px] text-red-600 font-bold flex items-center justify-end gap-0.5">
+                                                      <TrendingDown className="w-3 h-3" /> +{overpayPercent}%
+                                                  </div>
+                                              )}
+                                          </div>
+                                      ) : (
+                                          <span className="text-xs text-gray-300">-</span>
+                                      )}
                                   </div>
                               </div>
-                          ))}
+                          )})}
                       </div>
                   </div>
               </div>
@@ -747,14 +811,42 @@ export default function Receipt() {
                     </div>
                     <div className="p-4 space-y-3">
                         {receipt.insights.filter(i => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving', 'warning'].includes(i.type)).map((insight, idx) => (
-                            <div key={idx} className={`p-3 rounded-lg border text-sm flex items-start gap-3 ${
-                                insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-800' :
-                                'bg-red-50 border-red-100 text-red-800'
+                            <div key={idx} className={`rounded-xl border transition-all ${
+                                insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-900' :
+                                'bg-red-50 border-red-100 text-red-900'
                             }`}>
-                                {insight.type === 'warning' ? <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> : <TrendingDown className="w-4 h-4 mt-0.5 flex-shrink-0" />}
-                                <div>
-                                    <p className="font-bold">{insight.message}</p>
-                                    <p className="text-xs mt-1 opacity-90">{insight.explanation_text}</p>
+                                <div 
+                                    className="p-3 flex items-start gap-3 cursor-pointer" 
+                                    onClick={() => setExpandedInsight(expandedInsight === idx ? null : idx)}
+                                >
+                                    {insight.type === 'warning' ? <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-600" /> : <TrendingDown className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-600" />}
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-bold text-sm">{insight.message}</p>
+                                            {insight.potential_savings > 0 && (
+                                                <Badge variant="outline" className="bg-white border-red-200 text-red-700 font-bold ml-2 whitespace-nowrap">
+                                                    Save ₪{insight.potential_savings.toFixed(2)}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        {/* Progressive Disclosure */}
+                                        <div className={`text-xs mt-2 overflow-hidden transition-all duration-300 ${expandedInsight === idx ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                            <p className="opacity-90 leading-relaxed mb-2">{insight.explanation_text}</p>
+                                            {insight.evidence_json && (
+                                                <div className="bg-white/50 rounded p-2 text-[10px] font-mono border border-black/5">
+                                                    Evidence: {(() => {
+                                                        try {
+                                                            const evidence = JSON.parse(insight.evidence_json);
+                                                            return Object.entries(evidence).map(([k, v]) => `${k}: ${v}`).join(', ');
+                                                        } catch { return 'Details unavailable'; }
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-center mt-1">
+                                            {expandedInsight === idx ? <ChevronUp className="w-3 h-3 opacity-30" /> : <ChevronDown className="w-3 h-3 opacity-30" />}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -766,20 +858,28 @@ export default function Receipt() {
 
                 {/* What-if / Swaps */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 border-b border-indigo-100">
-                        <h4 className="text-xs font-semibold text-indigo-700 uppercase tracking-wider flex items-center gap-2">
-                            <ArrowRightLeft className="w-3 h-3" /> "What If" Simulator
+                    <div className="bg-gradient-to-r from-violet-50 to-fuchsia-50 p-4 border-b border-violet-100">
+                        <h4 className="text-xs font-semibold text-violet-700 uppercase tracking-wider flex items-center gap-2">
+                            <Sparkles className="w-3 h-3" /> "What If" Simulator
                         </h4>
                     </div>
                     <div className="p-4 space-y-3">
-                        <p className="text-xs text-gray-500 mb-2">Hypothetical savings if you switched products:</p>
+                        <div className="flex items-center gap-2 mb-3 bg-violet-50/50 p-2 rounded text-xs text-violet-600">
+                             <Info className="w-3 h-3" />
+                             <span>Hypothetical savings. Does not affect actual spending.</span>
+                        </div>
                         {receipt.insights.filter(i => i.type === 'alternative').map((insight, idx) => (
-                            <div key={idx} className="p-3 rounded-lg border border-indigo-100 bg-indigo-50/50 text-indigo-900 text-sm">
-                                <div className="flex items-start gap-2">
-                                    <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-indigo-500" />
+                            <div key={idx} className="p-3 rounded-lg border border-violet-100 bg-white shadow-sm text-violet-900 text-sm">
+                                <div className="flex items-start gap-3">
+                                    <ArrowRightLeft className="w-5 h-5 mt-0.5 flex-shrink-0 text-violet-500" />
                                     <div>
-                                        <p className="font-semibold">{insight.message}</p>
-                                        <p className="text-xs mt-1 text-indigo-700">{insight.explanation_text}</p>
+                                        <p className="font-bold">{insight.message}</p>
+                                        <p className="text-xs mt-1 text-gray-600 leading-relaxed">{insight.explanation_text}</p>
+                                        {insight.potential_savings > 0 && (
+                                            <div className="mt-2 text-xs font-semibold text-violet-600 bg-violet-50 inline-block px-2 py-1 rounded">
+                                                Could save ₪{insight.potential_savings.toFixed(2)}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

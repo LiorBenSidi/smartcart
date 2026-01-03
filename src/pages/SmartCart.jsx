@@ -21,6 +21,17 @@ export default function SmartCart() {
   const [showHistory, setShowHistory] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
 
+  const applyOptimizedCart = () => {
+    if (!optimizedCart) return;
+    const newItems = optimizedCart.items.map(item => ({
+        gtin: item.gtin,
+        name: item.name || products.find(p => p.gtin === item.gtin)?.canonical_name || "Optimized Item",
+        quantity: item.quantity
+    }));
+    setCartItems(newItems);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const [storesList, productsList, savedCartsList] = await Promise.all([
@@ -419,43 +430,60 @@ export default function SmartCart() {
                   {/* Optimization Suggestion */}
                   {optimizedCart && (
                   <div className="mt-8">
-                  <div className="bg-gradient-to-r from-purple-100 to-indigo-100 p-6 rounded-2xl border border-purple-200">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-white p-2 rounded-full shadow-sm">
-                        <Split className="w-6 h-6 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">Smart Split Optimization</h3>
-                        <p className="text-sm text-gray-600">Save more by splitting your shopping trip</p>
-                      </div>
-                      <div className="ml-auto text-right">
-                        <div className="text-2xl font-bold text-green-600">Save ₪{optimizedCart.savings.toFixed(2)}</div>
-                        <div className="text-xs text-gray-500">vs best single store</div>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="bg-white/50 rounded-xl p-4">
-                        <div className="text-sm text-gray-500 mb-1">Current Best Total</div>
-                        <div className="text-xl font-semibold text-gray-900">₪{optimizedCart.originalCost.toFixed(2)}</div>
-                      </div>
-                      <div className="bg-white rounded-xl p-4 border border-purple-200 shadow-sm">
-                        <div className="text-sm text-purple-600 mb-1 font-medium">Optimized Total</div>
-                        <div className="text-xl font-bold text-gray-900">₪{optimizedCart.totalCost.toFixed(2)}</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                       <h4 className="font-semibold text-gray-900 mb-2 text-sm">How to split your cart:</h4>
-                       <div className="space-y-2 max-h-40 overflow-y-auto">
-                         {Array.from(new Set(optimizedCart.items.map(i => i.store?.name))).map(storeName => (
-                            <div key={storeName} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-gray-100">
-                                <span>{storeName}</span>
-                                <span className="text-gray-500">{optimizedCart.items.filter(i => i.store?.name === storeName).length} items</span>
+                  <div className="bg-gradient-to-br from-violet-600 to-indigo-700 text-white p-1 rounded-2xl shadow-xl">
+                      <div className="bg-white rounded-xl p-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="h-12 w-12 bg-violet-100 rounded-full flex items-center justify-center">
+                                <Split className="w-6 h-6 text-violet-600" />
                             </div>
-                         ))}
-                       </div>
-                    </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">Smart Cart Optimization</h3>
+                                <p className="text-sm text-gray-500">Split your cart to maximize savings</p>
+                            </div>
+                            <div className="ml-auto">
+                                <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200 text-sm px-3 py-1">
+                                    Save ₪{optimizedCart.savings.toFixed(2)}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Current Best</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">₪{optimizedCart.originalCost.toFixed(2)}</p>
+                                <p className="text-xs text-gray-400 mt-1">Single Store</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-violet-50 border border-violet-100 ring-2 ring-violet-200 ring-offset-2">
+                                <p className="text-xs text-violet-600 uppercase tracking-wide font-semibold">Optimized</p>
+                                <p className="text-2xl font-bold text-violet-700 mt-1">₪{optimizedCart.totalCost.toFixed(2)}</p>
+                                <p className="text-xs text-violet-400 mt-1">Multi-Store Split</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                           <h4 className="font-semibold text-gray-900 text-sm">Split Strategy:</h4>
+                           <div className="grid gap-2">
+                             {Array.from(new Set(optimizedCart.items.map(i => i.store?.name))).map(storeName => (
+                                <div key={storeName} className="flex items-center justify-between text-sm p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                    <div className="flex items-center gap-2">
+                                        <StoreIcon className="w-4 h-4 text-gray-400" />
+                                        <span className="font-medium text-gray-700">{storeName}</span>
+                                    </div>
+                                    <Badge variant="secondary" className="bg-white shadow-sm text-gray-600">
+                                        {optimizedCart.items.filter(i => i.store?.name === storeName).length} items
+                                    </Badge>
+                                </div>
+                             ))}
+                           </div>
+                        </div>
+
+                        <Button 
+                            className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-200 h-12 text-base"
+                            onClick={applyOptimizedCart}
+                        >
+                            <Sparkles className="w-5 h-5 mr-2" /> Apply Optimized Cart
+                        </Button>
+                      </div>
                   </div>
                   </div>
                   )}

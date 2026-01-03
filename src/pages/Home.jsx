@@ -11,6 +11,7 @@ import Onboarding from '../components/Onboarding';
 
 export default function Home() {
   const [receipts, setReceipts] = useState([]);
+  const [insights, setInsights] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [displayCount, setDisplayCount] = useState(5);
@@ -130,6 +131,20 @@ export default function Home() {
             data = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 100);
         }
         setReceipts(data);
+
+        // Extract Insights from receipts for dashboard
+        const allInsights = data.flatMap(r => {
+             if (!r.insights) return [];
+             return r.insights.map(i => ({ ...i, receiptDate: r.date, store: r.storeName, receiptId: r.id }));
+        });
+        
+        // Prioritize savings and overpay warnings
+        const topInsights = allInsights
+            .filter(i => i.potential_savings > 0 || i.type === 'warning')
+            .sort((a, b) => (b.potential_savings || 0) - (a.potential_savings || 0))
+            .slice(0, 3);
+            
+        setInsights(topInsights);
 
         // Show onboarding if new user (no receipts and no profile)
         if (data.length === 0 && profiles.length === 0) {
@@ -288,6 +303,45 @@ export default function Home() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Top Insights Section */}
+      {insights.length > 0 && (
+          <section>
+              <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                  Top Savings Opportunities
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {insights.map((insight, idx) => (
+                      <Link key={idx} to={`${createPageUrl('Receipt')}?id=${insight.receiptId}`}>
+                          <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 h-full flex flex-col">
+                              <div className="flex items-start justify-between mb-3">
+                                  <div className={`p-2 rounded-lg ${
+                                      insight.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                                  }`}>
+                                      {insight.type === 'warning' ? <AlertCircle className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                  </div>
+                                  <span className="text-xs text-gray-400">{insight.store} • {format(new Date(insight.receiptDate), 'MMM d')}</span>
+                              </div>
+                              <h4 className="font-bold text-gray-900 mb-1">{insight.message}</h4>
+                              <p className="text-xs text-gray-500 line-clamp-2 mb-4 flex-1">{insight.explanation_text}</p>
+                              
+                              <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
+                                  {insight.potential_savings > 0 ? (
+                                      <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                                          Save ₪{insight.potential_savings.toFixed(2)}
+                                      </span>
+                                  ) : (
+                                      <span className="text-xs text-gray-400">View Details</span>
+                                  )}
+                                  <ChevronRight className="w-4 h-4 text-gray-300" />
+                              </div>
+                          </div>
+                      </Link>
+                  ))}
+              </div>
+          </section>
+      )}
 
       <div className={`grid grid-cols-1 gap-8 ${chartData.length > 0 ? 'lg:grid-cols-3' : ''}`}>
         {/* Spending Chart */}
