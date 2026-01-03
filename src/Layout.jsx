@@ -84,7 +84,11 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Bottom Navigation - only for authenticated users */}
         {!isLanding && user && (
-          <nav className="fixed bottom-6 left-4 right-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-2xl px-2 py-3 z-50 mx-auto transition-all duration-300 ease-in-out max-w-md">
+          <nav className={`fixed bottom-6 left-4 right-4 backdrop-blur-md border rounded-2xl shadow-2xl px-2 py-3 z-50 mx-auto transition-all duration-300 ease-in-out max-w-md ${
+            darkMode 
+              ? 'bg-white/95 border-gray-200/50' 
+              : 'bg-gray-900/95 border-gray-700/50'
+          }`}>
             <div className="flex justify-around items-center">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
@@ -96,7 +100,9 @@ export default function Layout({ children, currentPageName }) {
                     key={item.label} 
                     to={createPageUrl(item.path === '/' ? 'Home' : item.path.substring(1))}
                     className={`flex flex-col items-center gap-1 transition-colors duration-200 ${
-                      isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                      isActive 
+                        ? (darkMode ? 'text-indigo-600' : 'text-indigo-400') 
+                        : (darkMode ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200')
                     }`}
                   >
                     <Icon className={`w-6 h-6 ${isActive ? 'fill-current bg-opacity-20' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
@@ -109,7 +115,9 @@ export default function Layout({ children, currentPageName }) {
                 <Link 
                   to={createPageUrl('Admin')}
                   className={`flex flex-col items-center gap-1 transition-colors duration-200 ${
-                    currentPageName === 'Admin' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                    currentPageName === 'Admin' 
+                      ? (darkMode ? 'text-indigo-600' : 'text-indigo-400') 
+                      : (darkMode ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200')
                   }`}
                 >
                   <ShieldCheck className="w-6 h-6" />
