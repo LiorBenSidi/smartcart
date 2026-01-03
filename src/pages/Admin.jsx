@@ -174,12 +174,7 @@ export default function Admin() {
             </Button>
         </div>
 
-        <Button 
-            className="w-full bg-red-800 hover:bg-red-900" 
-            onClick={handleDeleteAllData}
-        >
-            <Trash2 className="w-4 h-4 mr-2" /> Delete ALL Data (Receipts, Products, Stores, Chains)
-        </Button>
+
 
         <SystemValidationPanel />
 
