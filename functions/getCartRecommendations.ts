@@ -145,6 +145,64 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Enrich with Google Maps real distance/duration if API key is present
+    const googleApiKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
+    if (googleApiKey && userLat && userLon && topStores.length > 0) {
+      try {
+        const destinations = topStores.map(item =>
+          item.nearestBranch ? `${item.nearestBranch.latitude},${item.nearestBranch.longitude}` : ''
+        ).filter(d => d).join('|');
+
+        if (destinations) {
+          const origin = `${userLat},${userLon}`;
+          
+          // Fetch Driving
+          const driveUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=driving&key=${googleApiKey}`;
+          const driveRes = await fetch(driveUrl);
+          const driveData = await driveRes.json();
+
+          // Fetch Transit
+          const transitUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=transit&key=${googleApiKey}`;
+          const transitRes = await fetch(transitUrl);
+          const transitData = await transitRes.json();
+
+          if (driveData.status === 'OK') {
+             const elements = driveData.rows[0].elements;
+             let validIndex = 0;
+             for (let i = 0; i < topStores.length; i++) {
+                if (topStores[i].nearestBranch) {
+                   if (elements[validIndex] && elements[validIndex].status === 'OK') {
+                      topStores[i].drivingInfo = {
+                         distance: elements[validIndex].distance.text,
+                         duration: elements[validIndex].duration.text
+                      };
+                   }
+                   validIndex++;
+                }
+             }
+          }
+
+          if (transitData.status === 'OK') {
+             const elements = transitData.rows[0].elements;
+             let validIndex = 0;
+             for (let i = 0; i < topStores.length; i++) {
+                if (topStores[i].nearestBranch) {
+                   if (elements[validIndex] && elements[validIndex].status === 'OK') {
+                      topStores[i].transitInfo = {
+                         distance: elements[validIndex].distance.text,
+                         duration: elements[validIndex].duration.text
+                      };
+                   }
+                   validIndex++;
+                }
+             }
+          }
+        }
+      } catch (err) {
+        console.error("Google Maps API error:", err);
+      }
+    }
+
     return Response.json({ topStores });
 
   } catch (error) {

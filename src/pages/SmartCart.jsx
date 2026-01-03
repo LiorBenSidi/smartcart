@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus } from 'lucide-react';
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
@@ -370,11 +370,28 @@ export default function SmartCart() {
                         </div>
                         <h4 className="text-xl font-bold text-gray-900">{comparison.chain?.name || comparison.store?.name}</h4>
                         {comparison.nearestBranch && (
-                          <div className="text-sm text-gray-600 mt-1 flex items-center gap-1">
-                            <StoreIcon className="w-4 h-4" />
-                            {comparison.nearestBranch.city || comparison.nearestBranch.address_line}
-                            {comparison.distance && (
-                              <span className="text-gray-500 ml-2">• {comparison.distance.toFixed(1)} km away</span>
+                          <div className="mt-2 space-y-1">
+                            <div className="text-sm text-gray-600 flex items-center gap-1">
+                              <StoreIcon className="w-4 h-4" />
+                              {comparison.nearestBranch.city || comparison.nearestBranch.address_line}
+                              {!comparison.drivingInfo && comparison.distance && (
+                                <span className="text-gray-500 ml-2">• {comparison.distance.toFixed(1)} km (linear)</span>
+                              )}
+                            </div>
+                            
+                            {comparison.drivingInfo && (
+                                <div className="text-xs text-gray-600 flex items-center gap-3">
+                                    <div className="flex items-center gap-1" title="Driving">
+                                        <Car className="w-3 h-3 text-indigo-600" />
+                                        <span>{comparison.drivingInfo.duration} ({comparison.drivingInfo.distance})</span>
+                                    </div>
+                                    {comparison.transitInfo && (
+                                         <div className="flex items-center gap-1" title="Public Transport">
+                                            <Bus className="w-3 h-3 text-indigo-600" />
+                                            <span>{comparison.transitInfo.duration}</span>
+                                        </div>
+                                    )}
+                                </div>
                             )}
                           </div>
                         )}
