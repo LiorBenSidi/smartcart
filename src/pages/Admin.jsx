@@ -207,7 +207,7 @@ export default function Admin() {
             </Card>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden text-[8px]">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden text-[7px]">
             <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="font-bold text-sm text-gray-700 dark:text-gray-200">User Database</h3>
             </div>
