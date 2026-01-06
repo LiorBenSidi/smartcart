@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelL
 import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import Onboarding from '../components/Onboarding';
+import ReceiptFolderView from '../components/ReceiptFolderView';
 
 export default function Home() {
   const [receipts, setReceipts] = useState([]);
@@ -220,7 +221,7 @@ export default function Home() {
     .slice(0, displayCount);
     
   // We only want to show the top 5 recent receipts in the list, but we fetched 100 for stats
-  const recentReceipts = receipts.slice(0, 5);
+  const recentReceipts = receipts; // Pass all receipts to the folder view
 
 
   
@@ -387,84 +388,16 @@ export default function Home() {
         </section>
         )}
 
-        {/* Recent Receipts */}
+        {/* Receipt History (Folder View) */}
         <section className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Recent Receipts</h3>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Receipts</h3>
             <Link to={createPageUrl('upload')} className="text-xs text-indigo-600 font-semibold hover:underline flex items-center">
               <Plus className="w-3 h-3 mr-1" /> Scan New
             </Link>
           </div>
-          
-          <div className="space-y-3">
-            {recentReceipts.length === 0 ? (
-               <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-                  <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">No receipts scanned yet.</p>
-               </div>
-            ) : (
-              recentReceipts.map((receipt) => {
-                  const isPending = receipt.processingStatus === 'pending';
-                  const isFailed = receipt.processingStatus === 'failed';
 
-                  return (
-                    <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`}>
-                        <div className={`bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border flex items-center justify-between hover:shadow-md transition-all active:scale-[0.99] ${
-                            isPending ? 'border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/20' : 
-                            isFailed ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/20' : 
-                            'border-gray-100 dark:border-gray-700'
-                        }`}>
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                                    isPending ? 'bg-indigo-100 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700' :
-                                    isFailed ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700' :
-                                    'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600'
-                                }`}>
-                                    {isPending ? (
-                                        <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
-                                    ) : isFailed ? (
-                                        <AlertCircle className="w-5 h-5 text-red-500" />
-                                    ) : (
-                                        <ShoppingBag className="w-5 h-5 text-gray-500" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                                        {isPending ? 'Processing...' : receipt.storeName}
-                                    </h4>
-                                    <p className={`text-xs ${
-                                        isPending ? 'text-indigo-600' :
-                                        isFailed ? 'text-red-500' :
-                                        'text-gray-500'
-                                    }`}>
-                                        {isPending ? 'Analyzing receipt...' :
-                                         isFailed ? 'Processing failed' :
-                                         format(new Date(receipt.date), 'MMM d, yyyy')}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {isPending ? (
-                                    <span className="text-xs text-indigo-600 font-medium bg-indigo-100 px-2 py-1 rounded-full">
-                                        In Progress
-                                    </span>
-                                ) : isFailed ? (
-                                    <span className="text-xs text-red-600 font-medium bg-red-100 px-2 py-1 rounded-full flex items-center gap-1">
-                                        <RefreshCw className="w-3 h-3" /> Retry
-                                    </span>
-                                ) : (
-                                    <>
-                                        <span className="font-bold text-gray-900 dark:text-gray-100">₪{receipt.totalAmount?.toFixed(2)}</span>
-                                        <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </Link>
-                  );
-              })
-            )}
-          </div>
+          <ReceiptFolderView receipts={recentReceipts} />
         </section>
       </div>
     </div>
