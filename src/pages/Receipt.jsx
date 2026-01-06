@@ -84,7 +84,10 @@ export default function Receipt() {
     if (field === 'quantity' || field === 'price') {
       const numValue = parseFloat(value) || 0;
       newItem[field] = numValue;
-      newItem.total = Number((newItem.quantity * newItem.price).toFixed(2));
+      // If price changes, update total to match (since price is line total)
+      if (field === 'price') {
+        newItem.total = numValue;
+      }
     } else if (field === 'total') {
       newItem.total = parseFloat(value) || 0;
     } else {
@@ -636,10 +639,16 @@ export default function Receipt() {
     );
   }
 
-  // Calculate the actual total from items
+  // Calculate the actual total from items (price represents line total)
   const displayTotal = receipt.items && receipt.items.length > 0
-    ? receipt.items.reduce((sum, item) => sum + (item.total || (item.quantity * item.price) || 0), 0)
+    ? receipt.items.reduce((sum, item) => sum + (item.total || item.price || 0), 0)
     : (receipt.totalAmount || receipt.total_amount || 0);
+
+  const handleEdit = () => {
+    setEditData({ ...receipt });
+    loadProductsForEditMode();
+    setEditMode(true);
+  };
 
   const totalPotentialSavings = receipt.insights
     ? receipt.insights.reduce((sum, i) => sum + (i.potential_savings || 0), 0)
@@ -656,9 +665,14 @@ export default function Receipt() {
                 </Link>
                 <h2 className="font-bold text-lg text-gray-900">Receipt Details</h2>
             </div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV}>
-                <Download className="w-4 h-4 mr-2" /> Export CSV
-            </Button>
+            <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleEdit}>
+                    <RefreshCw className="w-4 h-4 mr-2" /> Edit
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                    <Download className="w-4 h-4 mr-2" /> Export CSV
+                </Button>
+            </div>
         </div>
 
         {/* Potential Savings Summary Card */}
