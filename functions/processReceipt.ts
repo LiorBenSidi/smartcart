@@ -23,8 +23,12 @@ export default Deno.serve(async (req) => {
         // Define the prompt for extraction with confidence scoring
         const prompt = `
         Analyze this grocery receipt image and extract the data into the following JSON format.
-        Assign a confidence score (0.0 to 1.0) to every extracted field.
         
+        IMPORTANT:
+        1. The receipt is likely in Hebrew (Right-to-Left text).
+        2. Extract ALL line items visible on the receipt. Do not skip any.
+        3. Assign a confidence score (0.0 to 1.0) to every extracted field.
+
         - storeName: Name of the store
         - date: Date of purchase (YYYY-MM-DD).
         - time: Time of purchase (HH:MM).
@@ -36,11 +40,11 @@ export default Deno.serve(async (req) => {
             - code: Product code/SKU if visible.
             - name: Product name.
             - category: Product category (Produce, Dairy, Meat, Snacks, etc).
-            - quantity: Quantity.
-            - price: Line total.
+            - quantity: Quantity (default to 1 if not explicitly stated).
+            - price: Line total (the final price paid for this line).
             - confidence_score: Overall confidence for this line item (0.0 to 1.0).
 
-        Be conservative with confidence scores. If text is blurry or ambiguous, lower the score.
+        If text is blurry or ambiguous, lower the score.
         `;
 
         const llmRes = await base44.integrations.Core.InvokeLLM({
