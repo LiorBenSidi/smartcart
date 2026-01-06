@@ -178,12 +178,11 @@ Return as JSON array with: type (savings/health/info), title, description, savin
             setRecommendations(prev => prev.filter(r => r.id !== rec.id));
             setFeedbackDialog({ open: false, rec: null, action: null });
         } else {
-             // Maybe show a "Thanks" toast?
-             alert("Thanks for your feedback!");
+             toast.success("Thanks for your feedback!");
         }
     } catch (e) {
         console.error("Feedback failed", e);
-        alert("Failed to submit feedback");
+        toast.error("Failed to submit feedback");
     } finally {
         setSubmittingFeedback(false);
     }
