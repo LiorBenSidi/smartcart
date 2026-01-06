@@ -25,10 +25,11 @@ export default function Recommendations() {
       const user = await base44.auth.me();
       
       // Fetch user data
-      const [profileData, receiptsData, storesData] = await Promise.all([
+      const [profileData, receiptsData, storesData, feedbackData] = await Promise.all([
         base44.entities.UserProfile.filter({ created_by: user.email }),
         base44.entities.Receipt.filter({ created_by: user.email }, '-created_date', 20),
-        base44.entities.Store.list()
+        base44.entities.Store.list(),
+        base44.entities.RecommendationFeedback.filter({ created_by: user.email }, '-created_date', 50)
       ]);
 
       const profile = profileData[0] || {};
