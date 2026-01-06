@@ -273,12 +273,75 @@ Return as JSON array with: type (savings/health/info), title, description, savin
                             <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">{rec.title}</h3>
                             <span className="text-[10px] font-bold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">{rec.savings}</span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{rec.description}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-3">{rec.description}</p>
+                        
+                        {/* Feedback Actions */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-green-50 hover:text-green-600" onClick={() => openFeedback(rec, 'liked')}>
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-red-50 hover:text-red-600" onClick={() => openFeedback(rec, 'disliked')}>
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                            </Button>
+                            <div className="flex-1"></div>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] text-gray-400 hover:text-gray-600" onClick={() => openFeedback(rec, 'dismissed')}>
+                                Dismiss
+                            </Button>
+                        </div>
                     </div>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 absolute top-2 right-2 text-gray-300 hover:text-gray-500" onClick={() => openFeedback(rec, 'dismissed')}>
+                        <X className="w-3.5 h-3.5" />
+                    </Button>
                 </CardContent>
             </Card>
         ))}
       </div>
+
+      <Dialog open={feedbackDialog.open} onOpenChange={(open) => !open && setFeedbackDialog({ ...feedbackDialog, open: false })}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Help us improve</DialogTitle>
+                <DialogDescription>
+                    Why was this recommendation not helpful?
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                    <Label>Reason</Label>
+                    <Select value={feedbackReason} onValueChange={setFeedbackReason}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a reason" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="not_relevant">Not Relevant to Me</SelectItem>
+                            <SelectItem value="already_know">I Already Know This</SelectItem>
+                            <SelectItem value="incorrect_info">Information is Incorrect</SelectItem>
+                            <SelectItem value="too_expensive">Too Expensive</SelectItem>
+                            <SelectItem value="preference_mismatch">Doesn't Match My Preferences</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label>Comment (Optional)</Label>
+                    <Textarea 
+                        placeholder="Tell us more..." 
+                        value={feedbackComment}
+                        onChange={(e) => setFeedbackComment(e.target.value)}
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setFeedbackDialog({ ...feedbackDialog, open: false })}>Cancel</Button>
+                <Button 
+                    onClick={() => submitFeedback(feedbackDialog.rec, feedbackDialog.action, feedbackReason, feedbackComment)}
+                    disabled={submittingFeedback || !feedbackReason}
+                >
+                    {submittingFeedback ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Feedback"}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
