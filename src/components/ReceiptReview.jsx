@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, CheckCircle2, AlertCircle, Save } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, AlertCircle, Save, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { base44 } from '@/api/base44Client';
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,23 @@ export default function ReceiptReview({ receipt, onConfirm }) {
              newItems[index].total = isNaN(val) ? 0 : val;
         }
 
+        setData({ ...data, items: newItems });
+    };
+
+    const handleAddItem = () => {
+        const newItem = {
+            name: "",
+            quantity: 1,
+            price: 0,
+            total: 0,
+            needs_review: true,
+            user_confirmed: false
+        };
+        setData({ ...data, items: [...data.items, newItem] });
+    };
+
+    const handleDeleteItem = (index) => {
+        const newItems = data.items.filter((_, i) => i !== index);
         setData({ ...data, items: newItems });
     };
 
@@ -71,6 +88,10 @@ export default function ReceiptReview({ receipt, onConfirm }) {
     };
 
     const metadataWarning = data.needs_metadata_review;
+
+    // Calculate sum of items (using price as it represents line total)
+    const calculatedSum = data.items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+    const hasMismatch = Math.abs(calculatedSum - (parseFloat(data.totalAmount) || 0)) > 0.05;
 
     return (
         <div className="space-y-6">
@@ -162,6 +183,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                             <th className="py-2 px-2 text-center w-16">Qty</th>
                                             <th className="py-2 px-2 text-right w-24">Price</th>
                                             <th className="py-2 px-2 w-10"></th>
+                                            <th className="py-2 px-2 w-10"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y dark:divide-gray-700">
@@ -206,15 +228,54 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                         </button>
                                                     ) : (
                                                         <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400 mx-auto" />
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                                        )}
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                        <button 
+                                                        onClick={() => handleDeleteItem(idx)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                                        title="Remove item"
+                                                        >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                        </td>
+                                                        </tr>
+                                                        ))}
+                                                        </tbody>
+                                                        </table>
+                                                        </div>
+                                                        <div className="p-2 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                                                        <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        onClick={handleAddItem}
+                                                        className="w-full text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-dashed border-indigo-200 dark:border-indigo-800"
+                                                        >
+                                                        <Plus className="w-4 h-4 mr-2" /> Add Item
+                                                        </Button>
+                                                        </div>
+                                                        </CardContent>
+                                                        </Card>
+
+                                                        {hasMismatch && (
+                                                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+                                                        <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                                        <div className="flex-1">
+                                                        <h4 className="text-sm font-bold text-red-900 dark:text-red-200">Total Amount Mismatch</h4>
+                                                        <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                                                        The sum of item prices (₪{calculatedSum.toFixed(2)}) does not match the receipt total (₪{(parseFloat(data.totalAmount) || 0).toFixed(2)}).
+                                                        </p>
+                                                        </div>
+                                                        <Button 
+                                                        size="sm" 
+                                                        variant="outline"
+                                                        className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
+                                                        onClick={() => handleMetadataChange('totalAmount', calculatedSum)}
+                                                        >
+                                                        Fix Total
+                                                        </Button>
+                                                        </div>
+                                                        )}
 
                     <Button 
                         onClick={handleConfirmAll} 
