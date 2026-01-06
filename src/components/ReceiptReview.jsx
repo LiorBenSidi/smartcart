@@ -18,31 +18,12 @@ export default function ReceiptReview({ receipt, onConfirm }) {
         const newItems = [...data.items];
         newItems[index] = { ...newItems[index], [field]: value };
         
-        // Auto-recalculate line total if quantity or price changes
-        if (field === 'quantity' || field === 'price') {
-             const qty = field === 'quantity' ? parseFloat(value) : newItems[index].quantity;
-             const price = field === 'price' ? parseFloat(value) : newItems[index].price;
-             // Handle NaN
-             const validQty = isNaN(qty) ? 0 : qty;
-             const validPrice = isNaN(price) ? 0 : price;
-             newItems[index].total = Number((validQty * validPrice).toFixed(2));
-        }
-        // Auto-recalculate unit price if total changes
-        else if (field === 'total') {
-             const total = parseFloat(value);
-             const qty = newItems[index].quantity;
-             const validTotal = isNaN(total) ? 0 : total;
-             const validQty = isNaN(qty) ? 0 : qty;
-             
-             if (validQty !== 0) {
-                 newItems[index].price = Number((validTotal / validQty).toFixed(2));
-             }
+        // Sync total with price since price IS the total (user requirement)
+        if (field === 'price') {
+             const val = parseFloat(value);
+             newItems[index].total = isNaN(val) ? 0 : val;
         }
 
-        // If user manually edits, we can assume they are confirming it (clearing review flag)
-        // But let's keep it explicit for now or maybe clear 'needs_review' on edit?
-        // newItems[index].needs_review = false; 
-        
         setData({ ...data, items: newItems });
     };
 
@@ -179,8 +160,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                         <tr>
                                             <th className="py-2 px-3 text-left">Item / Raw Text</th>
                                             <th className="py-2 px-2 text-center w-16">Qty</th>
-                                            <th className="py-2 px-2 text-right w-20">Unit Price</th>
-                                            <th className="py-2 px-2 text-right w-20">Total</th>
+                                            <th className="py-2 px-2 text-right w-24">Price</th>
                                             <th className="py-2 px-2 w-10"></th>
                                         </tr>
                                     </thead>
@@ -212,14 +192,6 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                         type="number"
                                                         value={item.price || ''} 
                                                         onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                                                        className="h-7 text-right px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <Input 
-                                                        type="number"
-                                                        value={item.total || ''} 
-                                                        onChange={(e) => handleItemChange(idx, 'total', e.target.value)}
                                                         className="h-7 text-right px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 font-medium"
                                                     />
                                                 </td>
