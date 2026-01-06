@@ -83,7 +83,7 @@ export default function Landing() {
             <div className="w-full space-y-4">
                 {user && (
                     <div className="bg-indigo-50 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-200 px-4 py-3 rounded-xl font-medium text-sm border border-indigo-100 dark:border-indigo-800">
-                        👋 Hello, {user.email}
+                        👋 Hello, {user.full_name || user.email}
                     </div>
                 )}
                 <Button

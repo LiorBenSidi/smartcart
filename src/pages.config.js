@@ -1,4 +1,6 @@
+import Admin from './pages/Admin';
 import CatalogAdmin from './pages/CatalogAdmin';
+import Home from './pages/Home';
 import Landing from './pages/Landing';
 import NearbyStores from './pages/NearbyStores';
 import PriceComparison from './pages/PriceComparison';
@@ -7,13 +9,13 @@ import Receipt from './pages/Receipt';
 import Recommendations from './pages/Recommendations';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
-import Home from './pages/Home';
-import Admin from './pages/Admin';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Admin": Admin,
     "CatalogAdmin": CatalogAdmin,
+    "Home": Home,
     "Landing": Landing,
     "NearbyStores": NearbyStores,
     "PriceComparison": PriceComparison,
@@ -22,8 +24,6 @@ export const PAGES = {
     "Recommendations": Recommendations,
     "SmartCart": SmartCart,
     "Upload": Upload,
-    "Home": Home,
-    "Admin": Admin,
 }
 
 export const pagesConfig = {
