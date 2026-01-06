@@ -663,7 +663,7 @@ export default function Receipt() {
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </Button>
                 </Link>
-                <h2 className="font-bold text-lg text-gray-900">Receipt Details</h2>
+                <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">Receipt Details</h2>
             </div>
             <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleEdit}>
