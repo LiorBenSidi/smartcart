@@ -314,7 +314,7 @@ export default function Receipt() {
                     <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </Button>
                 </Link>
-                <h2 className="font-bold text-2xl text-gray-900">Review Receipt</h2>
+                <h2 className="font-bold text-2xl text-gray-900 dark:text-gray-100">Review Receipt</h2>
               </div>
               <ReceiptReview receipt={receipt} onConfirm={handleReviewConfirm} />
           </div>
