@@ -37,8 +37,7 @@ export default Deno.serve(async (req) => {
             - name: Product name.
             - category: Product category (Produce, Dairy, Meat, Snacks, etc).
             - quantity: Quantity.
-            - price: Unit price.
-            - total: Line total.
+            - price: Line total.
             - confidence_score: Overall confidence for this line item (0.0 to 1.0).
 
         Be conservative with confidence scores. If text is blurry or ambiguous, lower the score.
@@ -70,7 +69,6 @@ export default Deno.serve(async (req) => {
                                 category: { type: "string" },
                                 quantity: { type: "number" },
                                 price: { type: "number" },
-                                total: { type: "number" },
                                 confidence_score: { type: "number" }
                             }
                         }
@@ -105,7 +103,7 @@ export default Deno.serve(async (req) => {
             let itemNeedsReview = false;
             
             if ((item.confidence_score || 1) < ITEM_THRESHOLD) itemNeedsReview = true;
-            if (!item.name || !item.total) itemNeedsReview = true;
+            if (!item.name || !item.price) itemNeedsReview = true;
             
             // Mark global review if any item needs review
             if (itemNeedsReview) needsReview = true;
@@ -117,8 +115,7 @@ export default Deno.serve(async (req) => {
                 // Map to ReceiptItem entity fields
                 raw_text: item.raw_text || item.name,
                 sku: item.code,
-                unit_price_scanned: item.price,
-                line_total: item.total,
+                line_total: item.price,
                 description_on_receipt: item.name
             };
         });
