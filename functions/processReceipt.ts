@@ -22,29 +22,41 @@ export default Deno.serve(async (req) => {
 
         // Define the prompt for extraction with confidence scoring
         const prompt = `
-        Analyze this grocery receipt image and extract the data into the following JSON format.
-        
-        IMPORTANT:
-        1. The receipt is likely in Hebrew (Right-to-Left text).
-        2. Extract ALL line items visible on the receipt. Do not skip any.
-        3. Assign a confidence score (0.0 to 1.0) to every extracted field.
+        You are an advanced OCR engine specialized in Hebrew grocery receipts.
+        Analyze the attached receipt image and extract data with high precision.
 
-        - storeName: Name of the store
-        - date: Date of purchase (YYYY-MM-DD).
-        - time: Time of purchase (HH:MM).
-        - address: Address of the store.
-        - totalAmount: Total amount paid.
-        - currency: Currency code (e.g. ILS, USD). Default to ILS if not found.
-        - items: List of items purchased.
-            - raw_text: The full line text from the receipt.
-            - code: Product code/SKU if visible.
-            - name: Product name.
-            - category: Product category (Produce, Dairy, Meat, Snacks, etc).
-            - quantity: Quantity (default to 1 if not explicitly stated).
-            - price: Line total (the final price paid for this line).
-            - confidence_score: Overall confidence for this line item (0.0 to 1.0).
+        CRITICAL PARSING INSTRUCTIONS:
+        1. **Directionality**: The text is Hebrew (Right-to-Left), but numbers are Left-to-Right.
+        2. **Layout Recognition**: Identify columns. Common layouts in Israel are:
+           - [Code] [Description] [Qty] [Price]
+           - [Price] [Qty] [Description] [Code]
+           - [Description] [Code] [Price]
+        3. **Line Items**: Extract EVERY item line. Look for rows with a price and description.
+        4. **Quantity**: If a line has "x 2" or "2 @" or just a number "2" distinct from the price, that is quantity. Default to 1.
+        5. **Price**: This is the *Line Total* (Unit Price * Qty). Ensure the sum of items matches the Total Amount.
+        6. **Structure**: 
+           - "Osher Ad" receipts often have: [Price (Left)] [Qty] [Description] [Code (Right)]
+           - Ignore headers/footers when extracting items.
 
-        If text is blurry or ambiguous, lower the score.
+        EXTRACT INTO THIS JSON FORMAT:
+        - storeName: Name of the store (Hebrew or English).
+        - date: Date (YYYY-MM-DD). Look for DD/MM/YYYY or DD.MM.YY.
+        - time: Time (HH:MM).
+        - address: Store address.
+        - totalAmount: The final charge ("Sah-Hakol", "Total", "Letashlum").
+        - currency: "ILS" usually.
+        - items: Array of objects:
+            - raw_text: Full line content for debugging.
+            - code: Barcode/SKU (usually long number).
+            - name: Product description (Hebrew).
+            - category: Guess based on name (Produce, Dairy, Meat, Bakery, Pantry, Beverages, Household).
+            - quantity: Number of units (number).
+            - price: Final price for this line (number).
+            - confidence_score: 0.0 to 1.0 (low if blurry).
+
+        Heuristics:
+        - If you see a line with just text and no numbers, it might be a category header or wrapped text.
+        - Discount lines usually have a minus sign or "Mivtza". Include them if they affect the final total, or adjust the item price.
         `;
 
         const llmRes = await base44.integrations.Core.InvokeLLM({
