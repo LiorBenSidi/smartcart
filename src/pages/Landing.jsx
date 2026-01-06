@@ -106,7 +106,7 @@ export default function Landing() {
                               // We replace the start of the text if it doesn't have the greeting
                               const decodedText = decodeURIComponent(text); 
                               if (!decodedText.startsWith('👋 Hello')) {
-                                  url.searchParams.set('text', `👋 Hello, ${user.email}\n\n${text}`);
+                                  url.searchParams.set('text', `👋 Hello, ${user.name}\n\n${text}`);
                               }
                               return url.toString();
                           }
