@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, TrendingDown, Leaf, ShoppingCart, Loader2, Store, Heart, RefreshCw } from 'lucide-react';
+import { Sparkles, TrendingDown, Leaf, ShoppingCart, Loader2, Store, Heart, RefreshCw, ThumbsUp, ThumbsDown, X, MessageSquarePlus } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Recommendations() {
   const [filter, setFilter] = useState('all');
