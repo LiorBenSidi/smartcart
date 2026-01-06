@@ -13,9 +13,7 @@ export default function Upload() {
   const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [chains, setChains] = useState([]);
-  const [stores, setStores] = useState([]);
   const [selectedChain, setSelectedChain] = useState(null);
-  const [selectedStore, setSelectedStore] = useState(null);
   const [loadingStores, setLoadingStores] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -36,10 +34,8 @@ export default function Upload() {
         }
         
         const chainList = await base44.entities.Chain.list('-name', 1000);
-        const storeList = await base44.entities.Store.list('-name', 1000);
-        console.log('Loaded chains:', chainList.length, 'stores:', storeList.length);
+        console.log('Loaded chains:', chainList.length);
         setChains(chainList);
-        setStores(storeList);
       } catch (error) {
         console.error('Failed to load stores', error);
       } finally {
@@ -108,9 +104,7 @@ export default function Upload() {
         processing_status: 'pending'
       };
       
-      if (selectedStore) {
-        receiptData.store_id = selectedStore.id;
-      }
+
 
       const pendingReceipt = await base44.entities.Receipt.create(receiptData);
 
@@ -163,7 +157,6 @@ export default function Upload() {
             ) : (
               <Select value={selectedChain?.id} onValueChange={(id) => {
                 setSelectedChain(chains.find(c => c.id === id));
-                setSelectedStore(null);
               }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Choose chain" />
@@ -181,28 +174,7 @@ export default function Upload() {
 
 
 
-          {selectedChain && (
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                Select Store (Optional)
-              </label>
-              <Select value={selectedStore?.id} onValueChange={(id) => setSelectedStore(stores.find(s => s.id === id))}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose store branch" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stores
-                    .filter(s => s.chain_id === selectedChain.id)
-                    .map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.name} - {store.address_line || store.city}
-                      </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+
         </CardContent>
       </Card>
 
