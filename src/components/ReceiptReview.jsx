@@ -63,6 +63,9 @@ export default function ReceiptReview({ receipt, onConfirm }) {
 
             const updatedItems = data.items.map(item => ({
                 ...item,
+                price: parseFloat(item.price) || 0,
+                quantity: parseFloat(item.quantity) || 0,
+                total: parseFloat(item.total) || 0,
                 user_confirmed: true,
                 needs_review: false
             }));
