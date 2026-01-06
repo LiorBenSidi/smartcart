@@ -83,7 +83,7 @@ export default function Landing() {
             <div className="w-full space-y-4">
                 {user && (
                     <div className="bg-indigo-50 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-200 px-4 py-3 rounded-xl font-medium text-sm border border-indigo-100 dark:border-indigo-800">
-                        👋 Hello, {user.name}
+                        👋 Hello, {user.email}
                     </div>
                 )}
                 <Button
@@ -106,7 +106,7 @@ export default function Landing() {
                               // We replace the start of the text if it doesn't have the greeting
                               const decodedText = decodeURIComponent(text); 
                               if (!decodedText.startsWith('👋 Hello')) {
-                                  url.searchParams.set('text', `👋 Hello, ${user.name}\n\n${text}`);
+                                  url.searchParams.set('text', `👋 Hello, ${user.email}\n\n${text}`);
                               }
                               return url.toString();
                           }
