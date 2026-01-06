@@ -142,6 +142,52 @@ Return as JSON array with: type (savings/health/info), title, description, savin
     }
   };
 
+  // Feedback State
+  const [feedbackDialog, setFeedbackDialog] = useState({ open: false, rec: null, action: null });
+  const [feedbackReason, setFeedbackReason] = useState('');
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+
+  const openFeedback = (rec, action) => {
+    if (action === 'liked') {
+      // Immediate save for likes
+      submitFeedback(rec, action, null, null);
+    } else {
+      // Open dialog for negative/dismiss
+      setFeedbackDialog({ open: true, rec, action });
+      setFeedbackReason('');
+      setFeedbackComment('');
+    }
+  };
+
+  const submitFeedback = async (rec, action, reason, comment) => {
+    setSubmittingFeedback(true);
+    try {
+        await base44.entities.RecommendationFeedback.create({
+            recommendation_title: rec.title,
+            recommendation_description: rec.description,
+            recommendation_type: rec.type,
+            action_taken: action,
+            reason_code: reason || null,
+            user_comment: comment || null
+        });
+
+        // Remove from view if dismissed or disliked
+        if (action !== 'liked') {
+            setRecommendations(prev => prev.filter(r => r.id !== rec.id));
+            setFeedbackDialog({ open: false, rec: null, action: null });
+        } else {
+             // Maybe show a "Thanks" toast?
+             alert("Thanks for your feedback!");
+        }
+    } catch (e) {
+        console.error("Feedback failed", e);
+        alert("Failed to submit feedback");
+    } finally {
+        setSubmittingFeedback(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
