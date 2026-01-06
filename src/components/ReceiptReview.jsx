@@ -95,7 +95,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                 </div>
 
                 {/* Form Panel */}
-                <div className="space-y-6 overflow-y-auto h-[80vh] pr-2">
+                <div className="space-y-6 overflow-y-auto h-[80vh] pr-2 text-gray-900 dark:text-gray-100">
                     
                     {/* Metadata Section */}
                     <Card className={`${metadataWarning ? "border-amber-300 dark:border-amber-700 shadow-amber-50 dark:shadow-none" : "dark:border-gray-700"} dark:bg-gray-800`}>
