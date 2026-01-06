@@ -63,7 +63,14 @@ export default function Recommendations() {
 
       const storesSummary = storesData.slice(0, 8).map(s => s.name).join(', ');
 
+      // Summarize negative feedback to avoid repeating bad suggestions
+      const negativeFeedback = feedbackData
+        .filter(f => ['disliked', 'dismissed'].includes(f.action_taken))
+        .map(f => `- Avoid "${f.recommendation_title}": ${f.reason_code || 'User disliked'}`)
+        .join('\n');
+
       const prompt = `Generate 3-5 personalized shopping recommendations for this user:
+${negativeFeedback ? `\nIMPORTANT - USER FEEDBACK TO RESPECT:\n${negativeFeedback}\n` : ''}
 
 User Profile:
 - Budget Focus: ${profile.budget_focus || 'balanced'}
