@@ -12,6 +12,7 @@ export default function PriceComparison() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [priceData, setPriceData] = useState([]);
   const [stores, setStores] = useState(new Map());
+  const [chains, setChains] = useState(new Map());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,12 +24,15 @@ export default function PriceComparison() {
   }, []);
 
   useEffect(() => {
-    const loadStores = async () => {
-      const allStores = await base44.entities.Store.list();
-      const storeMap = new Map(allStores.map(s => [s.id, s]));
-      setStores(storeMap);
+    const loadData = async () => {
+      const [allStores, allChains] = await Promise.all([
+        base44.entities.Store.list(),
+        base44.entities.Chain.list()
+      ]);
+      setStores(new Map(allStores.map(s => [s.id, s])));
+      setChains(new Map(allChains.map(c => [c.id, c])));
     };
-    loadStores();
+    loadData();
   }, []);
 
   const handleProductSelect = async (product) => {
@@ -172,6 +176,8 @@ export default function PriceComparison() {
         <div className="space-y-3">
           {priceData.map((price, index) => {
             const store = stores.get(price.store_id);
+            const chain = chains.get(price.chain_id);
+            const displayName = store?.name || chain?.name || 'Unknown Store';
             const isCheapest = index === 0;
             const priceDiff = price.current_price - cheapestPrice;
             const priceDeviation = avgPrice > 0 ? ((price.current_price - avgPrice) / avgPrice * 100) : 0;
@@ -193,7 +199,7 @@ export default function PriceComparison() {
                       
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-gray-900 dark:text-gray-100">{store?.name || 'Unknown Store'}</h3>
+                          <h3 className="font-bold text-gray-900 dark:text-gray-100">{displayName}</h3>
                           {isCheapest && (
                             <Badge className="bg-green-600 dark:bg-green-700">Best Price</Badge>
                           )}
