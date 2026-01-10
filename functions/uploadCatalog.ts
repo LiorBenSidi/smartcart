@@ -16,7 +16,11 @@ async function processBatch(items, batchSize, delayMs, processFn, label) {
     
     console.log(`[${label}] Processing batch ${currentBatch}/${totalBatches} (${batch.length} items, ${remaining} remaining)`);
     
-    await processFn(batch);
+    try {
+      await processFn(batch);
+    } catch (err) {
+      console.error(`[${label}] Batch ${currentBatch} failed:`, err);
+    }
     
     if (i + batchSize < items.length) {
       console.log(`[${label}] Waiting ${delayMs}ms before next batch...`);
@@ -277,46 +281,21 @@ Deno.serve(async (req) => {
       productMap.set(itemCode, product || { id: null, gtin: itemCode });
     }
 
-    // Bulk create new products with enrichment
+    // Bulk create new products (Enrichment disabled)
     console.log(`Creating ${newProducts.length} new products...`);
     if (newProducts.length > 0) {
-      // Enrich first 20 products with web search
-      const productsToEnrich = newProducts.slice(0, 20);
-      const enrichedProducts = [];
-      
-      console.log(`Enriching ${productsToEnrich.length} products with web search...`);
-      for (const product of productsToEnrich) {
-        try {
-          const enrichment = await base44.integrations.Core.InvokeLLM({
-            prompt: `Find information about this product: "${product.canonical_name}" by ${product.brand_name || 'unknown brand'}. Provide: category, subcategory, image URL, and dietary flags (is_organic, is_gluten_free, is_lactose_free, is_vegan, is_kosher).`,
-            add_context_from_internet: true,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                category: { type: "string" },
-                subcategory: { type: "string" },
-                image_url: { type: "string" },
-                is_organic: { type: "boolean" },
-                is_gluten_free: { type: "boolean" },
-                is_lactose_free: { type: "boolean" },
-                is_vegan: { type: "boolean" },
-                is_kosher: { type: "boolean" }
-              }
+      await processBatch(
+        newProducts,
+        100,
+        1000,
+        async (batch) => {
+            const created = await svc.entities.Product.bulkCreate(batch);
+            for (const p of created) {
+                productMap.set(p.gtin, p);
             }
-          });
-          enrichedProducts.push({ ...product, ...enrichment });
-        } catch (error) {
-          console.error(`Failed to enrich product ${product.canonical_name}:`, error);
-          enrichedProducts.push(product);
-        }
-      }
-      
-      // Combine enriched and non-enriched products
-      const allProducts = [...enrichedProducts, ...newProducts.slice(20)];
-      const createdProducts = await svc.entities.Product.bulkCreate(allProducts);
-      for (const p of createdProducts) {
-        productMap.set(p.gtin, p);
-      }
+        },
+        "Product Creation"
+      );
     }
 
     // Update existing products in batches with delay
@@ -365,7 +344,15 @@ Deno.serve(async (req) => {
     // Bulk create new prices
     console.log(`Creating ${newPrices.length} new prices...`);
     if (newPrices.length > 0) {
-      await svc.entities.ProductPrice.bulkCreate(newPrices);
+      await processBatch(
+        newPrices,
+        100,
+        1000,
+        async (batch) => {
+           await svc.entities.ProductPrice.bulkCreate(batch);
+        },
+        "Price Creation"
+      );
     }
 
     // Update existing prices in batches with delay
