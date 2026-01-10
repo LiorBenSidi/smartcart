@@ -2,10 +2,10 @@ import React from "react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ChevronRight, ShoppingBag, Folder, Calendar, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { ChevronRight, ShoppingBag, Folder, Calendar, Loader2, AlertCircle, RefreshCw, Trash2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-export default function ReceiptFolderView({ receipts }) {
+export default function ReceiptFolderView({ receipts, onDelete }) {
     if (!receipts || receipts.length === 0) {
         return (
             <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
@@ -104,6 +104,19 @@ export default function ReceiptFolderView({ receipts }) {
                                                                         <div className="flex items-center gap-2">
                                                                             {!isPending && !isFailed && (
                                                                                 <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">₪{receipt.totalAmount?.toFixed(2)}</span>
+                                                                            )}
+                                                                            {onDelete && (
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.preventDefault();
+                                                                                        e.stopPropagation();
+                                                                                        onDelete(receipt.id);
+                                                                                    }}
+                                                                                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                                                    title="Delete receipt"
+                                                                                >
+                                                                                    <Trash2 className="w-4 h-4" />
+                                                                                </button>
                                                                             )}
                                                                             <ChevronRight className="w-3 h-3 text-gray-300" />
                                                                         </div>
