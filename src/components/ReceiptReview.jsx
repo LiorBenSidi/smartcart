@@ -191,7 +191,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                     <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
                                         <tr>
                                             <th className="py-2 px-3 text-left">Item / Raw Text</th>
-                                            <th className="py-2 px-2 text-center w-16">Qty</th>
+                                            <th className="py-2 px-2 text-center w-[66px]">Qty</th>
                                             <th className="py-2 px-2 text-right w-24">Price</th>
                                             <th className="py-2 px-2 w-10"></th>
                                             <th className="py-2 px-2 w-10"></th>
