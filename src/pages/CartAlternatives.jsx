@@ -30,9 +30,12 @@ export default function CartAlternatives() {
 
                 // 2. Get/Generate Run
                 const user = await base44.auth.me();
-                const res = await base44.functions.invoke('generateCollaborativeRecommendations', { userId: user.email });
-                if (res.data.success) {
-                    setRunId(res.data.runId);
+                const res = await base44.functions.invoke('api_createRecommendationRun', { 
+                    user_id: user.email,
+                    context: { k_items: 30 } // Minimal context for alternatives
+                });
+                if (res.data && res.data.run) {
+                    setRunId(res.data.run.id);
                 }
             } catch (e) {
                 console.error(e);
@@ -52,12 +55,15 @@ export default function CartAlternatives() {
     const fetchMaterialized = async () => {
         setMaterializing(true);
         try {
-            const res = await base44.functions.invoke('getMaterializedRecommendations', {
-                runId,
-                chosenStoreChainId: selectedChain
+            const res = await base44.functions.invoke('api_materializeRecommendationRun', {
+                run_id: runId,
+                store_chain_id: selectedChain,
+                limits: { max_items: 15, max_alternatives_per_item: 3 }
             });
-            if (res.data.success) {
-                setRecommendations(res.data.recommendations || []);
+            
+            // New API returns { results: [...] }
+            if (res.data && res.data.results) {
+                setRecommendations(res.data.results);
             }
         } catch (e) {
             console.error(e);

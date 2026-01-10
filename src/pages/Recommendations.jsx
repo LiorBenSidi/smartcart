@@ -18,16 +18,19 @@ export default function Recommendations() {
         setUser(currentUser);
         
         // 1. Generate Recommendations
-        const res = await base44.functions.invoke('generateCollaborativeRecommendations', { userId: currentUser.email });
-        if (res.data.success) {
-            setRunId(res.data.runId);
-            const all = res.data.candidates || [];
-            
-            // Organize
+        const res = await base44.functions.invoke('api_createRecommendationRun', { 
+            user_id: currentUser.email,
+            context: { k_items: 30, k_categories: 5, k_stores: 3 },
+            options: { lookback_days: 90 }
+        });
+        
+        if (res.data && res.data.run) {
+            setRunId(res.data.run.id);
+            // New API returns pre-grouped candidates
             setCandidates({
-                chains: all.filter(c => c.candidate_type === 'store_chain'),
-                categories: all.filter(c => c.candidate_type === 'category'),
-                products: all.filter(c => c.candidate_type === 'canonical_product')
+                chains: res.data.candidates.stores || [],
+                categories: res.data.candidates.categories || [],
+                products: res.data.candidates.items || []
             });
         }
       } catch (error) {
@@ -42,25 +45,28 @@ export default function Recommendations() {
 
   const handleFeedback = async (candidate, action) => {
       try {
-          await base44.functions.invoke('logRecommendationFeedback', {
-              runId,
-              candidateId: candidate.id || candidate.canonical_product_id, // Candidates might not have IDs if strictly from function return without DB fetch, but we saved them.
-              // If we saved them, they have IDs. But the function returned the array we sent to create? 
-              // Usually create returns object with ID. generateCollaborativeRecommendations logic: "await Promise.all(allCands.map(c => ...create(c)))".
-              // It returned `allCands` which was the payload *before* creation (no IDs).
-              // I should fix the backend to return created objects or just use the logic identifiers for now.
-              // For feedback, we need candidate_id (ref).
-              // Let's assume for prototype we log the 'logic' id if real ID missing, or fix backend.
-              // Fixing backend is better but takes a turn. 
-              // I'll proceed assuming we might fail on FK if I send non-UUID. 
-              // Actually, candidate_id in feedback is just a string, so whatever I send is stored.
-              // Ideally I send the DB ID.
-              action
+          // Use new API with correct schema
+          await base44.functions.invoke('api_logRecommendationFeedback', {
+              user_id: user.email,
+              run_id: runId,
+              candidate_id: candidate.candidate_id, // New API ensures we get the DB ID
+              action: action,
+              context: { page: 'Recommendations' }
           });
           
           if (action === 'dismiss' || action === 'add_to_cart') {
               // Remove from UI
-              const type = candidate.candidate_type === 'store_chain' ? 'chains' : candidate.candidate_type === 'category' ? 'categories' : 'products';
+              // Determine type based on properties or candidate_type if available (our new frontend state might lack candidate_type if we mapped it out? No, we mapped it out in api_createRecommendationRun return)
+              // Wait, api_createRecommendationRun returns objects like { candidate_id, store_chain_id, ... } but NOT candidate_type explicitly in the object properties (it was used to group).
+              // We can infer type from keys.
+              let type = 'products';
+              if (candidate.store_chain_id) type = 'chains';
+              else if (candidate.category) type = 'categories';
+              
+              setCandidates(prev => ({
+                  ...prev,
+                  [type]: prev[type].filter(c => c !== candidate)
+              }));
               setCandidates(prev => ({
                   ...prev,
                   [type]: prev[type].filter(c => c !== candidate)
