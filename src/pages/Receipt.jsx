@@ -418,6 +418,18 @@ export default function Receipt() {
     await base44.entities.Receipt.update(receipt.id, { needs_review: true });
   };
 
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete this receipt?")) {
+        try {
+            await base44.entities.Receipt.delete(receipt.id);
+            window.location.href = createPageUrl('Home');
+        } catch (error) {
+            console.error("Failed to delete receipt", error);
+            alert("Failed to delete receipt");
+        }
+    }
+  };
+
   const totalPotentialSavings = receipt.insights
     ? receipt.insights.reduce((sum, i) => sum + (i.potential_savings || 0), 0)
     : 0;
@@ -439,6 +451,9 @@ export default function Receipt() {
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleExportCSV}>
                     <Download className="w-4 h-4 mr-2" /> Export CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
                 </Button>
             </div>
         </div>
