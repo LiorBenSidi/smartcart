@@ -151,7 +151,16 @@ export default function Profile() {
               onChange={(e) => setFullName(e.target.value)}
               className="max-w-md"
               placeholder="Enter your full name" />
+            </div>
 
+            <div className="space-y-1">
+                <Label htmlFor="displayName">Display Name (App Nickname)</Label>
+                <Input
+              id="displayName"
+              value={profile.display_name || ''}
+              onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+              className="max-w-md"
+              placeholder="Enter a display name" />
             </div>
             <div className="space-y-1">
                 <Label>Email</Label>
