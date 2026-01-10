@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2, Moon, Sun } from 'lucide-react';
 import Onboarding from '../components/Onboarding';
 
@@ -179,6 +180,9 @@ export default function Profile() {
             </div>
         </div>
       </div>
+
+      {/* User Similarity Section */}
+      <UserSimilarityDisplay currentUser={user} />
 
       {/* Preferences Form */}
       <div className="bg-white pr-6 pb-3 pl-6 rounded-2xl dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 space-y-6">
