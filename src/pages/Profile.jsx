@@ -13,6 +13,7 @@ import Onboarding from '../components/Onboarding';
 
 export default function Profile() {
   const [profile, setProfile] = useState({
+    monthly_budget: '',
     budget_focus: 'balanced',
     kashrut_level: 'none',
     household_size: 1,
@@ -196,6 +197,16 @@ export default function Profile() {
               checked={darkMode}
               onCheckedChange={setDarkMode} />
 
+            </div>
+
+            <div className="space-y-2">
+                <Label>Monthly Budget (₪)</Label>
+                <Input
+                    type="number"
+                    value={profile.monthly_budget || ''}
+                    onChange={(e) => setProfile({ ...profile, monthly_budget: parseFloat(e.target.value) })}
+                    placeholder="Enter amount"
+                />
             </div>
 
             <div className="space-y-2">
