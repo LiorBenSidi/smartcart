@@ -71,25 +71,43 @@ export default Deno.serve(async (req) => {
 
         // 3. Get Neighbors
         const edges = await base44.entities.SimilarUserEdge.filter({ 
-            user_id: userId,
-            // Filter by based_on? If algorithm is profile_cold_start, prefer profile based neighbors?
-            // The existing computeSimilarUsers stores 'based_on'.
-            // Simple logic: fetch all, sort by similarity, or filter if 'based_on' is critical.
-            // Let's fetch all and let similarity dictate, or filter if possible.
-            // based_on: algorithm === 'cf_profile_cold_start' ? 'profile' : 'behavior' // Optional refinement
-        }, '-similarity', k_items); // Top K neighbors
-
-        if (edges.length === 0) {
-            return Response.json({ 
-                run: { id: null, algorithm, status: "no_neighbors" }, 
-                candidates: { stores: [], categories: [], items: [] } 
-            });
-        }
+            user_id: userId
+        }, '-similarity', k_items);
 
         // 4. Aggregate Candidates
         const chainScores = {};
         const catScores = {};
         const prodScores = {};
+
+        if (edges.length === 0) {
+            // Cold Start Fallback: Content-Based / Popularity
+            // Fetch User Profile for constraints
+            const profiles = await base44.entities.UserProfile.filter({ created_by: userId });
+            const userProfile = profiles[0];
+
+            // Fetch a batch of products to score based on profile
+            const fallbackProducts = await base44.entities.Product.list({ limit: 100 });
+            
+            fallbackProducts.forEach(p => {
+                let score = 0.1; // Low base score
+                
+                // Boost based on profile
+                if (userProfile) {
+                    if (userProfile.diet === 'vegan' && p.is_vegan) score += 0.5;
+                    if (userProfile.diet === 'vegetarian' && (p.is_vegan || p.is_vegetarian)) score += 0.3;
+                    if (userProfile.diet === 'gluten_free' && p.is_gluten_free) score += 0.5;
+                    if (userProfile.kosher_level && userProfile.kosher_level !== 'none' && p.is_kosher) score += 0.5;
+                    
+                    // Boost based on budget focus? Maybe cheaper items? We don't have price here easily without join.
+                }
+                
+                prodScores[p.gtin] = score;
+                
+                if (p.category) {
+                    catScores[p.category] = (catScores[p.category] || 0) + (score * 0.2);
+                }
+            });
+        }
 
         // Fetch exclude list (my recent purchases)
         const excludeDate = new Date();
