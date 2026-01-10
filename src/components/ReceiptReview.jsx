@@ -111,11 +111,19 @@ export default function ReceiptReview({ receipt, onConfirm }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Image Panel */}
                 <div className="bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-800 sticky top-4 h-[80vh]">
+                    {data.raw_receipt_image_url?.toLowerCase().includes('.pdf') ? (
+                        <iframe 
+                            src={data.raw_receipt_image_url} 
+                            className="w-full h-full"
+                            title="Receipt PDF"
+                        />
+                    ) : (
                      <img 
                         src={data.raw_receipt_image_url} 
                         alt="Receipt" 
                         className="w-full h-full object-contain"
                     />
+                    )}
                 </div>
 
                 {/* Form Panel */}

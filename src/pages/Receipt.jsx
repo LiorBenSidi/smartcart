@@ -360,7 +360,11 @@ export default function Receipt() {
             Our AI is extracting items and calculating totals. This usually takes 10-30 seconds.
           </p>
           {receipt.raw_receipt_image_url && (
-            <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />
+            receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ? (
+                <iframe src={receipt.raw_receipt_image_url} className="w-full max-h-64 h-64 mx-auto rounded-lg opacity-50 border-0" title="Receipt PDF" />
+            ) : (
+                <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />
+            )
           )}
         </div>
       </div>
@@ -389,7 +393,11 @@ export default function Receipt() {
             We couldn't extract the data from this receipt. This might happen with unclear images or unusual formats.
           </p>
           {receipt.raw_receipt_image_url && (
-            <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg mb-6" />
+            receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ? (
+                <iframe src={receipt.raw_receipt_image_url} className="w-full max-h-64 h-64 mx-auto rounded-lg mb-6 border-0" title="Receipt PDF" />
+            ) : (
+                <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg mb-6" />
+            )
           )}
           <Button onClick={retryProcessing} className="bg-indigo-600 hover:bg-indigo-700">
             <RefreshCw className="w-4 h-4 mr-2" /> Try Again
