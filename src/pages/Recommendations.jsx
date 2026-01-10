@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 
 export default function Recommendations() {
   const [loading, setLoading] = useState(true);
@@ -131,6 +132,8 @@ export default function Recommendations() {
         </div>
         <p className="text-gray-500 dark:text-gray-400">Personalized picks based on people with similar taste.</p>
       </div>
+
+      <UserSimilarityDisplay currentUser={user} />
 
       {/* 1. Stores */}
       {candidates.chains.length > 0 && (
