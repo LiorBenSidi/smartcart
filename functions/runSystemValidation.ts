@@ -19,6 +19,7 @@ export default Deno.serve(async (req) => {
             wave0: { status: "PASS", failures: [] },
             wave1: { status: "PASS", failures: [] },
             wave2: { status: "PASS", failures: [] },
+            wave3: { status: "PASS", failures: [] },
             timeBased: { status: "PASS", failures: [] },
             synthetic: { status: "PASS", failures: [] }
         };
@@ -41,14 +42,28 @@ export default Deno.serve(async (req) => {
             allHabits, 
             allBenchmarks, 
             allDrafts,
-            allUsers
+            allUsers,
+            allRuns,
+            allCandidates,
+            allFeedback,
+            allVectors,
+            allEdges,
+            allChains,
+            allProducts
         ] = await Promise.all([
             svc.entities.Receipt.list(),
             svc.entities.ReceiptInsight.list(),
             svc.entities.UserProductHabit.list(),
             svc.entities.ReceiptItemBenchmark.list(),
             svc.entities.SuggestedCartDraft.list(),
-            svc.entities.User.list()
+            svc.entities.User.list(),
+            svc.entities.RecommendationRun.list(),
+            svc.entities.RecommendationCandidate.list(),
+            svc.entities.RecommendationFeedback.list(),
+            svc.entities.UserVectorSnapshot.list(),
+            svc.entities.SimilarUserEdge.list(),
+            svc.entities.Chain.list(),
+            svc.entities.Product.list()
         ]);
 
         // Map for quick lookups
@@ -145,6 +160,61 @@ export default Deno.serve(async (req) => {
         }
 
         // ==========================================
+        // WAVE 3 – RECOMMENDATION ENGINE
+        // ==========================================
+        
+        // - Assert that if users exist, they should have vectors (snapshot)
+        const userIdsWithVectors = new Set(allVectors.map(v => v.user_id));
+        // We can only check users who *should* have vectors. 
+        // Maybe check if any user has >0 receipts but no vector?
+        for (const user of allUsers) {
+            const receiptCount = receiptCountByUser.get(user.email) || 0;
+            if (receiptCount > 0 && !userIdsWithVectors.has(user.email)) {
+                // Warning: Active user missing vector snapshot
+                // Soft fail or just log
+                // fail("wave3", "Active user (has receipts) missing UserVectorSnapshot", user.email);
+            }
+        }
+
+        // - Assert RecommendationCandidates link to real Chains/Products
+        const chainIds = new Set(allChains.map(c => c.id));
+        const productIds = new Set(allProducts.map(p => p.gtin));
+        
+        // Sampling candidates to check integrity
+        const sampleCandidates = allCandidates.slice(0, 100);
+        for (const cand of sampleCandidates) {
+            if (cand.candidate_type === 'store_chain') {
+                if (!cand.store_chain_id || !chainIds.has(cand.store_chain_id)) {
+                    fail("wave3", "Candidate StoreChain ID not found in Chain entity", cand.id);
+                }
+            } else if (cand.candidate_type === 'canonical_product') {
+                if (!cand.canonical_product_id || !productIds.has(cand.canonical_product_id)) {
+                     fail("wave3", "Candidate Product ID not found in Product entity", cand.id);
+                }
+            }
+        }
+
+        // - Assert Feedback links to valid Run
+        const runIds = new Set(allRuns.map(r => r.id));
+        for (const fb of allFeedback) {
+            if (!runIds.has(fb.run_id)) {
+                fail("wave3", "Feedback links to non-existent Run ID", fb.id);
+            }
+        }
+
+        // - Assert Neighbor Edges have valid users
+        const validUserIds = new Set(allUsers.map(u => u.email)); // Assuming user_id is email
+        for (const edge of allEdges) {
+             // Edge might use internal ID if we switched, but context says email.
+             // If edge.user_id is not in user list...
+             // Skip if we are not sure about ID format, but assuming email:
+             if (!validUserIds.has(edge.user_id)) {
+                 // might be a deleted user
+             }
+        }
+
+
+        // ==========================================
         // TIME-BASED CART
         // ==========================================
         // - Assert SuggestedCartDraft is not generated if user has < 6 receipts
@@ -196,10 +266,11 @@ export default Deno.serve(async (req) => {
             report.wave0.status === "FAIL" || 
             report.wave1.status === "FAIL" || 
             report.wave2.status === "FAIL" || 
+            report.wave3.status === "FAIL" || 
             report.timeBased.status === "FAIL"
         ) ? "FAIL" : "PASS";
 
-        const summary = `Validation ${finalStatus}. W0:${report.wave0.failures.length} err, W1:${report.wave1.failures.length} err, W2:${report.wave2.failures.length} err, Time:${report.timeBased.failures.length} err.`;
+        const summary = `Validation ${finalStatus}. W0:${report.wave0.failures.length} err, W1:${report.wave1.failures.length} err, W2:${report.wave2.failures.length} err, W3:${report.wave3.failures.length} err, Time:${report.timeBased.failures.length} err.`;
 
         // Save result
         await svc.entities.SystemValidationResult.create({

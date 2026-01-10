@@ -54,6 +54,7 @@ export default function SystemValidationPanel() {
         { key: 'wave0', label: 'Wave 0: Data Trust' },
         { key: 'wave1', label: 'Wave 1: Intelligence' },
         { key: 'wave2', label: 'Wave 2: Economic Core' },
+        { key: 'wave3', label: 'Wave 3: Recommendation Engine' },
         { key: 'timeBased', label: 'Time-Based Cart' }
     ];
 
