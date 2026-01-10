@@ -38,9 +38,17 @@ export default function Profile() {
       if (currentUser) {
         const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
         if (existing.length > 0) {
-          setProfile(existing[0]);
-          // Sync display_name to state if exists, otherwise might default to user full name if we wanted logic there
-          // but let's keep it separate as requested
+          // Initialize profile with existing data AND the display_name from the User entity
+          setProfile({
+              ...existing[0],
+              display_name: currentUser.display_name || ''
+          });
+        } else {
+          // No profile yet, but might have display_name
+          setProfile(prev => ({
+              ...prev,
+              display_name: currentUser.display_name || ''
+          }));
         }
       }
     } catch (err) {
