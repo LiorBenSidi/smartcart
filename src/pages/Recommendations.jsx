@@ -3,16 +3,23 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info } from 'lucide-react';
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function Recommendations() {
   const [loading, setLoading] = useState(true);
   const [runId, setRunId] = useState(null);
   const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
   const [user, setUser] = useState(null);
-
-  useEffect(() => {
+  const [selectedStore, setSelectedStore] = useState(null);
     const init = async () => {
       try {
         const currentUser = await base44.auth.me();
@@ -65,21 +72,21 @@ export default function Recommendations() {
   }, []);
 
   const handleFeedback = async (candidate, action) => {
+      // Optimistic UI update for view action
+      if (action === 'click' && candidate.store_chain_id) {
+          setSelectedStore(candidate);
+      }
+
       try {
-          // Use new API with correct schema
           await base44.functions.invoke('api_logRecommendationFeedback', {
               user_id: user.email,
               run_id: runId,
-              candidate_id: candidate.candidate_id, // New API ensures we get the DB ID
+              candidate_id: candidate.candidate_id,
               action: action,
               context: { page: 'Recommendations' }
           });
           
           if (action === 'dismiss' || action === 'add_to_cart') {
-              // Remove from UI
-              // Determine type based on properties or candidate_type if available (our new frontend state might lack candidate_type if we mapped it out? No, we mapped it out in api_createRecommendationRun return)
-              // Wait, api_createRecommendationRun returns objects like { candidate_id, store_chain_id, ... } but NOT candidate_type explicitly in the object properties (it was used to group).
-              // We can infer type from keys.
               let type = 'products';
               if (candidate.store_chain_id) type = 'chains';
               else if (candidate.category) type = 'categories';
@@ -88,16 +95,20 @@ export default function Recommendations() {
                   ...prev,
                   [type]: prev[type].filter(c => c !== candidate)
               }));
-              setCandidates(prev => ({
-                  ...prev,
-                  [type]: prev[type].filter(c => c !== candidate)
-              }));
-              if (action === 'add_to_cart') toast.success("Added to cart (simulation)");
+
+              if (action === 'add_to_cart') toast.success("Added to cart");
               else toast.info("Recommendation dismissed");
           }
       } catch (e) {
           console.error(e);
       }
+  };
+
+  const getMatchQuality = (score) => {
+      if (score >= 0.8) return { label: 'Excellent Match', color: 'bg-emerald-500' };
+      if (score >= 0.6) return { label: 'Great Match', color: 'bg-green-500' };
+      if (score >= 0.4) return { label: 'Good Match', color: 'bg-blue-500' };
+      return { label: 'Potential Match', color: 'bg-gray-500' };
   };
 
   if (loading) {
@@ -126,33 +137,104 @@ export default function Recommendations() {
                   <Store className="w-5 h-5 text-indigo-500" /> Recommended Stores
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {candidates.chains.map((c, i) => (
-                      <Card key={i} className="hover:shadow-md transition-all border-indigo-100 dark:border-gray-700 relative overflow-hidden">
-                          {/* Context Badge if highly ranked (likely location boosted) */}
-                          {i === 0 && (
-                              <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">
-                                  Best Match
-                              </div>
-                          )}
-                          <CardContent className="p-4 flex flex-col items-center text-center">
-                              <div className="w-12 h-12 bg-indigo-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 overflow-hidden">
-                                  {c.image_url ? 
-                                      <img src={c.image_url} alt={c.name} className="w-full h-full object-contain" /> :
-                                      <Store className="w-6 h-6 text-indigo-600" />
-                                  }
-                              </div>
-                              <h3 className="font-bold mb-1">{c.name || `Chain #${c.store_chain_id}`}</h3>
-                              <p className="text-xs text-gray-500 mb-3">Match Score: {(c.score).toFixed(1)}</p>
-                              <div className="flex gap-2 w-full">
-                                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleFeedback(c, 'dismiss')}>Dismiss</Button>
-                                  <Button size="sm" className="flex-1 bg-indigo-600" onClick={() => handleFeedback(c, 'click')}>View</Button>
-                              </div>
-                          </CardContent>
-                      </Card>
-                  ))}
+                  {candidates.chains.map((c, i) => {
+                      const matchQuality = getMatchQuality(c.score);
+                      return (
+                          <Card key={i} className="hover:shadow-md transition-all border-indigo-100 dark:border-gray-700 relative overflow-hidden group">
+                              <div className={`absolute top-0 left-0 w-1 h-full ${matchQuality.color}`} />
+                              {i === 0 && (
+                                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold z-10">
+                                      Top Pick
+                                  </div>
+                              )}
+                              <CardContent className="p-4 flex flex-col items-center text-center">
+                                  <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full shadow-sm flex items-center justify-center mb-3 overflow-hidden border border-gray-100 p-2">
+                                      {c.image_url ? 
+                                          <img src={c.image_url} alt={c.name} className="w-full h-full object-contain" /> :
+                                          <Store className="w-8 h-8 text-indigo-600" />
+                                      }
+                                  </div>
+                                  <h3 className="font-bold text-lg mb-1">{c.name || `Chain #${c.store_chain_id}`}</h3>
+                                  
+                                  <div className="flex items-center gap-1.5 mb-2">
+                                      <div className={`w-2 h-2 rounded-full ${matchQuality.color}`} />
+                                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                          {Math.round(c.score * 100)}% Match
+                                      </span>
+                                  </div>
+
+                                  <p className="text-xs text-gray-500 mb-4 line-clamp-2 min-h-[2.5em]">
+                                      {c.description || "Recommended based on your shopping preferences and location."}
+                                  </p>
+
+                                  <div className="flex gap-2 w-full mt-auto">
+                                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleFeedback(c, 'dismiss')}>
+                                          Dismiss
+                                      </Button>
+                                      <Button size="sm" className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => handleFeedback(c, 'click')}>
+                                          View Details
+                                      </Button>
+                                  </div>
+                              </CardContent>
+                          </Card>
+                      );
+                  })}
               </div>
           </section>
       )}
+
+      {/* Store Details Dialog */}
+      <Dialog open={!!selectedStore} onOpenChange={(open) => !open && setSelectedStore(null)}>
+        <DialogContent className="sm:max-w-md">
+          {selectedStore && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-lg border flex items-center justify-center p-2">
+                        {selectedStore.image_url ? 
+                            <img src={selectedStore.image_url} alt={selectedStore.name} className="w-full h-full object-contain" /> :
+                            <Store className="w-6 h-6 text-indigo-600" />
+                        }
+                    </div>
+                    <div>
+                        <DialogTitle>{selectedStore.name}</DialogTitle>
+                        <DialogDescription className="flex items-center gap-2 mt-1">
+                            <Badge variant="secondary" className="text-xs">
+                                {Math.round(selectedStore.score * 100)}% Match
+                            </Badge>
+                        </DialogDescription>
+                    </div>
+                </div>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                      <h4 className="text-sm font-medium leading-none">Why we recommend this</h4>
+                      <div className="text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg flex gap-3">
+                          <Info className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                          <p>
+                              Based on your profile, this chain offers products that align with your dietary preferences and budget goals.
+                              {selectedStore.description && <span className="block mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">{selectedStore.description}</span>}
+                          </p>
+                      </div>
+                  </div>
+                  
+                  {selectedStore.website_url && (
+                      <div className="pt-2">
+                          <a 
+                              href={selectedStore.website_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
+                          >
+                              Visit Website <ExternalLink className="w-3 h-3" />
+                          </a>
+                      </div>
+                  )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* 2. Categories */}
       {candidates.categories.length > 0 && (
