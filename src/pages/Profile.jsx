@@ -19,7 +19,8 @@ export default function Profile() {
     age_range: '',
     user_role: '',
     allergen_avoid_list: [],
-    profile_picture: ''
+    profile_picture: '',
+    display_name: ''
   });
   const [user, setUser] = useState(null);
   const [fullName, setFullName] = useState('');
