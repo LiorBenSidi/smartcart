@@ -112,8 +112,42 @@ export default function UserSimilarityDisplay({ currentUser }) {
         return `User #${Math.abs(hash).toString().substring(0, 4)}`;
     };
 
-    if (loading) return null;
-    if (edges.length === 0) return null;
+    if (loading) {
+        return (
+            <Card className="border-indigo-100 dark:border-indigo-900 mb-6">
+                <CardContent className="p-6 flex justify-center">
+                    <div className="flex items-center gap-2 text-gray-500">
+                         <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                         <span>Finding similar shoppers...</span>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (edges.length === 0) {
+        return (
+             <Card className="border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 mb-6">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <Users className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-lg">Shopper Twins</CardTitle>
+                            <CardDescription>People with similar taste profiles</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
+                        <p>Not enough data yet to find your shopper twins.</p>
+                        <p className="mt-1">Keep scanning receipts to build your profile!</p>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className="border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-white to-indigo-50/30 dark:from-gray-800 dark:to-indigo-950/20">
