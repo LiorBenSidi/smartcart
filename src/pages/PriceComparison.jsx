@@ -6,6 +6,68 @@ import { Badge } from "@/components/ui/badge";
 import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
+const ProductSearchItem = ({ product, chains, onClick }) => {
+  const [chainNames, setChainNames] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchChains = async () => {
+      try {
+        const prices = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
+        if (!mounted) return;
+        
+        const uniqueChainIds = [...new Set(prices.map(p => p.chain_id))];
+        const names = uniqueChainIds
+            .map(id => chains.get(id)?.name)
+            .filter(Boolean)
+            .sort();
+            
+        setChainNames(names);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    
+    fetchChains();
+    return () => { mounted = false; };
+  }, [product.gtin, chains]);
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 transition-colors group"
+    >
+      <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                {product.brand_name && <span className="mr-3">{product.brand_name}</span>}
+                <span className="font-mono">{product.gtin}</span>
+              </div>
+          </div>
+          <div className="text-right flex-shrink-0 max-w-[40%]">
+             {loading ? (
+                 <span className="text-xs text-gray-400">Checking stores...</span>
+             ) : chainNames.length > 0 ? (
+                 <div className="flex flex-wrap justify-end gap-1">
+                    {chainNames.map(name => (
+                        <Badge key={name} variant="outline" className="text-[10px] px-1 h-5 font-normal bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800">
+                            {name}
+                        </Badge>
+                    ))}
+                 </div>
+             ) : (
+                 <span className="text-xs text-gray-400 italic">No prices found</span>
+             )}
+          </div>
+      </div>
+    </button>
+  );
+};
+
 export default function PriceComparison() {
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState([]);
