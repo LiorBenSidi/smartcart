@@ -31,23 +31,23 @@ export default function Receipt() {
     setIsProcessing(true);
 
     try {
-        // Call backend function for robust extraction
-        const response = await base44.functions.invoke('processReceipt', { receiptId: r.id });
-        
-        if (response.data.success) {
-            const updatedReceipt = { ...r, ...response.data.data };
-            setReceipt(updatedReceipt);
-            
-            // If needs review, we stay on this page and the render logic handles it
-            if (response.data.needs_review) {
-                // Just update state, the component will render ReviewReceipt
-            } else {
-                // If by miracle it's perfect, we can proceed (e.g. to comparison or summary)
-                // But generally we expect review.
-            }
+      // Call backend function for robust extraction
+      const response = await base44.functions.invoke('processReceipt', { receiptId: r.id });
+
+      if (response.data.success) {
+        const updatedReceipt = { ...r, ...response.data.data };
+        setReceipt(updatedReceipt);
+
+        // If needs review, we stay on this page and the render logic handles it
+        if (response.data.needs_review) {
+
+          // Just update state, the component will render ReviewReceipt
         } else {
-            throw new Error(response.data.error || "Unknown processing error");
-        }
+
+          // If by miracle it's perfect, we can proceed (e.g. to comparison or summary)
+          // But generally we expect review.
+        }} else {throw new Error(response.data.error || "Unknown processing error");
+      }
 
     } catch (error) {
       console.error("Processing failed", error);
@@ -59,21 +59,21 @@ export default function Receipt() {
   };
 
   const handleReviewConfirm = async (confirmedReceipt) => {
-      setReceipt(confirmedReceipt);
-      
-      // Trigger economic analysis
-      try {
-          const analysisRes = await base44.functions.invoke('analyzeReceiptEconomics', { receiptId: confirmedReceipt.id });
-          if (analysisRes.data.success) {
-               // Reload receipt to get new insights
-               const refreshed = await base44.entities.Receipt.filter({ id: confirmedReceipt.id });
-               if (refreshed.length > 0) {
-                   setReceipt(refreshed[0]);
-               }
-          }
-      } catch (e) {
-          console.error("Analysis failed", e);
+    setReceipt(confirmedReceipt);
+
+    // Trigger economic analysis
+    try {
+      const analysisRes = await base44.functions.invoke('analyzeReceiptEconomics', { receiptId: confirmedReceipt.id });
+      if (analysisRes.data.success) {
+        // Reload receipt to get new insights
+        const refreshed = await base44.entities.Receipt.filter({ id: confirmedReceipt.id });
+        if (refreshed.length > 0) {
+          setReceipt(refreshed[0]);
+        }
       }
+    } catch (e) {
+      console.error("Analysis failed", e);
+    }
   };
 
   const handleItemChange = (index, field, value) => {
@@ -93,7 +93,7 @@ export default function Receipt() {
     } else {
       newItem[field] = value;
     }
-    
+
     newItems[index] = newItem;
     setEditData({ ...editData, items: newItems });
   };
@@ -112,13 +112,13 @@ export default function Receipt() {
 
   const calculateSum = () => {
     if (!editData || !editData.items) return 0;
-    return editData.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    return editData.items.reduce((sum, item) => sum + item.quantity * item.price, 0);
   };
 
   const saveReceipt = async () => {
     if (!editData) return;
     setIsSaving(true);
-    
+
     try {
       const currentCalculatedSum = calculateSum();
 
@@ -148,31 +148,31 @@ export default function Receipt() {
     const rows = [];
 
     if (receipt.items && receipt.items.length > 0) {
-        receipt.items.forEach(item => {
-            rows.push([
-                receipt.date,
-                `"${receipt.storeName || ''}"`,
-                `"${receipt.address || ''}"`,
-                receipt.totalAmount || receipt.total_amount || 0,
-                `"${item.name}"`,
-                item.category,
-                item.quantity,
-                item.price,
-                item.total
-            ].join(','));
-        });
+      receipt.items.forEach((item) => {
+        rows.push([
+        receipt.date,
+        `"${receipt.storeName || ''}"`,
+        `"${receipt.address || ''}"`,
+        receipt.totalAmount || receipt.total_amount || 0,
+        `"${item.name}"`,
+        item.category,
+        item.quantity,
+        item.price,
+        item.total].
+        join(','));
+      });
     } else {
-         rows.push([
-                receipt.date,
-                `"${receipt.storeName || ''}"`,
-                `"${receipt.address || ''}"`,
-                receipt.totalAmount || receipt.total_amount || 0,
-                '',
-                '',
-                '',
-                '',
-                ''
-            ].join(','));
+      rows.push([
+      receipt.date,
+      `"${receipt.storeName || ''}"`,
+      `"${receipt.address || ''}"`,
+      receipt.totalAmount || receipt.total_amount || 0,
+      '',
+      '',
+      '',
+      '',
+      ''].
+      join(','));
     }
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
@@ -188,54 +188,54 @@ export default function Receipt() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
-    
+
     const fetchReceipt = async () => {
       if (id) {
         try {
-            const user = await base44.auth.me();
-            let adminStatus = user.role === 'admin';
-            if (!adminStatus) {
-                try {
-                    const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-                    if (profiles.length > 0 && profiles[0].is_admin) {
-                        adminStatus = true;
-                    }
-                } catch(e) {
-                    console.error("Error checking admin status", e);
-                }
-            }
-            setIsAdmin(adminStatus);
-
-            let data;
-            if (adminStatus) {
-                data = await base44.entities.Receipt.filter({ id });
-            } else {
-                data = await base44.entities.Receipt.filter({ id, created_by: user.email });
-            }
-
-            if (data.length > 0) {
-              setReceipt(data[0]);
-              
-              // Fetch benchmarks for this receipt
-              try {
-                  const benchmarks = await base44.entities.ReceiptItemBenchmark.filter({ receipt_id: id });
-                  setItemBenchmarks(benchmarks);
-              } catch (bmError) {
-                  console.error("Failed to load benchmarks", bmError);
+          const user = await base44.auth.me();
+          let adminStatus = user.role === 'admin';
+          if (!adminStatus) {
+            try {
+              const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+              if (profiles.length > 0 && profiles[0].is_admin) {
+                adminStatus = true;
               }
-
-              // If pending, trigger processing
-              if (data[0].processing_status === 'pending') {
-                processReceipt(data[0]);
-              }
+            } catch (e) {
+              console.error("Error checking admin status", e);
             }
+          }
+          setIsAdmin(adminStatus);
+
+          let data;
+          if (adminStatus) {
+            data = await base44.entities.Receipt.filter({ id });
+          } else {
+            data = await base44.entities.Receipt.filter({ id, created_by: user.email });
+          }
+
+          if (data.length > 0) {
+            setReceipt(data[0]);
+
+            // Fetch benchmarks for this receipt
+            try {
+              const benchmarks = await base44.entities.ReceiptItemBenchmark.filter({ receipt_id: id });
+              setItemBenchmarks(benchmarks);
+            } catch (bmError) {
+              console.error("Failed to load benchmarks", bmError);
+            }
+
+            // If pending, trigger processing
+            if (data[0].processing_status === 'pending') {
+              processReceipt(data[0]);
+            }
+          }
         } catch (e) {
-            console.error("Error loading receipt", e);
+          console.error("Error loading receipt", e);
         }
       }
       setLoading(false);
     };
-    
+
     fetchReceipt();
   }, []);
 
@@ -254,10 +254,10 @@ export default function Receipt() {
       if (updates.length > 0) {
         await base44.functions.invoke('updatePrices', { updates });
       }
-      
+
       // Update editData items with selected prices
-      const updatedItems = editData.items.map(item => {
-        const diffIndex = differencesOnly.findIndex(d => d.item.code === item.code);
+      const updatedItems = editData.items.map((item) => {
+        const diffIndex = differencesOnly.findIndex((d) => d.item.code === item.code);
         if (diffIndex !== -1 && selections[diffIndex]) {
           const diff = differencesOnly[diffIndex];
           const selectedPrice = selections[diffIndex] === 'receipt' ? diff.receiptPrice : diff.dbPrice;
@@ -267,7 +267,7 @@ export default function Receipt() {
       });
 
       setEditData({ ...editData, items: updatedItems });
-      
+
       // Proceed to edit mode
       setShowPriceComparison(false);
       await loadProductsForEditMode();
@@ -289,7 +289,7 @@ export default function Receipt() {
   const loadProductsForEditMode = async () => {
     try {
       const products = await base44.entities.Product.list();
-      const map = new Map(products.map(p => [p.gtin, p]));
+      const map = new Map(products.map((p) => [p.gtin, p]));
       setProductMap(map);
     } catch (error) {
       console.error("Failed to load products", error);
@@ -309,8 +309,8 @@ export default function Receipt() {
 
   // Show Review Mode if needed
   if (receipt.needs_review) {
-      return (
-          <div className="min-h-screen max-w-6xl mx-auto pb-20 pt-6 px-4">
+    return (
+      <div className="mx-auto min-h-screen max-w-6xl">
               <div className="flex items-center gap-2 mb-6">
                 <Link to={createPageUrl('Home')}>
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -320,8 +320,8 @@ export default function Receipt() {
                 <h2 className="font-bold text-2xl text-gray-900 dark:text-gray-100">Review Receipt</h2>
               </div>
               <ReceiptReview receipt={receipt} onConfirm={handleReviewConfirm} />
-          </div>
-      );
+          </div>);
+
   }
 
   // Show price comparison review
@@ -331,9 +331,9 @@ export default function Receipt() {
         comparisonResults={comparisonResults}
         onConfirm={handlePriceComparisonConfirm}
         onCancel={handlePriceComparisonCancel}
-        isUpdating={isUpdatingPrices}
-      />
-    );
+        isUpdating={isUpdatingPrices} />);
+
+
   }
 
 
@@ -360,15 +360,15 @@ export default function Receipt() {
             Our AI is extracting items and calculating totals. This usually takes 10-30 seconds.
           </p>
           {receipt.raw_receipt_image_url && (
-            receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ? (
-                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(receipt.raw_receipt_image_url)}&embedded=true`} className="w-full max-h-64 h-64 mx-auto rounded-lg opacity-50 border-0" title="Receipt PDF" />
-            ) : (
-                <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />
-            )
-          )}
+          receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ?
+          <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(receipt.raw_receipt_image_url)}&embedded=true`} className="w-full max-h-64 h-64 mx-auto rounded-lg opacity-50 border-0" title="Receipt PDF" /> :
+
+          <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />)
+
+          }
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   // Show failed state
@@ -393,24 +393,24 @@ export default function Receipt() {
             We couldn't extract the data from this receipt. This might happen with unclear images or unusual formats.
           </p>
           {receipt.raw_receipt_image_url && (
-            receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ? (
-                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(receipt.raw_receipt_image_url)}&embedded=true`} className="w-full max-h-64 h-64 mx-auto rounded-lg mb-6 border-0" title="Receipt PDF" />
-            ) : (
-                <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg mb-6" />
-            )
-          )}
+          receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ?
+          <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(receipt.raw_receipt_image_url)}&embedded=true`} className="w-full max-h-64 h-64 mx-auto rounded-lg mb-6 border-0" title="Receipt PDF" /> :
+
+          <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg mb-6" />)
+
+          }
           <Button onClick={retryProcessing} className="bg-indigo-600 hover:bg-indigo-700">
             <RefreshCw className="w-4 h-4 mr-2" /> Try Again
           </Button>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   // Calculate the actual total from items (price represents line total)
-  const displayTotal = receipt.items && receipt.items.length > 0
-    ? receipt.items.reduce((sum, item) => sum + (item.total || item.price || 0), 0)
-    : (receipt.totalAmount || receipt.total_amount || 0);
+  const displayTotal = receipt.items && receipt.items.length > 0 ?
+  receipt.items.reduce((sum, item) => sum + (item.total || item.price || 0), 0) :
+  receipt.totalAmount || receipt.total_amount || 0;
 
   const handleEdit = async () => {
     const updated = { ...receipt, needs_review: true };
@@ -418,21 +418,9 @@ export default function Receipt() {
     await base44.entities.Receipt.update(receipt.id, { needs_review: true });
   };
 
-  const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this receipt?")) {
-        try {
-            await base44.entities.Receipt.delete(receipt.id);
-            window.location.href = createPageUrl('Home');
-        } catch (error) {
-            console.error("Failed to delete receipt", error);
-            alert("Failed to delete receipt");
-        }
-    }
-  };
-
-  const totalPotentialSavings = receipt.insights
-    ? receipt.insights.reduce((sum, i) => sum + (i.potential_savings || 0), 0)
-    : 0;
+  const totalPotentialSavings = receipt.insights ?
+  receipt.insights.reduce((sum, i) => sum + (i.potential_savings || 0), 0) :
+  0;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -452,16 +440,13 @@ export default function Receipt() {
                 <Button variant="outline" size="sm" onClick={handleExportCSV}>
                     <Download className="w-4 h-4 mr-2" /> Export CSV
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
-                    <Trash2 className="w-4 h-4 mr-2" /> Delete
-                </Button>
             </div>
         </div>
 
         {/* Potential Savings Summary Card */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {totalPotentialSavings > 0 ? (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+             {totalPotentialSavings > 0 ?
+        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-emerald-700 font-medium text-sm uppercase tracking-wide">Potential Savings Found</p>
                         <h3 className="text-3xl font-bold text-emerald-900 mt-1">₪{totalPotentialSavings.toFixed(2)}</h3>
@@ -470,9 +455,9 @@ export default function Receipt() {
                     <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center">
                         <Coins className="w-6 h-6 text-emerald-600" />
                     </div>
-                </div>
-             ) : (
-                <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                </div> :
+
+        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-gray-500 font-medium text-sm uppercase tracking-wide">Market Price Analysis</p>
                         <h3 className="text-2xl font-bold text-gray-900 mt-1">Fair Price</h3>
@@ -482,11 +467,11 @@ export default function Receipt() {
                         <CheckCircle2 className="w-6 h-6 text-gray-400" />
                     </div>
                 </div>
-             )}
+        }
 
             {/* AI Summary Card */}
-            {receipt.summary && (
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5 shadow-sm">
+            {receipt.summary &&
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Sparkles className="w-5 h-5 text-white" />
@@ -499,26 +484,26 @@ export default function Receipt() {
                   </div>
                 </div>
               </div>
-            )}
+        }
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
           
           {/* Overpay Alert */}
-          {receipt.insights?.some(i => i.type === 'OVERPAY_RECEIPT') && (
-              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-4">
+          {receipt.insights?.some((i) => i.type === 'OVERPAY_RECEIPT') &&
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-4">
                   <div className="bg-red-100 p-2 rounded-full">
                       <TrendingDown className="w-6 h-6 text-red-600" />
                   </div>
                   <div>
                       <h3 className="font-bold text-red-900">Overpayment Detected</h3>
                       <p className="text-red-700 text-sm">
-                          {receipt.insights.find(i => i.type === 'OVERPAY_RECEIPT').message}
+                          {receipt.insights.find((i) => i.type === 'OVERPAY_RECEIPT').message}
                       </p>
                   </div>
               </div>
-          )}
+          }
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6">
@@ -555,12 +540,12 @@ export default function Receipt() {
 
                       <div className="space-y-1">
                           {(receipt.items || []).map((item, idx) => {
-                              const benchmark = itemBenchmarks.find(b => b.receipt_line_item_id === item.code); // Assuming item.code links to benchmark line item id, or we might need robust linking
-                              const isOverpaid = benchmark && benchmark.overpay_amount > 0;
-                              const overpayPercent = benchmark ? ((benchmark.paid_price - benchmark.benchmark_min_price) / benchmark.benchmark_min_price * 100).toFixed(0) : 0;
-                              
-                              return (
-                              <div key={idx} className={`grid grid-cols-12 gap-2 items-center text-sm p-2 rounded-lg transition-colors ${isOverpaid ? 'bg-red-50/50' : 'hover:bg-gray-50'}`}>
+                    const benchmark = itemBenchmarks.find((b) => b.receipt_line_item_id === item.code); // Assuming item.code links to benchmark line item id, or we might need robust linking
+                    const isOverpaid = benchmark && benchmark.overpay_amount > 0;
+                    const overpayPercent = benchmark ? ((benchmark.paid_price - benchmark.benchmark_min_price) / benchmark.benchmark_min_price * 100).toFixed(0) : 0;
+
+                    return (
+                      <div key={idx} className={`grid grid-cols-12 gap-2 items-center text-sm p-2 rounded-lg transition-colors ${isOverpaid ? 'bg-red-50/50' : 'hover:bg-gray-50'}`}>
                                   <div className="col-span-5">
                                       <span className={`font-medium block truncate ${isOverpaid ? 'text-red-900' : 'text-gray-800'}`}>{item.name}</span>
                                       <div className="text-[10px] text-gray-400 truncate">
@@ -574,21 +559,21 @@ export default function Receipt() {
                                       ₪{item.price.toFixed(2)}
                                   </div>
                                   <div className="col-span-3 text-right">
-                                      {benchmark ? (
-                                          <div>
+                                      {benchmark ?
+                          <div>
                                               <div className="text-xs text-gray-500">₪{benchmark.benchmark_min_price.toFixed(2)}</div>
-                                              {isOverpaid && (
-                                                  <div className="text-[10px] text-red-600 font-bold flex items-center justify-end gap-0.5">
+                                              {isOverpaid &&
+                            <div className="text-[10px] text-red-600 font-bold flex items-center justify-end gap-0.5">
                                                       <TrendingDown className="w-3 h-3" /> +{overpayPercent}%
                                                   </div>
-                                              )}
-                                          </div>
-                                      ) : (
-                                          <span className="text-xs text-gray-300">-</span>
-                                      )}
+                            }
+                                          </div> :
+
+                          <span className="text-xs text-gray-300">-</span>
+                          }
                                   </div>
-                              </div>
-                          )})}
+                              </div>);
+                  })}
                       </div>
                   </div>
               </div>
@@ -597,8 +582,8 @@ export default function Receipt() {
 
           {/* Insights Section - Separate Card on Desktop */}
           <div className="lg:col-span-1 space-y-6">
-             {receipt.insights && receipt.insights.length > 0 ? (
-                <>
+             {receipt.insights && receipt.insights.length > 0 ?
+          <>
                 {/* Savings & Overpay Insights */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="bg-gray-50 p-4 border-b border-gray-100">
@@ -607,38 +592,38 @@ export default function Receipt() {
                         </h4>
                     </div>
                     <div className="p-4 space-y-3">
-                        {receipt.insights.filter(i => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving', 'warning'].includes(i.type)).map((insight, idx) => (
-                            <div key={idx} className={`rounded-xl border transition-all ${
-                                insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-900' :
-                                'bg-red-50 border-red-100 text-red-900'
-                            }`}>
-                                <div 
-                                    className="p-3 flex items-start gap-3 cursor-pointer" 
-                                    onClick={() => setExpandedInsight(expandedInsight === idx ? null : idx)}
-                                >
+                        {receipt.insights.filter((i) => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving', 'warning'].includes(i.type)).map((insight, idx) =>
+                <div key={idx} className={`rounded-xl border transition-all ${
+                insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-900' :
+                'bg-red-50 border-red-100 text-red-900'}`
+                }>
+                                <div
+                    className="p-3 flex items-start gap-3 cursor-pointer"
+                    onClick={() => setExpandedInsight(expandedInsight === idx ? null : idx)}>
+
                                     {insight.type === 'warning' ? <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-600" /> : <TrendingDown className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-600" />}
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
                                             <p className="font-bold text-sm">{insight.message}</p>
-                                            {insight.potential_savings > 0 && (
-                                                <Badge variant="outline" className="bg-white border-red-200 text-red-700 font-bold ml-2 whitespace-nowrap">
+                                            {insight.potential_savings > 0 &&
+                        <Badge variant="outline" className="bg-white border-red-200 text-red-700 font-bold ml-2 whitespace-nowrap">
                                                     Save ₪{insight.potential_savings.toFixed(2)}
                                                 </Badge>
-                                            )}
+                        }
                                         </div>
                                         {/* Progressive Disclosure */}
                                         <div className={`text-xs mt-2 overflow-hidden transition-all duration-300 ${expandedInsight === idx ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                                             <p className="opacity-90 leading-relaxed mb-2">{insight.explanation_text}</p>
-                                            {insight.evidence_json && (
-                                                <div className="bg-white/50 rounded p-2 text-[10px] font-mono border border-black/5">
+                                            {insight.evidence_json &&
+                        <div className="bg-white/50 rounded p-2 text-[10px] font-mono border border-black/5">
                                                     Evidence: {(() => {
-                                                        try {
-                                                            const evidence = JSON.parse(insight.evidence_json);
-                                                            return Object.entries(evidence).map(([k, v]) => `${k}: ${v}`).join(', ');
-                                                        } catch { return 'Details unavailable'; }
-                                                    })()}
+                            try {
+                              const evidence = JSON.parse(insight.evidence_json);
+                              return Object.entries(evidence).map(([k, v]) => `${k}: ${v}`).join(', ');
+                            } catch {return 'Details unavailable';}
+                          })()}
                                                 </div>
-                                            )}
+                        }
                                         </div>
                                         <div className="flex justify-center mt-1">
                                             {expandedInsight === idx ? <ChevronUp className="w-3 h-3 opacity-30" /> : <ChevronDown className="w-3 h-3 opacity-30" />}
@@ -646,10 +631,10 @@ export default function Receipt() {
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                        {receipt.insights.filter(i => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving'].includes(i.type)).length === 0 && (
-                            <p className="text-sm text-gray-500 text-center py-2">No overpayments detected! Good job.</p>
-                        )}
+                )}
+                        {receipt.insights.filter((i) => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving'].includes(i.type)).length === 0 &&
+                <p className="text-sm text-gray-500 text-center py-2">No overpayments detected! Good job.</p>
+                }
                     </div>
                 </div>
 
@@ -665,35 +650,35 @@ export default function Receipt() {
                              <Info className="w-3 h-3" />
                              <span>Hypothetical savings. Does not affect actual spending.</span>
                         </div>
-                        {receipt.insights.filter(i => i.type === 'alternative').map((insight, idx) => (
-                            <div key={idx} className="p-3 rounded-lg border border-violet-100 bg-white shadow-sm text-violet-900 text-sm">
+                        {receipt.insights.filter((i) => i.type === 'alternative').map((insight, idx) =>
+                <div key={idx} className="p-3 rounded-lg border border-violet-100 bg-white shadow-sm text-violet-900 text-sm">
                                 <div className="flex items-start gap-3">
                                     <ArrowRightLeft className="w-5 h-5 mt-0.5 flex-shrink-0 text-violet-500" />
                                     <div>
                                         <p className="font-bold">{insight.message}</p>
                                         <p className="text-xs mt-1 text-gray-600 leading-relaxed">{insight.explanation_text}</p>
-                                        {insight.potential_savings > 0 && (
-                                            <div className="mt-2 text-xs font-semibold text-violet-600 bg-violet-50 inline-block px-2 py-1 rounded">
+                                        {insight.potential_savings > 0 &&
+                      <div className="mt-2 text-xs font-semibold text-violet-600 bg-violet-50 inline-block px-2 py-1 rounded">
                                                 Could save ₪{insight.potential_savings.toFixed(2)}
                                             </div>
-                                        )}
+                      }
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                        {receipt.insights.filter(i => i.type === 'alternative').length === 0 && (
-                            <p className="text-sm text-gray-400 text-center py-2">No swap opportunities found for this receipt.</p>
-                        )}
+                )}
+                        {receipt.insights.filter((i) => i.type === 'alternative').length === 0 &&
+                <p className="text-sm text-gray-400 text-center py-2">No swap opportunities found for this receipt.</p>
+                }
                     </div>
                 </div>
-                </>
-             ) : (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center text-gray-400 text-sm">
+                </> :
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center text-gray-400 text-sm">
                     No specific insights for this receipt.
                 </div>
-             )}
+          }
           </div>
         </div>
-    </div>
-  );
+    </div>);
+
 }
