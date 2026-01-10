@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -213,7 +214,10 @@ export default function SmartCart() {
 
   return (
     <div className="space-y-6 pb-24">
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-2xl shadow-lg">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-2xl shadow-lg relative">
+        <div className="absolute top-6 right-6">
+             <RecommendationExplainer mode="smart_cart" className="text-white hover:bg-white/20 hover:text-white" />
+        </div>
         <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
           <ShoppingCart className="w-7 h-7" />
           Smart Cart Comparison

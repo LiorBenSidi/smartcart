@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -73,7 +74,10 @@ export default function CartAlternatives() {
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in">
             <header className="space-y-4 border-b pb-6">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Smart Cart Alternatives</h1>
+                <div className="flex justify-between items-start">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Smart Cart Alternatives</h1>
+                    <RecommendationExplainer mode="cart" />
+                </div>
                 <p className="text-gray-500 max-w-2xl">
                     We've filtered these products based on your diet, kosher level, and allergies, 
                     then ranked them by savings using real-time price data.
