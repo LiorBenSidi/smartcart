@@ -20,6 +20,8 @@ export default function Recommendations() {
   const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
+
+  useEffect(() => {
     const init = async () => {
       try {
         const currentUser = await base44.auth.me();
