@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 
@@ -75,7 +75,7 @@ export default function Upload() {
     setIsDragging(false);
     
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type.startsWith('image/')) {
+    if (droppedFile && (droppedFile.type.startsWith('image/') || droppedFile.type === 'application/pdf')) {
       setFile(droppedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -199,11 +199,19 @@ export default function Upload() {
                 <UploadCloud className="w-8 h-8" />
               </div>
               <p className="font-medium text-gray-900">{isDragging ? 'Drop receipt here' : 'Tap to upload receipt'}</p>
-              <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG</p>
+              <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG, PDF</p>
             </div>
           ) : (
             <div className="relative">
-              <img src={preview} alt="Receipt" className="w-full object-cover max-h-80 opacity-90" />
+              {file && file.type === 'application/pdf' ? (
+                <div className="h-80 flex flex-col items-center justify-center bg-gray-100 text-gray-500">
+                  <FileText className="w-16 h-16 mb-2 text-indigo-500" />
+                  <p className="font-medium text-gray-900">{file.name}</p>
+                  <p className="text-xs text-gray-400">PDF Document</p>
+                </div>
+              ) : (
+                <img src={preview} alt="Receipt" className="w-full object-cover max-h-80 opacity-90" />
+              )}
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -221,7 +229,7 @@ export default function Upload() {
             type="file" 
             ref={fileInputRef} 
             className="hidden" 
-            accept="image/*" 
+            accept="image/*,application/pdf" 
             onChange={handleFileChange} 
           />
         </CardContent>

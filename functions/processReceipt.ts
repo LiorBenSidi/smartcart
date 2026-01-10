@@ -22,7 +22,7 @@ export default Deno.serve(async (req) => {
 
         // Define the prompt for extraction with confidence scoring
         const prompt = `
-        Analyze this grocery receipt image and extract the data into the following JSON format.
+        Analyze this grocery receipt file (image or PDF) and extract the data into the following JSON format.
         Assign a confidence score (0.0 to 1.0) to every extracted field.
         
         - storeName: Name of the store
