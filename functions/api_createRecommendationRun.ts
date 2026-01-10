@@ -18,9 +18,26 @@ export default Deno.serve(async (req) => {
         const k_categories = context.k_categories || 5;
         const k_stores = context.k_stores || 3;
         
+        const user_lat = context.user_lat;
+        const user_lon = context.user_lon;
+        const current_store_id = context.current_store_id;
+
         const lookback_days = options.lookback_days || 90;
         const exclude_recent_days = options.exclude_recent_days || 10;
         const cold_start_min_receipts = options.cold_start_min_receipts || 3;
+
+        // Helper: Haversine Distance
+        const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+            if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+            const R = 6371; 
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        };
 
         // 1. Determine Algorithm (Cold vs Warm)
         // Check receipt count in last 60 days
@@ -138,6 +155,73 @@ export default Deno.serve(async (req) => {
                 }
             }
         });
+
+        // --- CONTEXT AUGMENTATION ---
+        
+        // A. Location Boost (Stores)
+        if (user_lat && user_lon) {
+            // Fetch all stores (or cache? list() is fine for now)
+            // Ideally we query stores near bbox, but list() is okay for proto.
+            const allStores = await base44.entities.Store.list();
+            const chainMinDist = {};
+
+            allStores.forEach(s => {
+                const d = getDistanceKm(user_lat, user_lon, s.latitude, s.longitude);
+                if (d < 50) { // Only consider stores within 50km
+                    if (!chainMinDist[s.chain_id] || d < chainMinDist[s.chain_id]) {
+                        chainMinDist[s.chain_id] = d;
+                    }
+                }
+            });
+
+            // Boost logic: Closer = Higher boost
+            // 0km = 1.0 boost, 10km = 0.5 boost, 50km = 0 boost
+            Object.entries(chainMinDist).forEach(([chainId, dist]) => {
+                const boost = Math.max(0, 1 - (dist / 20)); // Linear decay up to 20km
+                if (boost > 0) {
+                    chainScores[chainId] = (chainScores[chainId] || 0) + boost;
+                }
+            });
+        }
+
+        // B. Promotion/Inventory Boost (Products)
+        // Fetch active promotions
+        const now = new Date().toISOString();
+        const activePromos = await base44.entities.Promotion.filter({
+            starts_at: { $lte: now },
+            ends_at: { $gte: now }
+        });
+        
+        // If current_store_id provided, fetch its specific pricing/inventory
+        let storePrices = [];
+        if (current_store_id) {
+            storePrices = await base44.entities.ProductPrice.filter({ store_id: current_store_id });
+        }
+
+        // Apply Boosts
+        // 1. Global Promo Boost (if no specific store or generic chain promos)
+        // Map promos to products? Promos usually linked to products?
+        // Schema: Promotion has chain_id, store_id. It describes discount. 
+        // It doesn't strictly link to GTIN in the schema provided (Relation? No, just name/desc). 
+        // Assuming "name" or description matches or we need a join table.
+        // Wait, schema check: Promotion -> properties: name, description... no product_id?
+        // Ah, typically promos are complex. Let's assume for this proto we don't link promos to GTINs easily 
+        // without a separate lookup or if `ProductPrice` has `is_promoted` flag?
+        // `ProductPrice` schema has `allow_discount`. 
+        // Let's rely on `storePrices` if available.
+        
+        if (current_store_id && storePrices.length > 0) {
+            storePrices.forEach(p => {
+                if (p.availability_status === 'out_of_stock') {
+                    // Penalize heavily
+                    if (prodScores[p.gtin]) prodScores[p.gtin] *= 0.1;
+                } else {
+                     // Boost if price is good? Or just boost availability?
+                     // Let's slight boost available items in current store
+                     prodScores[p.gtin] = (prodScores[p.gtin] || 0) + 0.2;
+                }
+            });
+        }
 
         // 5. Create Run & Candidates
         const run = await base44.entities.RecommendationRun.create({

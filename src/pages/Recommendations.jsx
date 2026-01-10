@@ -17,10 +17,30 @@ export default function Recommendations() {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
         
+        // Get Location
+        let loc = {};
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+            });
+            loc = {
+                user_lat: position.coords.latitude,
+                user_lon: position.coords.longitude
+            };
+        } catch (e) {
+            console.log("Location access denied or timeout");
+        }
+
         // 1. Generate Recommendations
         const res = await base44.functions.invoke('api_createRecommendationRun', { 
             user_id: currentUser.email,
-            context: { k_items: 30, k_categories: 5, k_stores: 3 },
+            context: { 
+                k_items: 30, 
+                k_categories: 5, 
+                k_stores: 3,
+                ...loc
+                // current_store_id could be passed if we knew the user was in a store
+            },
             options: { lookback_days: 90 }
         });
         
@@ -103,7 +123,13 @@ export default function Recommendations() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {candidates.chains.map((c, i) => (
-                      <Card key={i} className="hover:shadow-md transition-all border-indigo-100 dark:border-gray-700">
+                      <Card key={i} className="hover:shadow-md transition-all border-indigo-100 dark:border-gray-700 relative overflow-hidden">
+                          {/* Context Badge if highly ranked (likely location boosted) */}
+                          {i === 0 && (
+                              <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">
+                                  Best Match
+                              </div>
+                          )}
                           <CardContent className="p-4 flex flex-col items-center text-center">
                               <div className="w-12 h-12 bg-indigo-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 overflow-hidden">
                                   {c.image_url ? 
