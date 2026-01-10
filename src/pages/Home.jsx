@@ -20,6 +20,20 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
 
+  const handleDeleteReceipt = async (receiptId) => {
+    if (confirm("Are you sure you want to delete this receipt?")) {
+        try {
+            await base44.entities.Receipt.delete(receiptId);
+            setReceipts(receipts.filter(r => r.id !== receiptId));
+            // Update insights too if they were derived from this receipt
+            setInsights(insights.filter(i => i.receiptId !== receiptId));
+        } catch (error) {
+            console.error("Failed to delete receipt", error);
+            alert("Failed to delete receipt");
+        }
+    }
+  };
+
   const handleExportAll = async () => {
     setIsExporting(true);
     try {
@@ -397,7 +411,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <ReceiptFolderView receipts={recentReceipts} />
+          <ReceiptFolderView receipts={recentReceipts} onDelete={handleDeleteReceipt} />
         </section>
       </div>
     </div>
