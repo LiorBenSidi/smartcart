@@ -17,16 +17,12 @@ export default function CartAlternatives() {
     useEffect(() => {
         const init = async () => {
             try {
-                // 1. Get Chains (Mock or List)
-                // Assuming we have Store Chains in DB or just use mocks for prototype
-                // Let's list from Store entity and extract unique chains?
-                // Or just hardcode a few common ones for the prototype.
-                setChains([
-                    { id: 'chain_1', name: 'SuperMart' },
-                    { id: 'chain_2', name: 'MegaSave' },
-                    { id: 'chain_3', name: 'OrganicLife' }
-                ]);
-                setSelectedChain('chain_1');
+                // 1. Get Chains from DB
+                const realChains = await base44.entities.Chain.list();
+                setChains(realChains);
+                if (realChains.length > 0) {
+                    setSelectedChain(realChains[0].id);
+                }
 
                 // 2. Get/Generate Run
                 const user = await base44.auth.me();
