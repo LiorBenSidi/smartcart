@@ -66,15 +66,23 @@ export default function Layout({ children, currentPageName }) {
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
               {currentPageName === 'Home' ? 'Dashboard' : currentPageName}
             </h1>
-            <Link to={createPageUrl('Profile')}>
-              {userProfile?.profile_picture ?
-              <img src={userProfile.profile_picture} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-indigo-100 dark:border-indigo-700" /> :
 
-              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold text-sm hover:ring-2 hover:ring-indigo-300 transition-all">
-                   {user.full_name?.[0] || user.email?.[0] || 'U'}
-                </div>
-              }
-            </Link>
+            <div className="flex items-center gap-3">
+              {user.display_name && (
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300 hidden sm:inline-block">
+                      Hi, {user.display_name}
+                  </span>
+              )}
+              <Link to={createPageUrl('Profile')}>
+                  {userProfile?.profile_picture ?
+                  <img src={userProfile.profile_picture} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-indigo-100 dark:border-indigo-700" /> :
+
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold text-sm hover:ring-2 hover:ring-indigo-300 transition-all">
+                      {user.display_name?.[0] || user.full_name?.[0] || user.email?.[0] || 'U'}
+                  </div>
+                  }
+              </Link>
+            </div>
           </header>
           }
 
