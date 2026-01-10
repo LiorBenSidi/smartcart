@@ -38,16 +38,7 @@ const QUESTIONS = [
       { value: 'health_focused', label: 'Health Focused', emoji: '🌟' }
     ]
   },
-  {
-    id: 'health',
-    text: 'What are your dietary priorities?',
-    icon: Heart,
-    options: [
-      { value: 'price', label: 'Best Price', emoji: '💵' },
-      { value: 'health', label: 'Health Focused', emoji: '🥗' },
-      { value: 'balanced', label: 'Balanced', emoji: '⚖️' }
-    ]
-  },
+
   {
     id: 'restrictions',
     text: 'Do you have dietary restrictions?',
@@ -195,7 +186,6 @@ export default function Onboarding({ onComplete }) {
 
       const prompt = `Generate personalized shopping recommendations for a new user with these preferences:
       - Budget: ${finalAnswers.budget}
-      - Health Priority: ${finalAnswers.health}
       - Restrictions: ${finalAnswers.restrictions}
       - Shopping Style: ${finalAnswers.style}
       
