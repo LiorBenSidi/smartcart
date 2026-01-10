@@ -7,97 +7,97 @@ import { base44 } from '@/api/base44Client';
 import { Badge } from "@/components/ui/badge";
 
 export default function ReceiptReview({ receipt, onConfirm }) {
-    const [data, setData] = useState(receipt);
-    const [isSaving, setIsSaving] = useState(false);
+  const [data, setData] = useState(receipt);
+  const [isSaving, setIsSaving] = useState(false);
 
-    const handleMetadataChange = (field, value) => {
-        setData({ ...data, [field]: value });
+  const handleMetadataChange = (field, value) => {
+    setData({ ...data, [field]: value });
+  };
+
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...data.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+
+    // Sync total with price since price IS the total (user requirement)
+    if (field === 'price') {
+      const val = parseFloat(value);
+      newItems[index].total = isNaN(val) ? 0 : val;
+    }
+
+    setData({ ...data, items: newItems });
+  };
+
+  const handleAddItem = () => {
+    const newItem = {
+      name: "",
+      quantity: 1,
+      price: 0,
+      total: 0,
+      needs_review: true,
+      user_confirmed: false
     };
+    setData({ ...data, items: [...data.items, newItem] });
+  };
 
-    const handleItemChange = (index, field, value) => {
-        const newItems = [...data.items];
-        newItems[index] = { ...newItems[index], [field]: value };
-        
-        // Sync total with price since price IS the total (user requirement)
-        if (field === 'price') {
-             const val = parseFloat(value);
-             newItems[index].total = isNaN(val) ? 0 : val;
-        }
+  const handleDeleteItem = (index) => {
+    const newItems = data.items.filter((_, i) => i !== index);
+    setData({ ...data, items: newItems });
+  };
 
-        setData({ ...data, items: newItems });
-    };
+  const toggleItemConfirm = (index) => {
+    const newItems = [...data.items];
+    newItems[index].user_confirmed = !newItems[index].user_confirmed;
+    newItems[index].needs_review = false; // Clear review flag if confirmed
+    setData({ ...data, items: newItems });
+  };
 
-    const handleAddItem = () => {
-        const newItem = {
-            name: "",
-            quantity: 1,
-            price: 0,
-            total: 0,
-            needs_review: true,
-            user_confirmed: false
-        };
-        setData({ ...data, items: [...data.items, newItem] });
-    };
+  const handleConfirmAll = async () => {
+    setIsSaving(true);
+    try {
+      // Validate
+      if (!data.storeName || !data.date || !data.totalAmount) {
+        alert("Please ensure Store Name, Date, and Total Amount are filled.");
+        setIsSaving(false);
+        return;
+      }
 
-    const handleDeleteItem = (index) => {
-        const newItems = data.items.filter((_, i) => i !== index);
-        setData({ ...data, items: newItems });
-    };
+      const updatedItems = data.items.map((item) => ({
+        ...item,
+        price: parseFloat(item.price) || 0,
+        quantity: parseFloat(item.quantity) || 0,
+        total: parseFloat(item.total) || 0,
+        user_confirmed: true,
+        needs_review: false
+      }));
 
-    const toggleItemConfirm = (index) => {
-        const newItems = [...data.items];
-        newItems[index].user_confirmed = !newItems[index].user_confirmed;
-        newItems[index].needs_review = false; // Clear review flag if confirmed
-        setData({ ...data, items: newItems });
-    };
+      const payload = {
+        ...data,
+        items: updatedItems,
+        needs_review: false,
+        needs_metadata_review: false,
+        processing_status: 'processed'
+      };
 
-    const handleConfirmAll = async () => {
-        setIsSaving(true);
-        try {
-            // Validate
-            if (!data.storeName || !data.date || !data.totalAmount) {
-                alert("Please ensure Store Name, Date, and Total Amount are filled.");
-                setIsSaving(false);
-                return;
-            }
+      // Update DB
+      await base44.entities.Receipt.update(receipt.id, payload);
 
-            const updatedItems = data.items.map(item => ({
-                ...item,
-                price: parseFloat(item.price) || 0,
-                quantity: parseFloat(item.quantity) || 0,
-                total: parseFloat(item.total) || 0,
-                user_confirmed: true,
-                needs_review: false
-            }));
+      if (onConfirm) onConfirm(payload);
+    } catch (error) {
+      console.error("Failed to confirm receipt", error);
+      alert("Failed to save confirmation. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-            const payload = {
-                ...data,
-                items: updatedItems,
-                needs_review: false,
-                needs_metadata_review: false,
-                processing_status: 'processed'
-            };
+  const metadataWarning = data.needs_metadata_review;
 
-            // Update DB
-            await base44.entities.Receipt.update(receipt.id, payload);
-            
-            if (onConfirm) onConfirm(payload);
-        } catch (error) {
-            console.error("Failed to confirm receipt", error);
-            alert("Failed to save confirmation. Please try again.");
-        } finally {
-            setIsSaving(false);
-        }
-    };
+  // Calculate sum of items (using price as it represents line total)
+  const calculatedSum = data.items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+  const hasMismatch = Math.abs(calculatedSum - (parseFloat(data.totalAmount) || 0)) > 0.05;
 
-    const metadataWarning = data.needs_metadata_review;
-
-    // Calculate sum of items (using price as it represents line total)
-    const calculatedSum = data.items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-    const hasMismatch = Math.abs(calculatedSum - (parseFloat(data.totalAmount) || 0)) > 0.05;
-
-    return (
-        <div className="space-y-6 text-gray-900 dark:text-gray-100">
+  return (
+    <div className="space-y-6 text-gray-900 dark:text-gray-100">
             <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-600 p-4 rounded-r-lg">
                 <div className="flex items-center">
                     <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400 mr-2" />
@@ -111,19 +111,19 @@ export default function ReceiptReview({ receipt, onConfirm }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Image Panel */}
                 <div className="bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-800 sticky top-4 h-[80vh]">
-                    {data.raw_receipt_image_url?.toLowerCase().includes('.pdf') ? (
-                        <iframe 
-                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(data.raw_receipt_image_url)}&embedded=true`}
-                            className="w-full h-full"
-                            title="Receipt PDF"
-                        />
-                    ) : (
-                     <img 
-                        src={data.raw_receipt_image_url} 
-                        alt="Receipt" 
-                        className="w-full h-full object-contain"
-                    />
-                    )}
+                    {data.raw_receipt_image_url?.toLowerCase().includes('.pdf') ?
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(data.raw_receipt_image_url)}&embedded=true`}
+            className="w-full h-full"
+            title="Receipt PDF" /> :
+
+
+          <img
+            src={data.raw_receipt_image_url}
+            alt="Receipt"
+            className="w-full h-full object-contain" />
+
+          }
                 </div>
 
                 {/* Form Panel */}
@@ -141,40 +141,40 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Store Name</label>
-                                    <Input 
-                                        value={data.storeName || ''} 
-                                        onChange={(e) => handleMetadataChange('storeName', e.target.value)}
-                                        className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.storeName ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`}
-                                    />
+                                    <Input
+                    value={data.storeName || ''}
+                    onChange={(e) => handleMetadataChange('storeName', e.target.value)}
+                    className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.storeName ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`} />
+
                                 </div>
                                 <div>
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Date</label>
-                                    <Input 
-                                        type="date"
-                                        value={data.date || ''} 
-                                        onChange={(e) => handleMetadataChange('date', e.target.value)}
-                                        className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.date ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`}
-                                    />
+                                    <Input
+                    type="date"
+                    value={data.date || ''}
+                    onChange={(e) => handleMetadataChange('date', e.target.value)}
+                    className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.date ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`} />
+
                                 </div>
                                 <div>
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Total Amount</label>
                                     <div className="relative">
-                                        <Input 
-                                            type="number"
-                                            value={data.totalAmount || ''} 
-                                            onChange={(e) => handleMetadataChange('totalAmount', parseFloat(e.target.value))}
-                                            className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.totalAmount ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : "font-bold"}`}
-                                        />
+                                        <Input
+                      type="number"
+                      value={data.totalAmount || ''}
+                      onChange={(e) => handleMetadataChange('totalAmount', parseFloat(e.target.value))}
+                      className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.totalAmount ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : "font-bold"}`} />
+
                                         <span className="absolute right-3 top-2 text-gray-400 dark:text-gray-500 text-xs">{data.currency || 'ILS'}</span>
                                     </div>
                                 </div>
                                 <div>
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Currency</label>
-                                    <Input 
-                                        value={data.currency || 'ILS'} 
-                                        onChange={(e) => handleMetadataChange('currency', e.target.value)}
-                                        className="dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
-                                    />
+                                    <Input
+                    value={data.currency || 'ILS'}
+                    onChange={(e) => handleMetadataChange('currency', e.target.value)}
+                    className="dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700" />
+
                                 </div>
                             </div>
                         </CardContent>
@@ -198,78 +198,78 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y dark:divide-gray-700">
-                                        {data.items.map((item, idx) => (
-                                            <tr key={idx} className={item.needs_review ? "bg-amber-50/50 dark:bg-amber-900/10" : ""}>
+                                        {data.items.map((item, idx) =>
+                    <tr key={idx} className={item.needs_review ? "bg-amber-50/50 dark:bg-amber-900/10" : ""}>
                                                 <td className="p-2">
-                                                    <Input 
-                                                        value={item.name || ''} 
-                                                        onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                        className={`h-7 text-sm dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 ${item.needs_review ? "border-amber-300 dark:border-amber-700 focus:border-amber-500" : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 dark:border-transparent"}`}
-                                                    />
-                                                    {item.raw_text && item.raw_text !== item.name && (
-                                                        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 truncate max-w-[200px]" title={item.raw_text}>
+                                                    <Input
+                          value={item.name || ''}
+                          onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
+                          className={`h-7 text-sm dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 ${item.needs_review ? "border-amber-300 dark:border-amber-700 focus:border-amber-500" : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 dark:border-transparent"}`} />
+
+                                                    {item.raw_text && item.raw_text !== item.name &&
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 truncate max-w-[200px]" title={item.raw_text}>
                                                             OCR: {item.raw_text}
                                                         </div>
-                                                    )}
+                        }
+                                                </td>
+                                                <td className="py-2">
+                                                    <Input
+                          type="number"
+                          value={item.quantity || ''}
+                          onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                          className="h-7 text-center px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700" />
+
                                                 </td>
                                                 <td className="p-2">
-                                                    <Input 
-                                                        type="number"
-                                                        value={item.quantity || ''} 
-                                                        onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                        className="h-7 text-center px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <Input 
-                                                        type="number"
-                                                        value={item.price || ''} 
-                                                        onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                                                        className="h-7 text-right px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 font-medium"
-                                                    />
+                                                    <Input
+                          type="number"
+                          value={item.price || ''}
+                          onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
+                          className="h-7 text-right px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 font-medium" />
+
                                                 </td>
                                                 <td className="p-2 text-center">
-                                                    {item.needs_review ? (
-                                                        <button 
-                                                            onClick={() => toggleItemConfirm(idx)}
-                                                            className="text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                                                            title="Review needed"
-                                                        >
+                                                    {item.needs_review ?
+                        <button
+                          onClick={() => toggleItemConfirm(idx)}
+                          className="text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                          title="Review needed">
+
                                                             <AlertCircle className="w-4 h-4" />
-                                                        </button>
-                                                    ) : (
-                                                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400 mx-auto" />
-                                                        )}
+                                                        </button> :
+
+                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400 mx-auto" />
+                        }
                                                         </td>
                                                         <td className="p-2 text-center">
-                                                        <button 
-                                                        onClick={() => handleDeleteItem(idx)}
-                                                        className="text-gray-400 hover:text-red-500 transition-colors"
-                                                        title="Remove item"
-                                                        >
+                                                        <button
+                          onClick={() => handleDeleteItem(idx)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          title="Remove item">
+
                                                         <Trash2 className="w-4 h-4" />
                                                         </button>
                                                         </td>
                                                         </tr>
-                                                        ))}
+                    )}
                                                         </tbody>
                                                         </table>
                                                         </div>
                                                         <div className="p-2 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                                                        <Button 
-                                                        variant="ghost" 
-                                                        size="sm" 
-                                                        onClick={handleAddItem}
-                                                        className="w-full text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-dashed border-indigo-200 dark:border-indigo-800"
-                                                        >
+                                                        <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAddItem}
+                  className="w-full text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-dashed border-indigo-200 dark:border-indigo-800">
+
                                                         <Plus className="w-4 h-4 mr-2" /> Add Item
                                                         </Button>
                                                         </div>
                                                         </CardContent>
                                                         </Card>
 
-                                                        {hasMismatch && (
-                                                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+                                                        {hasMismatch &&
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
                                                         <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                                                         <div className="flex-1">
                                                         <h4 className="text-sm font-bold text-red-900 dark:text-red-200">Total Amount Mismatch</h4>
@@ -277,27 +277,27 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                         The sum of item prices (₪{calculatedSum.toFixed(2)}) does not match the receipt total (₪{(parseFloat(data.totalAmount) || 0).toFixed(2)}).
                                                         </p>
                                                         </div>
-                                                        <Button 
-                                                        size="sm" 
-                                                        variant="outline"
-                                                        className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
-                                                        onClick={() => handleMetadataChange('totalAmount', calculatedSum)}
-                                                        >
+                                                        <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
+              onClick={() => handleMetadataChange('totalAmount', calculatedSum)}>
+
                                                         Fix Total
                                                         </Button>
                                                         </div>
-                                                        )}
+          }
 
-                    <Button 
-                        onClick={handleConfirmAll} 
-                        disabled={isSaving}
-                        className="w-full h-12 text-lg bg-green-600 hover:bg-green-700"
-                    >
+                    <Button
+            onClick={handleConfirmAll}
+            disabled={isSaving}
+            className="w-full h-12 text-lg bg-green-600 hover:bg-green-700">
+
                         <Save className="mr-2 h-5 w-5" />
                         {isSaving ? "Saving..." : "Confirm & Continue"}
                     </Button>
                 </div>
             </div>
-        </div>
-    );
+        </div>);
+
 }
