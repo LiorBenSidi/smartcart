@@ -361,7 +361,7 @@ export default function Receipt() {
           </p>
           {receipt.raw_receipt_image_url && (
             receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ? (
-                <iframe src={receipt.raw_receipt_image_url} className="w-full max-h-64 h-64 mx-auto rounded-lg opacity-50 border-0" title="Receipt PDF" />
+                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(receipt.raw_receipt_image_url)}&embedded=true`} className="w-full max-h-64 h-64 mx-auto rounded-lg opacity-50 border-0" title="Receipt PDF" />
             ) : (
                 <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />
             )
@@ -394,7 +394,7 @@ export default function Receipt() {
           </p>
           {receipt.raw_receipt_image_url && (
             receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ? (
-                <iframe src={receipt.raw_receipt_image_url} className="w-full max-h-64 h-64 mx-auto rounded-lg mb-6 border-0" title="Receipt PDF" />
+                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(receipt.raw_receipt_image_url)}&embedded=true`} className="w-full max-h-64 h-64 mx-auto rounded-lg mb-6 border-0" title="Receipt PDF" />
             ) : (
                 <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg mb-6" />
             )
