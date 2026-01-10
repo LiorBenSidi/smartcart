@@ -199,18 +199,18 @@ export default function Profile() {
             </div>
 
             <div className="space-y-2">
-                <Label>Budget Focus</Label>
+                <Label>Monthly Budget</Label>
                 <Select
               value={profile.budget_focus}
               onValueChange={(val) => setProfile({ ...profile, budget_focus: val })}>
 
                     <SelectTrigger>
-                        <SelectValue placeholder="Select focus" />
+                        <SelectValue placeholder="Select monthly budget" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="save_money">Save Money (Aggressive)</SelectItem>
-                        <SelectItem value="balanced">Balanced</SelectItem>
-                        <SelectItem value="health_focused">Health Focused</SelectItem>
+                        <SelectItem value="save_money">Under ₪1000</SelectItem>
+                        <SelectItem value="balanced">₪1000 - ₪2000</SelectItem>
+                        <SelectItem value="health_focused">Over ₪2000</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
