@@ -55,11 +55,28 @@ export default function Profile() {
   const handleSave = async () => {
     // Save or Update logic
     try {
-      // Update user name if changed
+      // Update user name if changed (built-in)
       if (user && fullName !== user.full_name) {
         await base44.auth.updateMe({ full_name: fullName });
-        // Update local user state
         setUser({ ...user, full_name: fullName });
+      }
+      
+      // We also update the User entity custom attribute 'display_name' separately if needed,
+      // but usually we just want to update the UserProfile entity we created.
+      // Wait, I added display_name to the 'User' entity in the previous step, BUT
+      // I cannot update the 'User' entity directly via entities.User.update usually for built-in users except via auth.updateMe 
+      // AND auth.updateMe only accepts specific fields usually.
+      // Actually, the instruction said: "You can define additional attributes on the user entity... In that case - you don't need to specify the built-in attributes...".
+      // And "You cannot include any of the built-in attributes when editing entities/User.json".
+      // So if I added 'display_name' to User.json, it is an extension of the User entity.
+      // To update it, I should use base44.auth.updateMe({ display_name: ... }) ? 
+      // OR base44.entities.User.update(user.id, { display_name: ... }) ?
+      // The instructions say "You can define additional attributes on the user entity...". 
+      // Usually custom attributes on User entity are updated via base44.auth.updateMe(data)
+      // "to save additional data on the current user, you can use the base44.auth.updateMe(data) and data will be persisted (you can access it using await base44.auth.me())."
+      
+      if (profile.display_name) {
+          await base44.auth.updateMe({ display_name: profile.display_name });
       }
 
       // Check if profile exists to decide update vs create
