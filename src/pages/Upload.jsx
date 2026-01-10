@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from "@/components/lib/utils";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 
@@ -16,6 +19,7 @@ export default function Upload() {
   const [selectedChain, setSelectedChain] = useState(null);
   const [stores, setStores] = useState([]);
   const [selectedStore, setSelectedStore] = useState(null);
+  const [openStoreCombobox, setOpenStoreCombobox] = useState(false);
   const [loadingChains, setLoadingChains] = useState(true);
   const [loadingStores, setLoadingStores] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -207,20 +211,63 @@ export default function Upload() {
               ) : stores.length === 0 ? (
                  <p className="text-xs text-gray-500 italic p-1">No stores found for this chain.</p>
               ) : (
-                <Select value={selectedStore?.id} onValueChange={(id) => {
-                  setSelectedStore(stores.find(s => s.id === id));
-                }}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select specific store" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stores.map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.name} {store.city ? `- ${store.city}` : ''} {store.address_line ? `(${store.address_line})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={openStoreCombobox} onOpenChange={setOpenStoreCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openStoreCombobox}
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedStore
+                        ? `${selectedStore.name}${selectedStore.city ? ` - ${selectedStore.city}` : ''}`
+                        : "Select specific store..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search store by city or address..." />
+                      <CommandList>
+                        <CommandEmpty>No store found.</CommandEmpty>
+                        {Object.entries(
+                          stores.reduce((acc, store) => {
+                            const city = store.city || 'Other';
+                            if (!acc[city]) acc[city] = [];
+                            acc[city].push(store);
+                            return acc;
+                          }, {})
+                        ).sort((a, b) => a[0].localeCompare(b[0])).map(([city, cityStores]) => (
+                          <CommandGroup key={city} heading={city}>
+                            {cityStores.map((store) => (
+                              <CommandItem
+                                key={store.id}
+                                value={`${store.name} ${store.city || ''} ${store.address_line || ''}`}
+                                onSelect={() => {
+                                  setSelectedStore(store);
+                                  setOpenStoreCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedStore?.id === store.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span>{store.name}</span>
+                                  {store.address_line && (
+                                    <span className="text-xs text-gray-500">{store.address_line}</span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
           )}
