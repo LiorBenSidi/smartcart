@@ -154,20 +154,15 @@ export default function PriceComparison() {
           {searchTerm && filteredProducts.length > 0 && (
             <div className="mt-3 max-h-64 overflow-y-auto space-y-2">
               {filteredProducts.slice(0, 10).map((product) => (
-                <button
-                  key={product.id}
+                <ProductSearchItem 
+                  key={product.id} 
+                  product={product} 
+                  chains={chains} 
                   onClick={() => {
                     handleProductSelect(product);
                     setSearchTerm('');
-                  }}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 transition-colors"
-                >
-                  <div className="font-medium text-gray-900 dark:text-gray-100">{product.canonical_name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {product.brand_name && <span className="mr-3">{product.brand_name}</span>}
-                    <span className="font-mono">{product.gtin}</span>
-                  </div>
-                </button>
+                  }} 
+                />
               ))}
             </div>
           )}
