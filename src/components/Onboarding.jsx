@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, Sparkles, ShoppingCart, Heart, Shield, TrendingDown, Loader2, AlertTriangle } from 'lucide-react';
 
@@ -19,13 +20,22 @@ const ALLERGEN_OPTIONS = [
 
 const QUESTIONS = [
   {
+    id: 'monthly_budget',
+    text: 'What is your target monthly grocery budget (₪)?',
+    icon: TrendingDown,
+    type: 'input',
+    inputType: 'number',
+    placeholder: 'e.g. 1500',
+    options: [] 
+  },
+  {
     id: 'budget',
-    text: 'What is your typical monthly shopping budget?',
+    text: 'What is your main spending priority?',
     icon: TrendingDown,
     options: [
-      { value: 'save_money', label: '<₪1000', emoji: '💰' },
-      { value: 'balanced', label: '₪1000-2000', emoji: '⚖️' },
-      { value: 'health_focused', label: '>₪2000', emoji: '🌟' }
+      { value: 'save_money', label: 'Save Money', emoji: '💰' },
+      { value: 'balanced', label: 'Balanced', emoji: '⚖️' },
+      { value: 'health_focused', label: 'Health Focused', emoji: '🌟' }
     ]
   },
   {
@@ -166,6 +176,7 @@ export default function Onboarding({ onComplete }) {
       // Map answers to profile
       const restrictions = Array.isArray(finalAnswers.restrictions) ? finalAnswers.restrictions : [finalAnswers.restrictions];
       const profile = {
+        monthly_budget: parseFloat(finalAnswers.monthly_budget) || 0,
         budget_focus: finalAnswers.budget,
         kashrut_level: restrictions.includes('kosher') ? 'basic_kosher' : 'none',
         allergen_avoid_list: restrictions.includes('allergies') ? selectedAllergens : [],
@@ -430,6 +441,27 @@ export default function Onboarding({ onComplete }) {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {currentQuestion.type === 'input' && (
+        <div className="space-y-4">
+            <Input
+                type={currentQuestion.inputType || 'text'}
+                placeholder={currentQuestion.placeholder}
+                value={answers[currentQuestion.id] || ''}
+                onChange={(e) => setAnswers({ ...answers, [currentQuestion.id]: e.target.value })}
+                className="h-14 text-lg text-center"
+                autoFocus
+            />
+            <Button
+                onClick={handleContinue}
+                disabled={!answers[currentQuestion.id]}
+                size="lg"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                Continue <ChevronRight className="w-5 h-5 ml-2" />
+            </Button>
+        </div>
       )}
 
       {currentQuestion.multiSelect && (
