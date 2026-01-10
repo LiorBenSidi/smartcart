@@ -39,15 +39,8 @@ export default function Profile() {
         const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
         if (existing.length > 0) {
           // Initialize profile with existing data AND the display_name from the User entity
-          // Map legacy budget_focus values if needed
-          let budgetFocus = existing[0].budget_focus;
-          if (budgetFocus === 'medium') budgetFocus = 'balanced';
-          if (budgetFocus === 'low') budgetFocus = 'save_money';
-          if (budgetFocus === 'high') budgetFocus = 'health_focused';
-
           setProfile({
               ...existing[0],
-              budget_focus: budgetFocus,
               display_name: currentUser.display_name || ''
           });
         } else {
@@ -206,18 +199,18 @@ export default function Profile() {
             </div>
 
             <div className="space-y-2">
-                <Label>Monthly Budget</Label>
+                <Label>Budget Focus</Label>
                 <Select
               value={profile.budget_focus}
               onValueChange={(val) => setProfile({ ...profile, budget_focus: val })}>
 
                     <SelectTrigger>
-                        <SelectValue placeholder="Select monthly budget" />
+                        <SelectValue placeholder="Select focus" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="save_money">Under ₪1000</SelectItem>
-                        <SelectItem value="balanced">₪1000 - ₪2000</SelectItem>
-                        <SelectItem value="health_focused">Over ₪2000</SelectItem>
+                        <SelectItem value="save_money">Save Money (Aggressive)</SelectItem>
+                        <SelectItem value="balanced">Balanced</SelectItem>
+                        <SelectItem value="health_focused">Health Focused</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
