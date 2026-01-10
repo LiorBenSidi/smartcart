@@ -14,7 +14,10 @@ export default function Upload() {
   const [isUploading, setIsUploading] = useState(false);
   const [chains, setChains] = useState([]);
   const [selectedChain, setSelectedChain] = useState(null);
-  const [loadingStores, setLoadingStores] = useState(true);
+  const [stores, setStores] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(null);
+  const [loadingChains, setLoadingChains] = useState(true);
+  const [loadingStores, setLoadingStores] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -37,9 +40,9 @@ export default function Upload() {
         console.log('Loaded chains:', chainList.length);
         setChains(chainList);
       } catch (error) {
-        console.error('Failed to load stores', error);
+        console.error('Failed to load chains', error);
       } finally {
-        setLoadingStores(false);
+        setLoadingChains(false);
       }
     };
     fetchData();
@@ -101,7 +104,9 @@ export default function Upload() {
         purchased_at: new Date().toISOString(),
         total_amount: 0,
         raw_receipt_image_url: fileUrl,
-        processing_status: 'pending'
+        processing_status: 'pending',
+        store_id: selectedStore?.id,
+        storeName: selectedStore?.name || selectedChain?.name
       };
       
 
@@ -132,7 +137,7 @@ export default function Upload() {
               <Store className="w-4 h-4" />
               Select Chain
             </label>
-            {loadingStores ? (
+            {loadingChains ? (
               <div className="flex items-center gap-2 text-gray-500">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Loading chains...</span>
@@ -155,8 +160,23 @@ export default function Upload() {
                 )}
               </div>
             ) : (
-              <Select value={selectedChain?.id} onValueChange={(id) => {
-                setSelectedChain(chains.find(c => c.id === id));
+              <Select value={selectedChain?.id} onValueChange={async (id) => {
+                const chain = chains.find(c => c.id === id);
+                setSelectedChain(chain);
+                setSelectedStore(null);
+                setStores([]);
+                
+                if (chain) {
+                  setLoadingStores(true);
+                  try {
+                    const chainStores = await base44.entities.Store.filter({ chain_id: chain.id });
+                    setStores(chainStores);
+                  } catch (err) {
+                    console.error("Failed to load stores", err);
+                  } finally {
+                    setLoadingStores(false);
+                  }
+                }
               }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Choose chain" />
@@ -171,6 +191,39 @@ export default function Upload() {
               </Select>
             )}
           </div>
+
+          {/* Store Selection */}
+          {selectedChain && (
+            <div className="animate-in fade-in slide-in-from-top-2">
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Select Store (Optional)
+              </label>
+              {loadingStores ? (
+                <div className="flex items-center gap-2 text-gray-500 text-sm p-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Loading stores...</span>
+                </div>
+              ) : stores.length === 0 ? (
+                 <p className="text-xs text-gray-500 italic p-1">No stores found for this chain.</p>
+              ) : (
+                <Select value={selectedStore?.id} onValueChange={(id) => {
+                  setSelectedStore(stores.find(s => s.id === id));
+                }}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select specific store" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stores.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.name} {store.city ? `- ${store.city}` : ''} {store.address_line ? `(${store.address_line})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
 
 
 
