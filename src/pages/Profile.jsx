@@ -39,8 +39,15 @@ export default function Profile() {
         const existing = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
         if (existing.length > 0) {
           // Initialize profile with existing data AND the display_name from the User entity
+          // Map legacy budget_focus values if needed
+          let budgetFocus = existing[0].budget_focus;
+          if (budgetFocus === 'medium') budgetFocus = 'balanced';
+          if (budgetFocus === 'low') budgetFocus = 'save_money';
+          if (budgetFocus === 'high') budgetFocus = 'health_focused';
+
           setProfile({
               ...existing[0],
+              budget_focus: budgetFocus,
               display_name: currentUser.display_name || ''
           });
         } else {
