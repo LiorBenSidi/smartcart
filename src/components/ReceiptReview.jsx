@@ -97,7 +97,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
     const hasMismatch = Math.abs(calculatedSum - (parseFloat(data.totalAmount) || 0)) > 0.05;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 text-gray-900 dark:text-gray-100">
             <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-600 p-4 rounded-r-lg">
                 <div className="flex items-center">
                     <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400 mr-2" />
