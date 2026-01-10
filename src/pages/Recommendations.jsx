@@ -105,10 +105,13 @@ export default function Recommendations() {
                   {candidates.chains.map((c, i) => (
                       <Card key={i} className="hover:shadow-md transition-all border-indigo-100 dark:border-gray-700">
                           <CardContent className="p-4 flex flex-col items-center text-center">
-                              <div className="w-12 h-12 bg-indigo-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
-                                  <Store className="w-6 h-6 text-indigo-600" />
+                              <div className="w-12 h-12 bg-indigo-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3 overflow-hidden">
+                                  {c.image_url ? 
+                                      <img src={c.image_url} alt={c.name} className="w-full h-full object-contain" /> :
+                                      <Store className="w-6 h-6 text-indigo-600" />
+                                  }
                               </div>
-                              <h3 className="font-bold mb-1">Chain #{c.store_chain_id}</h3>
+                              <h3 className="font-bold mb-1">{c.name || `Chain #${c.store_chain_id}`}</h3>
                               <p className="text-xs text-gray-500 mb-3">Match Score: {(c.score).toFixed(1)}</p>
                               <div className="flex gap-2 w-full">
                                   <Button variant="outline" size="sm" className="flex-1" onClick={() => handleFeedback(c, 'dismiss')}>Dismiss</Button>
@@ -149,12 +152,15 @@ export default function Recommendations() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {candidates.products.map((c, i) => (
                       <Card key={i} className="group relative overflow-hidden border-gray-100 dark:border-gray-700">
-                          <CardContent className="p-4 flex items-start justify-between">
-                              <div>
-                                  <h3 className="font-bold text-gray-900 dark:text-gray-100">Product #{c.canonical_product_id}</h3>
-                                  <p className="text-xs text-gray-500 mt-1">Based on purchase history of similar users</p>
+                          <CardContent className="p-4 flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-3 flex-1">
+                                  {c.image_url && <img src={c.image_url} alt={c.name} className="w-12 h-12 object-contain rounded bg-white border border-gray-100" />}
+                                  <div>
+                                      <h3 className="font-bold text-gray-900 dark:text-gray-100 line-clamp-2">{c.name || `Product #${c.canonical_product_id}`}</h3>
+                                      <p className="text-xs text-gray-500 mt-1">Based on purchase history of similar users</p>
+                                  </div>
                               </div>
-                              <div className="flex flex-col gap-2">
+                              <div className="flex flex-col gap-2 flex-shrink-0">
                                   <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50" onClick={() => handleFeedback(c, 'add_to_cart')}>
                                       <ShoppingCart className="w-4 h-4 mr-1" /> Add
                                   </Button>

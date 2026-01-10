@@ -149,35 +149,103 @@ export default Deno.serve(async (req) => {
             created_at: new Date().toISOString()
         });
 
-        const processScores = (scores, type, limit) => {
-            return Object.entries(scores)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, limit)
-                .map(([id, score], idx) => ({
-                    run_id: run.id,
-                    candidate_type: type,
-                    [type === 'store_chain' ? 'store_chain_id' : type === 'category' ? 'category' : 'canonical_product_id']: id,
-                    score: score,
-                    reason_code: 'collaborative_filtering',
-                    rank: idx + 1
-                }));
+        // Helper to get top keys
+        const getTopKeys = (scores, limit) => Object.entries(scores)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, limit)
+            .map(([id, score]) => ({ id, score }));
+
+        const topChainKeys = getTopKeys(chainScores, k_stores);
+        const topCatKeys = getTopKeys(catScores, k_categories);
+        const topProdKeys = getTopKeys(prodScores, k_items);
+
+        // Validate Chains
+        const validatedChains = [];
+        await Promise.all(topChainKeys.map(async ({ id, score }) => {
+            const res = await base44.entities.Chain.filter({ id });
+            if (res.length > 0) {
+                validatedChains.push({ ...res[0], score }); // Keep entity data + score
+            }
+        }));
+
+        // Validate Products
+        const validatedProducts = [];
+        await Promise.all(topProdKeys.map(async ({ id, score }) => {
+            const res = await base44.entities.Product.filter({ gtin: id }); // Assuming vector uses GTIN/Canonical ID
+            if (res.length > 0) {
+                validatedProducts.push({ ...res[0], score });
+            }
+        }));
+
+        // Categories (No DB entity usually, but pass through)
+        const validatedCategories = topCatKeys.map(k => ({ category: k.id, score: k.score }));
+
+        // Prepare Candidates for DB
+        const dbCandidates = [];
+        
+        validatedChains.forEach((c, idx) => {
+            dbCandidates.push({
+                run_id: run.id,
+                candidate_type: 'store_chain',
+                store_chain_id: c.id,
+                score: c.score,
+                reason_code: 'collaborative_filtering',
+                rank: idx + 1
+            });
+        });
+
+        validatedCategories.forEach((c, idx) => {
+            dbCandidates.push({
+                run_id: run.id,
+                candidate_type: 'category',
+                category: c.category,
+                score: c.score,
+                reason_code: 'collaborative_filtering',
+                rank: idx + 1
+            });
+        });
+
+        validatedProducts.forEach((p, idx) => {
+            dbCandidates.push({
+                run_id: run.id,
+                candidate_type: 'canonical_product',
+                canonical_product_id: p.gtin,
+                score: p.score,
+                reason_code: 'collaborative_filtering',
+                rank: idx + 1
+            });
+        });
+
+        // Persist
+        const createdCandidates = await Promise.all(dbCandidates.map(c => base44.entities.RecommendationCandidate.create(c)));
+
+        // Enrich Response
+        const enrich = (candidates, entities, typeField, entityIdField) => {
+            return candidates.map(c => {
+                const entity = entities.find(e => e[entityIdField] === c[typeField]);
+                return {
+                    candidate_id: c.id,
+                    [typeField]: c[typeField],
+                    score: c.score,
+                    reason_code: c.reason_code,
+                    // Enrich
+                    name: entity?.name || entity?.canonical_name || c[typeField],
+                    image_url: entity?.logo_url || entity?.image_url,
+                    description: entity?.description
+                };
+            });
         };
 
-        const storeCands = processScores(chainScores, 'store_chain', k_stores);
-        const catCands = processScores(catScores, 'category', k_categories);
-        const itemCands = processScores(prodScores, 'canonical_product', k_items);
-        
-        const allCands = [...storeCands, ...catCands, ...itemCands];
-        
-        // Persist Candidates
-        const createdCandidates = await Promise.all(allCands.map(c => base44.entities.RecommendationCandidate.create(c)));
-
-        // Format Output
-        // Map created candidates back to groups with IDs
         const responseCandidates = {
-            stores: createdCandidates.filter(c => c.candidate_type === 'store_chain').map(c => ({ candidate_id: c.id, store_chain_id: c.store_chain_id, score: c.score, reason_code: c.reason_code })),
-            categories: createdCandidates.filter(c => c.candidate_type === 'category').map(c => ({ candidate_id: c.id, category: c.category, score: c.score, reason_code: c.reason_code })),
-            items: createdCandidates.filter(c => c.candidate_type === 'canonical_product').map(c => ({ candidate_id: c.id, canonical_product_id: c.canonical_product_id, score: c.score, reason_code: c.reason_code }))
+            stores: enrich(createdCandidates.filter(c => c.candidate_type === 'store_chain'), validatedChains, 'store_chain_id', 'id'),
+            categories: createdCandidates.filter(c => c.candidate_type === 'category').map(c => ({ 
+                candidate_id: c.id, 
+                category: c.category, 
+                score: c.score, 
+                reason_code: c.reason_code,
+                name: c.category // Categories are just strings usually
+            })),
+            items: enrich(createdCandidates.filter(c => c.candidate_type === 'canonical_product'), validatedProducts, 'canonical_product_id', 'gtin')
         };
 
         return Response.json({
