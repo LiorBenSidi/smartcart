@@ -237,19 +237,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Load existing products and prices
-    console.log("Loading existing products and prices...");
-    const existingProducts = await svc.entities.Product.list();
-    const existingPrices = await svc.entities.ProductPrice.filter({ chain_id: chain.id, store_id: null });
+    // Load existing products for this chain
+    console.log("Loading existing products for this chain...");
+    const existingProducts = await svc.entities.Product.filter({ chain_id: chain.id });
 
     const productMap = new Map();
     for (const p of existingProducts) {
       productMap.set(p.gtin, p);
-    }
-
-    const priceMap = new Map();
-    for (const pr of existingPrices) {
-      priceMap.set(pr.gtin, pr);
     }
 
     // Prepare bulk operations
@@ -262,6 +256,7 @@ Deno.serve(async (req) => {
       if (!itemCode) continue;
 
       const productData = {
+        // Canonical fields
         gtin: itemCode,
         canonical_name: item.ItemName || "",
         brand_name: item.ManufacturerName || "",
@@ -269,7 +264,18 @@ Deno.serve(async (req) => {
         unit_of_measure: item.UnitOfMeasure || "",
         unit_quantity: parseFloat(item.UnitQty) || 0,
         package_quantity: parseFloat(item.QtyInPackage) || 0,
-        is_weight_based: item.bIsWeighted === "1"
+        is_weight_based: item.bIsWeighted === "1",
+        
+        // Price/Chain fields (Merged)
+        chain_id: chain.id,
+        store_id: null, // Chain-level price default
+        current_price: parseFloat(item.ItemPrice) || 0,
+        unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
+        allow_discount: item.AllowDiscount === "1",
+        price_updated_at: item.PriceUpdateDate || new Date().toISOString(),
+        chain_item_code: itemCode,
+        display_name: item.ItemName,
+        availability_status: "in_stock"
       };
 
       let product = productMap.get(itemCode);
@@ -281,7 +287,7 @@ Deno.serve(async (req) => {
       productMap.set(itemCode, product || { id: null, gtin: itemCode });
     }
 
-    // Bulk create new products (Enrichment disabled)
+    // Bulk create new products
     console.log(`Creating ${newProducts.length} new products...`);
     if (newProducts.length > 0) {
       await processBatch(
@@ -314,63 +320,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Now prepare prices - create at chain level by default
-    console.log("Preparing price data...");
-    const newPrices = [];
-    const updatePrices = [];
-
-    for (const item of items) {
-      const itemCode = item.ItemCode?.toString().trim();
-      if (!itemCode) continue;
-
-      const priceData = {
-        gtin: itemCode,
-        chain_id: chain.id,
-        store_id: null, // Chain-level price by default
-        current_price: parseFloat(item.ItemPrice) || 0,
-        unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
-        allow_discount: item.AllowDiscount === "1",
-        price_updated_at: item.PriceUpdateDate || new Date().toISOString()
-      };
-
-      let price = priceMap.get(itemCode);
-      if (!price) {
-        newPrices.push(priceData);
-      } else {
-        updatePrices.push({ id: price.id, data: priceData });
-      }
-    }
-
-    // Bulk create new prices
-    console.log(`Creating ${newPrices.length} new prices...`);
-    if (newPrices.length > 0) {
-      await processBatch(
-        newPrices,
-        100,
-        1000,
-        async (batch) => {
-           await svc.entities.ProductPrice.bulkCreate(batch);
-        },
-        "Price Creation"
-      );
-    }
-
-    // Update existing prices in batches with delay
-    if (updatePrices.length > 0) {
-      console.log(`Updating ${updatePrices.length} existing prices in batches...`);
-      await processBatch(
-        updatePrices,
-        50, // batch size
-        2000, // delay 2 seconds between batches
-        async (batch) => {
-          for (const update of batch) {
-            await svc.entities.ProductPrice.update(update.id, update.data);
-          }
-        },
-        "Price Updates"
-      );
-    }
-
     console.log("Processing complete!");
 
     return Response.json({
@@ -380,9 +329,7 @@ Deno.serve(async (req) => {
       totalItems: items.length,
       processed: items.length,
       newProducts: newProducts.length,
-      updatedProducts: updateProducts.length,
-      newPrices: newPrices.length,
-      updatedPrices: updatePrices.length
+      updatedProducts: updateProducts.length
     });
 
   } catch (error) {
