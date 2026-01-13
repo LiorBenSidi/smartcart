@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck } from 'lucide-react';
 import CartAlternatives from '@/components/CartAlternatives';
+import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
@@ -504,14 +505,20 @@ export default function SmartCart() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.gtin)}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.gtin)}>
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                  <DataCorrectionDialog 
+                      entityType="product" 
+                      entityId={item.gtin} 
+                      entityName={item.name} 
+                      defaultIssueType="price" 
+                  />
                   </div>
-                </div>
-              ))}
+                  </div>
+                  ))}
             </CardContent>
           </Card>
 

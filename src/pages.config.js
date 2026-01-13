@@ -9,6 +9,7 @@ import Receipt from './pages/Receipt';
 import Recommendations from './pages/Recommendations';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
+import Feedback from './pages/Feedback';
 import __Layout from './Layout.jsx';
 
 
@@ -24,6 +25,7 @@ export const PAGES = {
     "Recommendations": Recommendations,
     "SmartCart": SmartCart,
     "Upload": Upload,
+    "Feedback": Feedback,
 }
 
 export const pagesConfig = {

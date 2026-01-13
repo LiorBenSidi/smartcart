@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare } from 'lucide-react';
+import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import StoreReviews from '@/components/StoreReviews';
+import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -308,6 +309,18 @@ export default function NearbyStores() {
                                         </DialogContent>
                                     </Dialog>
                                 </div>
+                                <div className="mt-2 pt-2 border-t flex justify-end">
+                                    <DataCorrectionDialog 
+                                        entityType="store" 
+                                        entityId={store.id} 
+                                        entityName={store.name}
+                                        trigger={
+                                            <button className="text-[10px] text-gray-400 hover:text-red-500 flex items-center gap-1">
+                                                <Flag className="w-3 h-3" /> Report issue
+                                            </button>
+                                        }
+                                    />
+                                </div>
                             </div>
                         </Popup>
                     </Marker>
@@ -394,6 +407,16 @@ export default function NearbyStores() {
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDirections(store)}>
                                         <Navigation className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                                     </Button>
+                                    <DataCorrectionDialog 
+                                        entityType="store" 
+                                        entityId={store.id} 
+                                        entityName={store.name}
+                                        trigger={
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500">
+                                                <Flag className="w-4 h-4" />
+                                            </Button>
+                                        }
+                                    />
                                   </div>
                               </div>
                           ))}

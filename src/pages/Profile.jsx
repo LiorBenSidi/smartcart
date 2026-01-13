@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
-import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2, Moon, Sun } from 'lucide-react';
+import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2, Moon, Sun, MessageSquarePlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Onboarding from '../components/Onboarding';
 
 export default function Profile() {
@@ -350,6 +351,12 @@ export default function Profile() {
 
         <RefreshCw className="w-4 h-4 mr-2" /> Retake Onboarding
       </Button>
+
+      <Link to={createPageUrl('Feedback')} className="block w-full">
+        <Button variant="outline" className="w-full text-indigo-600 border-indigo-200 hover:bg-indigo-50">
+            <MessageSquarePlus className="w-4 h-4 mr-2" /> Send Feedback
+        </Button>
+      </Link>
 
       <Button
         variant="outline"

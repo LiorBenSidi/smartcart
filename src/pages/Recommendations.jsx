@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info } from 'lucide-react';
 import { toast } from "sonner";
+import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
   Dialog,
   DialogContent,
@@ -173,15 +174,18 @@ export default function Recommendations() {
                                   </p>
 
                                   <div className="flex gap-2 w-full mt-auto">
-                                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleFeedback(c, 'dismiss')}>
-                                          Dismiss
+                                      <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleFeedback(c, 'thumbs_down')}>
+                                          <ThumbsDown className="w-4 h-4" />
                                       </Button>
-                                      <Button size="sm" className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => handleFeedback(c, 'click')}>
+                                      <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleFeedback(c, 'thumbs_up')}>
+                                          <ThumbsUp className="w-4 h-4" />
+                                      </Button>
+                                      <Button size="sm" className="flex-1 bg-indigo-600 hover:bg-indigo-700 h-8" onClick={() => handleFeedback(c, 'click')}>
                                           View Details
                                       </Button>
                                   </div>
                               </CardContent>
-                          </Card>
+                          </Card
                       );
                   })}
               </div>
@@ -275,6 +279,21 @@ export default function Recommendations() {
                                   <div>
                                       <h3 className="font-bold text-gray-900 dark:text-gray-100 line-clamp-2">{c.name || `Product #${c.canonical_product_id}`}</h3>
                                       <p className="text-xs text-gray-500 mt-1">Based on purchase history of similar users</p>
+                                      
+                                      <div className="flex gap-2 mt-2">
+                                          <button onClick={() => handleFeedback(c, 'thumbs_up')} className="text-gray-400 hover:text-green-600 transition-colors">
+                                              <ThumbsUp className="w-4 h-4" />
+                                          </button>
+                                          <button onClick={() => handleFeedback(c, 'thumbs_down')} className="text-gray-400 hover:text-red-500 transition-colors">
+                                              <ThumbsDown className="w-4 h-4" />
+                                          </button>
+                                          <DataCorrectionDialog 
+                                              entityType="product" 
+                                              entityId={c.canonical_product_id} 
+                                              entityName={c.name}
+                                              defaultIssueType="price"
+                                          />
+                                      </div>
                                   </div>
                               </div>
                               <div className="flex flex-col gap-2 flex-shrink-0">
