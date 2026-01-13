@@ -8,23 +8,16 @@ import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTr
 import { format } from 'date-fns';
 
 const ProductSearchItem = ({ product, chains, onClick }) => {
-  const [chainNames, setChainNames] = useState([]);
+  const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    const fetchChains = async () => {
+    const fetchPrices = async () => {
       try {
-        const prices = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
+        const priceList = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
         if (!mounted) return;
-        
-        const uniqueChainIds = [...new Set(prices.map(p => p.chain_id))];
-        const names = uniqueChainIds
-            .map(id => chains.get(id)?.name)
-            .filter(Boolean)
-            .sort();
-            
-        setChainNames(names);
+        setPrices(priceList);
       } catch (e) {
         console.error(e);
       } finally {
@@ -32,40 +25,56 @@ const ProductSearchItem = ({ product, chains, onClick }) => {
       }
     };
     
-    fetchChains();
+    fetchPrices();
     return () => { mounted = false; };
-  }, [product.gtin, chains]);
+  }, [product.gtin]);
+
+  if (loading) {
+      return (
+        <div className="p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+            <div className="flex justify-between items-center">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.canonical_name}</div>
+                <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+            </div>
+        </div>
+      );
+  }
+
+  if (prices.length === 0) {
+      return null;
+  }
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 transition-colors group"
-    >
-      <div className="flex justify-between items-start gap-4">
-          <div className="flex-1 min-w-0">
-              <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                {product.brand_name && <span className="mr-3">{product.brand_name}</span>}
-                <span className="font-mono">{product.gtin}</span>
+    <>
+      {prices.map((price) => {
+          const chainName = chains.get(price.chain_id)?.name || 'Unknown Chain';
+          return (
+            <button
+              key={price.id}
+              onClick={() => onClick(product)}
+              className="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 transition-colors group"
+            >
+              <div className="flex justify-between items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                        {product.brand_name && <span className="mr-3">{product.brand_name}</span>}
+                        <span className="font-mono">{product.gtin}</span>
+                      </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                      <div className="font-bold text-indigo-600 dark:text-indigo-400">
+                          ₪{price.current_price?.toFixed(2)}
+                      </div>
+                      <Badge variant="outline" className="mt-1 text-[10px] px-1 h-5 font-normal bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">
+                          {chainName}
+                      </Badge>
+                  </div>
               </div>
-          </div>
-          <div className="text-right flex-shrink-0 max-w-[40%]">
-             {loading ? (
-                 <span className="text-xs text-gray-400">Checking stores...</span>
-             ) : chainNames.length > 0 ? (
-                 <div className="flex flex-wrap justify-end gap-1">
-                    {chainNames.map(name => (
-                        <Badge key={name} variant="outline" className="text-[10px] px-1 h-5 font-normal bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800">
-                            {name}
-                        </Badge>
-                    ))}
-                 </div>
-             ) : (
-                 <span className="text-xs text-gray-400 italic">No prices found</span>
-             )}
-          </div>
-      </div>
-    </button>
+            </button>
+          );
+      })}
+    </>
   );
 };
 
@@ -95,7 +104,18 @@ export default function PriceComparison() {
                 { brand_name: { $regex: searchTerm, $options: 'i' } }
             ]
         }, undefined, 50);
-        setProducts(results);
+        
+        // Deduplicate by GTIN
+        const uniqueProducts = [];
+        const seenGtins = new Set();
+        for (const p of results) {
+            if (p.gtin && !seenGtins.has(p.gtin)) {
+                seenGtins.add(p.gtin);
+                uniqueProducts.push(p);
+            }
+        }
+        
+        setProducts(uniqueProducts);
       } catch (error) {
         console.error("Failed to search products", error);
       } finally {
@@ -187,8 +207,8 @@ export default function PriceComparison() {
                   key={product.id} 
                   product={product} 
                   chains={chains} 
-                  onClick={() => {
-                    handleProductSelect(product);
+                  onClick={(p) => {
+                    handleProductSelect(p);
                     setSearchTerm('');
                     setProducts([]); 
                   }} 
