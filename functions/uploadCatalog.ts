@@ -361,7 +361,7 @@ Deno.serve(async (req) => {
       await processBatch(
         newProducts,
         100, // High batch size for speed
-        50, // Minimal delay
+        5000, // Minimal delay
         async (batch) => {
             const created = await svc.entities.Product.bulkCreate(batch);
             for (const p of created) {
@@ -378,7 +378,7 @@ Deno.serve(async (req) => {
       await processBatch(
         updateProducts,
         100, // High batch size for speed
-        50, 
+        5000, 
         async (batch) => {
           for (const update of batch) {
             const dataToUpdate = { ...update.data };
