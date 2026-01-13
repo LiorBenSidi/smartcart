@@ -185,7 +185,7 @@ export default function Recommendations() {
                                       </Button>
                                   </div>
                               </CardContent>
-                          </Card
+                          </Card>
                       );
                   })}
               </div>
