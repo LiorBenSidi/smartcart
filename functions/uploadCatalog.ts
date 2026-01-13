@@ -5,20 +5,23 @@ import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 // Helper to delay execution
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function categorizeItems(base44, items) {
+async function enrichItems(base44, items) {
   if (items.length === 0) return;
   
-  console.log(`Categorizing ${items.length} items via LLM...`);
+  console.log(`Enriching ${items.length} items with Category, Kosher Level, and Allergens via LLM...`);
   
   const promptItems = items.map((item, idx) => {
       // Handle both flat items (new) and update objects (existing)
       const data = item.data || item;
-      return `${idx + 1}. ${data.canonical_name || data.display_name} (${data.description || ''})`;
+      return `${idx + 1}. ${data.canonical_name || data.display_name} ${data.description ? `(${data.description})` : ''} ${data.brand_name ? `[Brand: ${data.brand_name}]` : ''}`;
   }).join('\n');
   
-  const prompt = `Categorize the following grocery products into standard categories (e.g. "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen").
+  const prompt = `Analyze the following grocery products and provide:
+  1. Category: standard category (e.g. "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen").
+  2. Kosher Level: one of ["None", "Basic Kosher", "Strict Kosher", "Glatt Kosher", "Mehadrin"]. If unsure, default to "None" or "Basic Kosher" based on typical Israeli products.
+  3. Allergens: list of present allergens from ["Gluten", "Nuts", "Soy", "Fish", "Wheat", "Lactose", "Peanuts", "Eggs", "Shellfish", "Sesame"].
   
-  Return ONLY a JSON object where keys are the item indices (1 to ${items.length}) and values are the category names.
+  Return ONLY a JSON object where keys are the item indices (1 to ${items.length}) and values are objects with "category", "kosher_level", and "allergens".
   
   Items:
   ${promptItems}`;
@@ -28,26 +31,43 @@ async function categorizeItems(base44, items) {
           prompt: prompt,
           response_json_schema: {
               type: "object",
-              additionalProperties: { type: "string" }
-          }
-      });
-      
-      // Apply categories
-      Object.entries(response).forEach(([idx, category]) => {
-          const itemIndex = parseInt(idx) - 1;
-          if (items[itemIndex]) {
-              const item = items[itemIndex];
-              if (item.data) {
-                  item.data.category = category;
-              } else {
-                  item.category = category;
+              patternProperties: {
+                  "^[0-9]+$": {
+                      type: "object",
+                      properties: {
+                          category: { type: "string" },
+                          kosher_level: { type: "string", enum: ["None", "Basic Kosher", "Strict Kosher", "Glatt Kosher", "Mehadrin"] },
+                          allergens: { 
+                              type: "array", 
+                              items: { type: "string", enum: ["Gluten", "Nuts", "Soy", "Fish", "Wheat", "Lactose", "Peanuts", "Eggs", "Shellfish", "Sesame"] } 
+                          }
+                      },
+                      required: ["category", "kosher_level", "allergens"]
+                  }
               }
           }
       });
       
+      // Apply enrichment data
+      Object.entries(response).forEach(([idx, data]) => {
+          const itemIndex = parseInt(idx) - 1;
+          if (items[itemIndex]) {
+              const item = items[itemIndex];
+              const target = item.data || item;
+              
+              if (data.category) target.category = data.category;
+              if (data.kosher_level) target.kosher_level = data.kosher_level;
+              if (data.allergens) target.allergen_tags = data.allergens;
+              
+              // Infer basic flags
+              target.is_kosher = data.kosher_level !== 'None';
+              target.is_gluten_free = !data.allergens?.includes('Gluten') && !data.allergens?.includes('Wheat');
+          }
+      });
+      
   } catch (err) {
-      console.error("Error categorizing items:", err);
-      // Continue without categories
+      console.error("Error enriching items:", err);
+      // Continue without enrichment
   }
 }
 
@@ -328,9 +348,9 @@ Deno.serve(async (req) => {
       if (!product) {
         newProducts.push(productData);
       } else {
-        // Only categorize if missing
-        if (!product.category) {
-            productData._needsCategory = true;
+        // Only enrich if missing critical fields
+        if (!product.category || !product.kosher_level) {
+            productData._needsEnrichment = true;
         }
         updateProducts.push({ id: product.id, data: productData });
       }
@@ -342,10 +362,10 @@ Deno.serve(async (req) => {
     if (newProducts.length > 0) {
       await processBatch(
         newProducts,
-        20, // Reduced batch size for LLM
+        10, // Reduced batch size for heavier LLM enrichment
         1000,
         async (batch) => {
-            await categorizeItems(base44, batch);
+            await enrichItems(base44, batch);
             const created = await svc.entities.Product.bulkCreate(batch);
             for (const p of created) {
                 productMap.set(p.gtin, p);
@@ -360,19 +380,19 @@ Deno.serve(async (req) => {
       console.log(`Updating ${updateProducts.length} existing products in batches...`);
       await processBatch(
         updateProducts,
-        20, // Reduced batch size for LLM
+        10, // Reduced batch size for heavier LLM enrichment
         2000, // delay 2 seconds between batches
         async (batch) => {
-          // Filter items needing category
-          const itemsToCategorize = batch.filter(item => item.data._needsCategory);
-          if (itemsToCategorize.length > 0) {
-            await categorizeItems(base44, itemsToCategorize);
+          // Filter items needing enrichment
+          const itemsToEnrich = batch.filter(item => item.data._needsEnrichment);
+          if (itemsToEnrich.length > 0) {
+            await enrichItems(base44, itemsToEnrich);
           }
           
           for (const update of batch) {
             // Clean up internal flag
             const dataToUpdate = { ...update.data };
-            delete dataToUpdate._needsCategory;
+            delete dataToUpdate._needsEnrichment;
             
             await svc.entities.Product.update(update.id, dataToUpdate);
           }
