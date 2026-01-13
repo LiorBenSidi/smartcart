@@ -16,7 +16,8 @@ const ProductSearchItem = ({ product, chains, onClick }) => {
     let mounted = true;
     const fetchPrices = async () => {
       try {
-        const priceList = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
+        // Now we fetch from Product entity, filtering by GTIN
+        const priceList = await base44.entities.Product.filter({ gtin: product.gtin });
         if (!mounted) return;
         
         // Identify missing chains
@@ -165,13 +166,14 @@ export default function PriceComparison() {
   const handleProductSelect = async (product) => {
     setSelectedProduct(product);
     setLoading(true);
-    
+
     try {
-      const prices = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
-      
+      // Fetch all instances of this product (across chains/stores)
+      const prices = await base44.entities.Product.filter({ gtin: product.gtin });
+
       // Sort by price (cheapest first)
       prices.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
-      
+
       setPriceData(prices);
     } catch (error) {
       console.error('Failed to load prices', error);
