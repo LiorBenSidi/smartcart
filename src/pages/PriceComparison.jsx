@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Play, Pause } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ProductSearchItem = ({ product, chains, onClick }) => {
@@ -79,6 +79,7 @@ export default function PriceComparison() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const ITEMS_PER_PAGE = 2500;
 
   useEffect(() => {
@@ -89,12 +90,27 @@ export default function PriceComparison() {
         setProducts(allProducts);
       } catch (error) {
         console.error("Failed to load products", error);
+        setIsScanning(false);
       } finally {
         setProductsLoading(false);
       }
     };
     loadProducts();
   }, [page]);
+
+  useEffect(() => {
+    if (isScanning && !productsLoading) {
+      if (products.length < ITEMS_PER_PAGE) {
+        setIsScanning(false); // Stop if we reached the end
+        return;
+      }
+      
+      const timer = setTimeout(() => {
+        setPage(p => p + 1);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isScanning, productsLoading, products.length]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -179,25 +195,39 @@ export default function PriceComparison() {
           )}
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0 || productsLoading}
-            >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Previous
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0 || productsLoading || isScanning}
+              >
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Previous
+              </Button>
+              <Button
+                  variant={isScanning ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setIsScanning(!isScanning)}
+                  disabled={productsLoading && !isScanning}
+                  className={isScanning ? "bg-indigo-100 text-indigo-700 border-indigo-200" : ""}
+              >
+                  {isScanning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                  {isScanning ? "Scanning..." : "Auto Scan"}
+              </Button>
+            </div>
+            
             <span className="text-sm text-gray-500 flex items-center gap-2">
                 {productsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                 {productsLoading ? 'Loading...' : `Page ${page + 1}`}
                 {!productsLoading && <span className="text-xs text-gray-400">({products.length} items)</span>}
             </span>
+
             <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setPage(p => p + 1)}
-                disabled={products.length < ITEMS_PER_PAGE || productsLoading}
+                disabled={products.length < ITEMS_PER_PAGE || productsLoading || isScanning}
             >
                 Next
                 <ChevronRight className="w-4 h-4 ml-2" />
