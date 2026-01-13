@@ -24,6 +24,13 @@ export default function CatalogAdmin() {
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState(null);
 
+  // Staging & Sync State
+  const [jobId, setJobId] = useState(null);
+  const [totalItems, setTotalItems] = useState(0);
+  const [processedItems, setProcessedItems] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null); // 'staging', 'ready', 'syncing', 'complete'
+
   // Pagination View
   const [page, setPage] = useState(0);
   const pageSize = 10;
@@ -70,13 +77,6 @@ export default function CatalogAdmin() {
       setIsLoading(false);
     }
   };
-
-  // Staging & Sync State
-  const [jobId, setJobId] = useState(null);
-  const [totalItems, setTotalItems] = useState(0);
-  const [processedItems, setProcessedItems] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState(null); // 'staging', 'ready', 'syncing', 'complete'
 
   const handleStageCatalog = async () => {
     if (!xmlFile) {
