@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2 } from 'lucide-react';
+import { ShieldCheck, Database, Trash2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import SystemValidationPanel from '../components/SystemValidationPanel';
@@ -148,11 +148,24 @@ export default function Admin() {
   return (
     <div className="space-y-6">
         <div className="bg-slate-800 dark:bg-slate-900 text-white p-6 rounded-2xl shadow-lg">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-                <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                Admin Console
-            </h1>
-            <p className="text-slate-300 text-sm mt-1">System Overview</p>
+            <div className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                        Admin Console
+                    </h1>
+                    <p className="text-slate-300 text-sm mt-1">System Overview</p>
+                </div>
+                <Button 
+                    onClick={syncStats} 
+                    disabled={isSyncing}
+                    variant="outline" 
+                    className="bg-slate-700 border-slate-600 text-slate-100 hover:bg-slate-600 hover:text-white"
+                >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync Stats'}
+                </Button>
+            </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
