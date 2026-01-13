@@ -100,7 +100,7 @@ export default function UserSimilarityDisplay({ currentUser }) {
     const getDisplayName = (neighborId) => {
         if (currentUser.role === 'admin') {
             const user = neighborDetails[neighborId];
-            return user?.full_name || user?.email || neighborId;
+            return user?.display_name || user?.full_name || user?.email || neighborId;
         }
         // Generate consistent random code for regular users
         // Simple hash of string to number
