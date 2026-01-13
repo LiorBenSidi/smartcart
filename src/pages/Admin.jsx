@@ -14,6 +14,7 @@ export default function Admin() {
   const [productCount, setProductCount] = useState(0);
   const [storeCount, setStoreCount] = useState(0);
   const [trueCounts, setTrueCounts] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
