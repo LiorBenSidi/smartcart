@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle } from 'lucide-react';
+import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ProductSearchItem = ({ product, chains, onClick }) => {
@@ -76,14 +77,24 @@ export default function PriceComparison() {
   const [stores, setStores] = useState(new Map());
   const [chains, setChains] = useState(new Map());
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const ITEMS_PER_PAGE = 2500;
 
   useEffect(() => {
     const loadProducts = async () => {
-      const allProducts = await base44.entities.Product.list('-updated_date', 100);
-      setProducts(allProducts);
+      setProductsLoading(true);
+      try {
+        const allProducts = await base44.entities.Product.list('-updated_date', ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+        setProducts(allProducts);
+      } catch (error) {
+        console.error("Failed to load products", error);
+      } finally {
+        setProductsLoading(false);
+      }
     };
     loadProducts();
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -166,6 +177,32 @@ export default function PriceComparison() {
               ))}
             </div>
           )}
+
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0 || productsLoading}
+            >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Previous
+            </Button>
+            <span className="text-sm text-gray-500 flex items-center gap-2">
+                {productsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                {productsLoading ? 'Loading...' : `Page ${page + 1}`}
+                {!productsLoading && <span className="text-xs text-gray-400">({products.length} items)</span>}
+            </span>
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setPage(p => p + 1)}
+                disabled={products.length < ITEMS_PER_PAGE || productsLoading}
+            >
+                Next
+                <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
