@@ -5,6 +5,7 @@ import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 // Helper to delay execution
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Deprecated inline enrichment - moved to background job
 async function enrichProductData(base44, items) {
   if (items.length === 0) return;
   
@@ -350,13 +351,18 @@ Deno.serve(async (req) => {
 
     // Bulk create new products
     console.log(`Creating ${newProducts.length} new products...`);
+    
+    // Set enrichment_status to 'pending' for new items
+    for (const p of newProducts) {
+        p.enrichment_status = 'pending';
+    }
+
     if (newProducts.length > 0) {
       await processBatch(
         newProducts,
-        100, // Reduced batch size for LLM
-        5000,
+        100, // High batch size for speed
+        50, // Minimal delay
         async (batch) => {
-            await enrichProductData(base44, batch);
             const created = await svc.entities.Product.bulkCreate(batch);
             for (const p of created) {
                 productMap.set(p.gtin, p);
@@ -366,28 +372,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update existing products in batches with delay
+    // Update existing products in batches
     if (updateProducts.length > 0) {
-      console.log(`Updating ${updateProducts.length} existing products in batches...`);
+      console.log(`Updating ${updateProducts.length} existing products...`);
       await processBatch(
         updateProducts,
-        20, // Reduced batch size for LLM
-        2000, // delay 2 seconds between batches
+        100, // High batch size for speed
+        50, 
         async (batch) => {
-          // Filter items needing category
-          // Always enrich if _needsCategory or if we want to update tags for existing items
-          // For now, let's enrich if missing category OR if we force update (which we can assume for now to backfill)
-          // Actually, let's stick to _needsCategory logic for efficiency, but maybe rename it to _needsEnrichment in future.
-          // For now, let's assume we want to enrich items that are being updated too if they lack these fields.
-          
-          const itemsToEnrich = batch.filter(item => item.data._needsCategory || !item.data.kosher_level);
-          if (itemsToEnrich.length > 0) {
-            await enrichProductData(base44, itemsToEnrich);
-          }
-          
           for (const update of batch) {
-            // Clean up internal flag
             const dataToUpdate = { ...update.data };
+            
+            // If needs category or kosher level, mark for background enrichment
+            if (dataToUpdate._needsCategory || !dataToUpdate.kosher_level) {
+                dataToUpdate.enrichment_status = 'pending';
+            }
             delete dataToUpdate._needsCategory;
             
             await svc.entities.Product.update(update.id, dataToUpdate);
