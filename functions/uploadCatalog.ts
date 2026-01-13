@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
     if (newProducts.length > 0) {
       await processBatch(
         newProducts,
-        2500, // High batch size for speed
+        1000, // High batch size for speed
         5000, // Minimal delay
         async (batch) => {
             const created = await svc.entities.Product.bulkCreate(batch);
@@ -377,7 +377,7 @@ Deno.serve(async (req) => {
       console.log(`Updating ${updateProducts.length} existing products...`);
       await processBatch(
         updateProducts,
-        2500, // High batch size for speed
+        1000, // High batch size for speed
         5000, 
         async (batch) => {
           for (const update of batch) {
