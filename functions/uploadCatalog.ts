@@ -348,15 +348,49 @@ Deno.serve(async (req) => {
       productMap.set(itemCode, product || { id: null, gtin: itemCode });
     }
 
+    // State for enrichment throttling
+    let enrichmentCount = 0;
+    const MAX_ENRICHMENT_ITEMS = 60; // Limit inline enrichment to prevent timeouts
+    let stopEnrichment = false;
+
+    // Helper wrapper for conditional enrichment
+    const safeEnrich = async (items) => {
+        if (stopEnrichment) return;
+        if (enrichmentCount >= MAX_ENRICHMENT_ITEMS) {
+            if (!stopEnrichment) {
+                console.log("Max inline enrichment reached. Skipping enrichment for remaining items to prevent timeout.");
+                stopEnrichment = true;
+            }
+            return;
+        }
+
+        try {
+            await enrichProductData(base44, items);
+            enrichmentCount += items.length;
+        } catch (error) {
+            console.error("Enrichment failed, stopping further enrichment:", error);
+            stopEnrichment = true;
+        }
+    };
+
     // Bulk create new products
     console.log(`Creating ${newProducts.length} new products...`);
     if (newProducts.length > 0) {
       await processBatch(
         newProducts,
-        20, // Reduced batch size for LLM
-        1000,
+        50, // Increased batch size for raw creation
+        100, // Reduced delay
         async (batch) => {
-            await enrichProductData(base44, batch);
+            // Only enrich if we haven't hit the limit
+            if (!stopEnrichment && enrichmentCount < MAX_ENRICHMENT_ITEMS) {
+                // Take a slice for enrichment if batch is larger than remaining allowance
+                const remaining = MAX_ENRICHMENT_ITEMS - enrichmentCount;
+                const toEnrich = batch.slice(0, remaining);
+                if (toEnrich.length > 0) {
+                    await safeEnrich(toEnrich);
+                }
+            }
+            
             const created = await svc.entities.Product.bulkCreate(batch);
             for (const p of created) {
                 productMap.set(p.gtin, p);
@@ -371,18 +405,20 @@ Deno.serve(async (req) => {
       console.log(`Updating ${updateProducts.length} existing products in batches...`);
       await processBatch(
         updateProducts,
-        20, // Reduced batch size for LLM
-        2000, // delay 2 seconds between batches
+        50, // Increased batch size
+        100, // Reduced delay
         async (batch) => {
-          // Filter items needing category
-          // Always enrich if _needsCategory or if we want to update tags for existing items
-          // For now, let's enrich if missing category OR if we force update (which we can assume for now to backfill)
-          // Actually, let's stick to _needsCategory logic for efficiency, but maybe rename it to _needsEnrichment in future.
-          // For now, let's assume we want to enrich items that are being updated too if they lack these fields.
           
-          const itemsToEnrich = batch.filter(item => item.data._needsCategory || !item.data.kosher_level);
-          if (itemsToEnrich.length > 0) {
-            await enrichProductData(base44, itemsToEnrich);
+          if (!stopEnrichment && enrichmentCount < MAX_ENRICHMENT_ITEMS) {
+              const itemsToEnrich = batch.filter(item => item.data._needsCategory || !item.data.kosher_level);
+              if (itemsToEnrich.length > 0) {
+                  // Check limit
+                  const remaining = MAX_ENRICHMENT_ITEMS - enrichmentCount;
+                  const toEnrich = itemsToEnrich.slice(0, remaining);
+                  if (toEnrich.length > 0) {
+                      await safeEnrich(toEnrich);
+                  }
+              }
           }
           
           for (const update of batch) {
