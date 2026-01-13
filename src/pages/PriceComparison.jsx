@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 const ProductSearchItem = ({ product, chains, onClick }) => {
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [missingChains, setMissingChains] = useState(new Map());
 
   useEffect(() => {
     let mounted = true;
@@ -17,6 +18,27 @@ const ProductSearchItem = ({ product, chains, onClick }) => {
       try {
         const priceList = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
         if (!mounted) return;
+        
+        // Identify missing chains
+        const missingIds = new Set();
+        priceList.forEach(p => {
+            if (p.chain_id && !chains.has(p.chain_id)) {
+                missingIds.add(p.chain_id);
+            }
+        });
+
+        // Fetch missing chains if any
+        if (missingIds.size > 0) {
+            const fetchedChains = await Promise.all(
+                [...missingIds].map(id => base44.entities.Chain.filter({ id }).then(res => res[0]))
+            );
+            const newChainsMap = new Map();
+            fetchedChains.forEach(c => {
+                if (c) newChainsMap.set(c.id, c);
+            });
+            if (mounted) setMissingChains(newChainsMap);
+        }
+
         setPrices(priceList);
       } catch (e) {
         console.error(e);
@@ -27,7 +49,7 @@ const ProductSearchItem = ({ product, chains, onClick }) => {
     
     fetchPrices();
     return () => { mounted = false; };
-  }, [product.gtin]);
+  }, [product.gtin, chains]);
 
   if (loading) {
       return (
@@ -47,7 +69,7 @@ const ProductSearchItem = ({ product, chains, onClick }) => {
   return (
     <>
       {prices.map((price) => {
-          const chainName = chains.get(price.chain_id)?.name || 'Unknown Chain';
+          const chainName = chains.get(price.chain_id)?.name || missingChains.get(price.chain_id)?.name || 'Unknown Chain';
           return (
             <button
               key={price.id}
@@ -129,9 +151,10 @@ export default function PriceComparison() {
 
   useEffect(() => {
     const loadData = async () => {
+      // Fetch more items to ensure we cover all chains/stores
       const [allStores, allChains] = await Promise.all([
-        base44.entities.Store.list(),
-        base44.entities.Chain.list()
+        base44.entities.Store.list(undefined, 1000),
+        base44.entities.Chain.list(undefined, 1000)
       ]);
       setStores(new Map(allStores.map(s => [s.id, s])));
       setChains(new Map(allChains.map(c => [c.id, c])));
