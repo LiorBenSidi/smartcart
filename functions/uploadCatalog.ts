@@ -5,6 +5,52 @@ import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 // Helper to delay execution
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+async function categorizeItems(base44, items) {
+  if (items.length === 0) return;
+  
+  console.log(`Categorizing ${items.length} items via LLM...`);
+  
+  const promptItems = items.map((item, idx) => {
+      // Handle both flat items (new) and update objects (existing)
+      const data = item.data || item;
+      return `${idx + 1}. ${data.canonical_name || data.display_name} (${data.description || ''})`;
+  }).join('\n');
+  
+  const prompt = `Categorize the following grocery products into standard categories (e.g. "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen").
+  
+  Return ONLY a JSON object where keys are the item indices (1 to ${items.length}) and values are the category names.
+  
+  Items:
+  ${promptItems}`;
+  
+  try {
+      const response = await base44.integrations.Core.InvokeLLM({
+          prompt: prompt,
+          response_json_schema: {
+              type: "object",
+              additionalProperties: { type: "string" }
+          }
+      });
+      
+      // Apply categories
+      Object.entries(response).forEach(([idx, category]) => {
+          const itemIndex = parseInt(idx) - 1;
+          if (items[itemIndex]) {
+              const item = items[itemIndex];
+              if (item.data) {
+                  item.data.category = category;
+              } else {
+                  item.category = category;
+              }
+          }
+      });
+      
+  } catch (err) {
+      console.error("Error categorizing items:", err);
+      // Continue without categories
+  }
+}
+
 // Helper to process in batches
 async function processBatch(items, batchSize, delayMs, processFn, label) {
   const totalBatches = Math.ceil(items.length / batchSize);
@@ -282,6 +328,10 @@ Deno.serve(async (req) => {
       if (!product) {
         newProducts.push(productData);
       } else {
+        // Only categorize if missing
+        if (!product.category) {
+            productData._needsCategory = true;
+        }
         updateProducts.push({ id: product.id, data: productData });
       }
       productMap.set(itemCode, product || { id: null, gtin: itemCode });
@@ -292,9 +342,10 @@ Deno.serve(async (req) => {
     if (newProducts.length > 0) {
       await processBatch(
         newProducts,
-        100,
+        20, // Reduced batch size for LLM
         1000,
         async (batch) => {
+            await categorizeItems(base44, batch);
             const created = await svc.entities.Product.bulkCreate(batch);
             for (const p of created) {
                 productMap.set(p.gtin, p);
@@ -309,11 +360,21 @@ Deno.serve(async (req) => {
       console.log(`Updating ${updateProducts.length} existing products in batches...`);
       await processBatch(
         updateProducts,
-        50, // batch size
+        20, // Reduced batch size for LLM
         2000, // delay 2 seconds between batches
         async (batch) => {
+          // Filter items needing category
+          const itemsToCategorize = batch.filter(item => item.data._needsCategory);
+          if (itemsToCategorize.length > 0) {
+            await categorizeItems(base44, itemsToCategorize);
+          }
+          
           for (const update of batch) {
-            await svc.entities.Product.update(update.id, update.data);
+            // Clean up internal flag
+            const dataToUpdate = { ...update.data };
+            delete dataToUpdate._needsCategory;
+            
+            await svc.entities.Product.update(update.id, dataToUpdate);
           }
         },
         "Product Updates"
