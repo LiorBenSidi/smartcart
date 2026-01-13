@@ -77,40 +77,35 @@ export default function PriceComparison() {
   const [stores, setStores] = useState(new Map());
   const [chains, setChains] = useState(new Map());
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(0);
-  const [productsLoading, setProductsLoading] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
-  const ITEMS_PER_PAGE = 2500;
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      setProductsLoading(true);
-      try {
-        const allProducts = await base44.entities.Product.list('-updated_date', ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-        setProducts(allProducts);
-      } catch (error) {
-        console.error("Failed to load products", error);
-        setIsScanning(false);
-      } finally {
-        setProductsLoading(false);
-      }
-    };
-    loadProducts();
-  }, [page]);
-
-  useEffect(() => {
-    if (isScanning && !productsLoading) {
-      if (products.length < ITEMS_PER_PAGE) {
-        setIsScanning(false); // Stop if we reached the end
+    const searchProducts = async () => {
+      if (!searchTerm || searchTerm.length < 2) {
+        if (searchTerm.length === 0) setProducts([]);
         return;
       }
-      
-      const timer = setTimeout(() => {
-        setPage(p => p + 1);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isScanning, productsLoading, products.length]);
+
+      setIsSearching(true);
+      try {
+        const results = await base44.entities.Product.filter({
+            $or: [
+                { canonical_name: { $regex: searchTerm, $options: 'i' } },
+                { gtin: { $regex: searchTerm, $options: 'i' } },
+                { brand_name: { $regex: searchTerm, $options: 'i' } }
+            ]
+        }, undefined, 50);
+        setProducts(results);
+      } catch (error) {
+        console.error("Failed to search products", error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounce = setTimeout(searchProducts, 500);
+    return () => clearTimeout(debounce);
+  }, [searchTerm]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -142,13 +137,7 @@ export default function PriceComparison() {
     }
   };
 
-  const filteredProducts = searchTerm
-    ? products.filter(p => 
-        p.canonical_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.gtin?.includes(searchTerm) ||
-        p.brand_name?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : [];
+  const filteredProducts = products;
 
   const cheapestPrice = priceData.length > 0 ? priceData[0].current_price : 0;
   const avgPrice = priceData.length > 0 
