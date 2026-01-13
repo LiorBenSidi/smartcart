@@ -4,7 +4,7 @@ import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ArrowRight, ShieldCheck, TrendingDown, Info } from 'lucide-react';
+import { Loader2, ShieldCheck, TrendingDown, Info } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
 export default function CartAlternatives() {
@@ -72,26 +72,22 @@ export default function CartAlternatives() {
     if (loading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-indigo-600" /></div>;
 
     return (
-        <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in">
-            <header className="space-y-4 border-b pb-6">
-                <div className="flex justify-between items-start">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Smart Cart Alternatives</h1>
-                    <RecommendationExplainer mode="cart" />
+        <div className="space-y-6 animate-in fade-in">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 font-medium text-gray-900">
+                        <ShieldCheck className="w-5 h-5 text-green-600" />
+                        AI-Curated Alternatives
+                    </div>
+                    <p className="text-sm text-gray-500 max-w-xl">
+                        Filtered by your diet & preferences, ranked by savings.
+                    </p>
                 </div>
-                <p className="text-gray-500 max-w-2xl">
-                    We've filtered these products based on your diet, kosher level, and allergies, 
-                    then ranked them by savings using real-time price data.
-                </p>
                 
-                <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-100 w-fit">
-                    <ShieldCheck className="w-4 h-4" />
-                    Filtered by your preferences & guardrails
-                </div>
-
-                <div className="flex items-center gap-4 mt-4">
-                    <span className="text-sm font-medium">Choose Store Chain:</span>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <span className="text-sm font-medium whitespace-nowrap">Store:</span>
                     <Select value={selectedChain} onValueChange={setSelectedChain}>
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-full md:w-[200px] bg-white">
                             <SelectValue placeholder="Select Store" />
                         </SelectTrigger>
                         <SelectContent>
@@ -99,7 +95,7 @@ export default function CartAlternatives() {
                         </SelectContent>
                     </Select>
                 </div>
-            </header>
+            </div>
 
             {materializing ? (
                 <div className="py-20 text-center space-y-3">
@@ -112,41 +108,47 @@ export default function CartAlternatives() {
                     <p className="text-gray-600">No recommendations found matching your strict criteria for this store.</p>
                 </div>
             ) : (
-                <div className="grid gap-6">
+                <div className="grid gap-4">
                     {recommendations.map((rec, i) => (
                         <Card key={i} className="overflow-hidden border-indigo-50 shadow-sm hover:shadow-md transition-shadow">
-                            <CardHeader className="bg-gray-50/50 pb-3">
-                                <CardTitle className="flex justify-between items-center text-lg">
-                                    <span>{rec.canonical_product.canonical_name || `Product ${rec.canonical_product.gtin}`}</span>
-                                    <Badge variant="outline" className="bg-white">
-                                        Score: {rec.score?.toFixed(1) || 'N/A'}
+                            <CardHeader className="bg-gray-50/50 pb-3 py-3">
+                                <CardTitle className="flex justify-between items-center text-base">
+                                    <div className="flex items-center gap-2">
+                                        <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full">Base Item</span>
+                                        <span>{rec.canonical_product.canonical_name || `Product ${rec.canonical_product.gtin}`}</span>
+                                    </div>
+                                    <Badge variant="outline" className="bg-white text-xs font-normal text-gray-500">
+                                        Match Score: {rec.score?.toFixed(1) || 'N/A'}
                                     </Badge>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="divide-y divide-gray-100">
                                     {rec.alternatives.map((alt, j) => (
-                                        <div key={j} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                        <div key={j} className="p-3 pl-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                                             <div className="space-y-1">
-                                                <div className="font-medium text-gray-900">{alt.name}</div>
+                                                <div className="font-medium text-sm text-gray-900 flex items-center gap-2">
+                                                    {j === 0 && <Sparkles className="w-3 h-3 text-amber-500" />}
+                                                    {alt.name}
+                                                </div>
                                                 <div className="flex gap-2 text-xs">
                                                     {alt.tags?.map(t => (
-                                                        <span key={t} className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 capitalize">{t.replace('_', ' ')}</span>
+                                                        <span key={t} className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 capitalize">{t.replace('_', ' ')}</span>
                                                     ))}
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="font-bold text-lg">₪{alt.price}</div>
-                                                {parseFloat(alt.savings) > 0 && (
-                                                    <div className="text-xs text-green-600 font-medium flex items-center justify-end gap-1">
-                                                        <TrendingDown className="w-3 h-3" /> Save ₪{alt.savings}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="ml-4">
-                                                 <Button size="sm" variant={j === 0 ? "default" : "outline"}>
-                                                     Select
-                                                 </Button>
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <div className="font-bold text-sm">₪{alt.price}</div>
+                                                    {parseFloat(alt.savings) > 0 && (
+                                                        <div className="text-[10px] text-green-600 font-medium flex items-center justify-end gap-1">
+                                                            <TrendingDown className="w-3 h-3" /> -₪{alt.savings}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <Button size="sm" variant={j === 0 ? "default" : "outline"} className="h-8 text-xs">
+                                                    Select
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}

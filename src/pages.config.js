@@ -1,5 +1,4 @@
 import Admin from './pages/Admin';
-import CartAlternatives from './pages/CartAlternatives';
 import CatalogAdmin from './pages/CatalogAdmin';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
@@ -15,7 +14,6 @@ import __Layout from './Layout.jsx';
 
 export const PAGES = {
     "Admin": Admin,
-    "CartAlternatives": CartAlternatives,
     "CatalogAdmin": CatalogAdmin,
     "Home": Home,
     "Landing": Landing,

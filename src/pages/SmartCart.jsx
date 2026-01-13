@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck } from 'lucide-react';
+import CartAlternatives from '@/components/CartAlternatives';
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
@@ -220,10 +222,18 @@ export default function SmartCart() {
         </div>
         <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
           <ShoppingCart className="w-7 h-7" />
-          Smart Cart Comparison
+          Smart Cart
         </h1>
-        <p className="text-purple-100 text-sm">Build your cart and find the cheapest supermarkets near you</p>
+        <p className="text-purple-100 text-sm">Compare prices or find better alternatives</p>
       </div>
+
+      <Tabs defaultValue="build" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="build">Build Cart</TabsTrigger>
+            <TabsTrigger value="ai">AI Recommendations</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="build" className="space-y-6">
 
       {/* Suggested for Today */}
       {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 && (
@@ -647,6 +657,13 @@ export default function SmartCart() {
           )}
         </>
       )}
+      </TabsContent>
+
+      <TabsContent value="ai">
+        <CartAlternatives />
+      </TabsContent>
+
+      </Tabs>
     </div>);
 
 }
