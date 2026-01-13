@@ -13,6 +13,7 @@ export default function Admin() {
   const [receipts, setReceipts] = useState([]);
   const [productCount, setProductCount] = useState(0);
   const [storeCount, setStoreCount] = useState(0);
+  const [trueCounts, setTrueCounts] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -34,25 +35,39 @@ export default function Admin() {
           return;
         }
 
-        // Fetch real data
+        // Fetch backend stats for accurate total counts
+        const statsResponse = await base44.functions.invoke('getSystemStats');
+        const statsData = statsResponse.data;
+        
+        // Update stats with backend data if available, otherwise fallback (or 0)
+        setProductCount(statsData?.products || 0);
+        setStoreCount(statsData?.stores || 0);
+        // Note: For users and receipts, we use the backend count for the overview cards
+        // but fetch list for the table below (which might be limited by RLS/pagination)
+        
+        // Fetch visible data for table/list
         const allReceipts = await base44.entities.Receipt.list();
-        setReceipts(allReceipts);
+        setReceipts(allReceipts); // This sets the array, might be less than total statsData.receipts
 
-        const allProducts = await base44.entities.Product.list();
-        setProductCount(allProducts.length);
-
-        const allStores = await base44.entities.Store.list();
-        setStoreCount(allStores.length);
-
-        // Fetch real users (admin only operation)
         const allUsers = await base44.entities.User.list();
 
-        // Calculate stats
+        // Calculate stats for table
         const usersWithStats = allUsers.map((u) => ({
           ...u,
           receipts: allReceipts.filter((r) => r.created_by === u.email).length
         }));
         setUsers(usersWithStats);
+        
+        // Override counts for display cards
+        if (statsData) {
+             // We can store these in separate state or rely on array lengths if we didn't have statsData
+             // But user wants "real value" for overview.
+             // We'll update the state variables used in the JSX to prefer statsData
+             // Since users.length and receipts.length are used directly in JSX, we might need new state variables
+             // or just update how they are rendered.
+             // Let's create new state variables for the counters to be explicit.
+             setTrueCounts(statsData);
+        }
 
       } catch (e) {
         console.error("Admin access denied or error", e);
@@ -144,13 +159,13 @@ export default function Admin() {
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Total Users</p>
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{users.length}</h3>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{trueCounts?.users ?? users.length}</h3>
                 </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Total Receipts</p>
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{receipts.length}</h3>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{trueCounts?.receipts ?? receipts.length}</h3>
                 </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
