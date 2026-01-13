@@ -167,9 +167,22 @@ export default function PriceComparison() {
             />
           </div>
           
-          {searchTerm && filteredProducts.length > 0 && (
-            <div className="mt-3 max-h-64 overflow-y-auto space-y-2">
-              {filteredProducts.slice(0, 10).map((product) => (
+          {isSearching && (
+              <div className="mt-4 flex items-center justify-center text-gray-500">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Searching products...
+              </div>
+          )}
+
+          {!isSearching && searchTerm && filteredProducts.length === 0 && (
+              <div className="mt-4 text-center text-gray-500 text-sm">
+                  No products found. Try a different search term.
+              </div>
+          )}
+
+          {!isSearching && filteredProducts.length > 0 && (
+            <div className="mt-3 max-h-96 overflow-y-auto space-y-2">
+              {filteredProducts.map((product) => (
                 <ProductSearchItem 
                   key={product.id} 
                   product={product} 
@@ -177,51 +190,12 @@ export default function PriceComparison() {
                   onClick={() => {
                     handleProductSelect(product);
                     setSearchTerm('');
+                    setProducts([]); 
                   }} 
                 />
               ))}
             </div>
           )}
-
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <div className="flex gap-2">
-              <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setPage(p => Math.max(0, p - 1))}
-                  disabled={page === 0 || productsLoading || isScanning}
-              >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Previous
-              </Button>
-              <Button
-                  variant={isScanning ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => setIsScanning(!isScanning)}
-                  disabled={productsLoading && !isScanning}
-                  className={isScanning ? "bg-indigo-100 text-indigo-700 border-indigo-200" : ""}
-              >
-                  {isScanning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                  {isScanning ? "Scanning..." : "Auto Scan"}
-              </Button>
-            </div>
-            
-            <span className="text-sm text-gray-500 flex items-center gap-2">
-                {productsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                {productsLoading ? 'Loading...' : `Page ${page + 1}`}
-                {!productsLoading && <span className="text-xs text-gray-400">({products.length} items)</span>}
-            </span>
-
-            <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setPage(p => p + 1)}
-                disabled={products.length < ITEMS_PER_PAGE || productsLoading || isScanning}
-            >
-                Next
-                <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
