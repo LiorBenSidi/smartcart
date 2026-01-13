@@ -89,10 +89,10 @@ Deno.serve(async (req) => {
         const user = await base44.auth.me();
         
         // 1. Find pending products
-        // Limit to 200 items per run to stay well within timeout limits
+        // Limit to 100 items per run to stay well within timeout limits
         const pendingProducts = await base44.asServiceRole.entities.Product.filter({
             enrichment_status: 'pending'
-        }, undefined, 200);
+        }, undefined, 100);
 
         if (pendingProducts.length === 0) {
             return Response.json({ message: "No pending products found", processed: 0 });
