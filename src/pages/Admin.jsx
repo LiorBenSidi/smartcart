@@ -171,25 +171,33 @@ export default function Admin() {
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Total Users</p>
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{trueCounts?.users ?? users.length}</h3>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                        {trueCounts ? trueCounts.users : <span className="text-sm font-normal text-slate-400 italic">Sync to view</span>}
+                    </h3>
                 </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Total Receipts</p>
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{trueCounts?.receipts ?? receipts.length}</h3>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                        {trueCounts ? trueCounts.receipts : <span className="text-sm font-normal text-slate-400 italic">Sync to view</span>}
+                    </h3>
                 </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Products</p>
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{productCount}</h3>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                        {trueCounts ? trueCounts.products : <span className="text-sm font-normal text-slate-400 italic">Sync to view</span>}
+                    </h3>
                 </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500 uppercase font-bold mb-1">Stores</p>
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{storeCount}</h3>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                        {trueCounts ? trueCounts.stores : <span className="text-sm font-normal text-slate-400 italic">Sync to view</span>}
+                    </h3>
                 </CardContent>
             </Card>
         </div>
