@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, Database, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import SystemValidationPanel from '../components/SystemValidationPanel';
+
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -177,7 +177,7 @@ export default function Admin() {
 
 
 
-        <SystemValidationPanel />
+
 
         {showConfirm &&
       <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
