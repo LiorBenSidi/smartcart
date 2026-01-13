@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, CheckCircle, AlertCircle, Database, Upload, FileText } from 'lucide-react';
 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 export default function CatalogAdmin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -20,6 +23,27 @@ export default function CatalogAdmin() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState(null);
+
+  // Pagination View
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const [viewProducts, setViewProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      setLoadingProducts(true);
+      try {
+        const prods = await base44.entities.Product.list('-created_date', pageSize, page * pageSize);
+        setViewProducts(prods);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchProducts();
+  }, [page, syncStatus]); // Refresh when sync status changes (completed batch)
 
   const runCatalogUpdate = async () => {
     setIsLoading(true);
@@ -47,7 +71,14 @@ export default function CatalogAdmin() {
     }
   };
 
-  const handleFileUpload = async () => {
+  // Staging & Sync State
+  const [jobId, setJobId] = useState(null);
+  const [totalItems, setTotalItems] = useState(0);
+  const [processedItems, setProcessedItems] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null); // 'staging', 'ready', 'syncing', 'complete'
+
+  const handleStageCatalog = async () => {
     if (!xmlFile) {
       setUploadError('Please select a file first');
       return;
@@ -60,29 +91,74 @@ export default function CatalogAdmin() {
     setIsUploading(true);
     setUploadResult(null);
     setUploadError(null);
+    setSyncStatus('staging');
 
     try {
-      // Step 1: Upload file to get URL
+      // Step 1: Upload file
       const { file_url } = await base44.integrations.Core.UploadFile({ file: xmlFile });
 
-      // Step 2: Process the uploaded file
-      const response = await base44.functions.invoke('uploadCatalog', { 
+      // Step 2: Stage the catalog
+      const response = await base44.functions.invoke('stageCatalogUpload', { 
         fileUrl: file_url,
         chain_name: chainName.trim()
       });
 
       if (response.data.error) {
         setUploadError(response.data.error);
+        setSyncStatus(null);
       } else {
+        const { jobId, totalItems } = response.data;
+        setJobId(jobId);
+        setTotalItems(totalItems);
+        setProcessedItems(0);
+        setSyncStatus('ready');
         setUploadResult(response.data);
-        setXmlFile(null);
-        setChainName('');
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.error || err.message || 'Failed to upload file';
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to stage catalog';
       setUploadError(errorMsg);
+      setSyncStatus(null);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!jobId) return;
+    
+    setIsSyncing(true);
+    setSyncStatus('syncing');
+    let currentProcessed = processedItems;
+    let hasMore = true;
+
+    try {
+      while (hasMore) {
+        // Process a batch
+        const res = await base44.functions.invoke('processCatalogBatch', { 
+          jobId, 
+          limit: 1000 
+        });
+
+        if (res.data.error) throw new Error(res.data.error);
+
+        const { processed, hasMore: more, remaining } = res.data;
+        
+        currentProcessed += processed;
+        setProcessedItems(currentProcessed);
+        hasMore = more;
+
+        if (hasMore) {
+          // Wait 5 seconds before next batch
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      }
+      setSyncStatus('complete');
+      setXmlFile(null);
+      setChainName('');
+    } catch (err) {
+      setUploadError(`Sync failed: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -137,17 +213,55 @@ export default function CatalogAdmin() {
             </div>
           </div>
 
-          <Button 
-            onClick={handleFileUpload} 
-            disabled={isUploading || !xmlFile || !chainName.trim()}
-            className="w-full bg-emerald-600 hover:bg-emerald-700"
-          >
-            {isUploading ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading...</>
-            ) : (
-              <><Upload className="w-4 h-4 mr-2" /> Upload & Process .gz File</>
-            )}
-          </Button>
+          {!syncStatus || syncStatus === 'staging' ? (
+            <Button 
+              onClick={handleStageCatalog} 
+              disabled={isUploading || !xmlFile || !chainName.trim()}
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+            >
+              {isUploading ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Staging Catalog...</>
+              ) : (
+                <><Upload className="w-4 h-4 mr-2" /> Stage Catalog (Step 1)</>
+              )}
+            </Button>
+          ) : (
+             <div className="space-y-4">
+               <div className="bg-slate-100 p-4 rounded-lg">
+                 <div className="flex justify-between text-sm mb-2">
+                   <span>Progress</span>
+                   <span className="font-bold">{processedItems} / {totalItems}</span>
+                 </div>
+                 <div className="w-full bg-gray-200 rounded-full h-2.5">
+                   <div 
+                     className="bg-emerald-600 h-2.5 rounded-full transition-all duration-500" 
+                     style={{ width: `${Math.min((processedItems / totalItems) * 100, 100)}%` }}
+                   ></div>
+                 </div>
+                 <p className="text-xs text-gray-500 mt-2 text-center">
+                   {syncStatus === 'syncing' ? 'Syncing batches (1000 items / 5s)...' : 'Ready to Sync'}
+                 </p>
+               </div>
+               
+               {syncStatus === 'complete' ? (
+                 <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => setSyncStatus(null)}>
+                   <CheckCircle className="w-4 h-4 mr-2" /> Complete! Reset
+                 </Button>
+               ) : (
+                 <Button 
+                   onClick={handleSync} 
+                   disabled={isSyncing}
+                   className="w-full bg-indigo-600 hover:bg-indigo-700"
+                 >
+                   {isSyncing ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Syncing...</>
+                   ) : (
+                      <><Database className="w-4 h-4 mr-2" /> Start Sync (Step 2)</>
+                   )}
+                 </Button>
+               )}
+             </div>
+          )}
         </CardContent>
       </Card>
 
@@ -279,38 +393,70 @@ export default function CatalogAdmin() {
                 <p className="text-sm text-green-700">Catalog updated successfully</p>
               </div>
             </div>
-
-            <div className="bg-white rounded-lg p-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">File:</span>
-                <span className="font-mono text-xs">{result.summary?.file}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Chain:</span>
-                <span className="font-medium">{result.summary?.chain}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Store ID:</span>
-                <span className="font-medium">{result.summary?.storeId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Items:</span>
-                <span className="font-bold text-indigo-600">{result.summary?.totalItems}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Processed:</span>
-                <span className="font-bold text-green-600">{result.summary?.processedCount}</span>
-              </div>
-              {result.summary?.errorCount > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Errors:</span>
-                  <span className="font-bold text-red-600">{result.summary?.errorCount}</span>
-                </div>
-              )}
-            </div>
+            {/* ... result details ... */}
           </CardContent>
         </Card>
       )}
+
+      {/* Product Viewer */}
+      <Card>
+          <CardHeader>
+              <CardTitle>Catalog Products</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <div className="border rounded-md">
+                  <Table>
+                      <TableHeader>
+                          <TableRow>
+                              <TableHead>GTIN</TableHead>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Brand</TableHead>
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          {loadingProducts ? (
+                              <TableRow>
+                                  <TableCell colSpan={3} className="text-center py-4">Loading...</TableCell>
+                              </TableRow>
+                          ) : viewProducts.length === 0 ? (
+                              <TableRow>
+                                  <TableCell colSpan={3} className="text-center py-4">No products found</TableCell>
+                              </TableRow>
+                          ) : (
+                              viewProducts.map(p => (
+                                  <TableRow key={p.id}>
+                                      <TableCell className="font-mono text-xs">{p.gtin}</TableCell>
+                                      <TableCell>{p.canonical_name}</TableCell>
+                                      <TableCell>{p.brand_name}</TableCell>
+                                  </TableRow>
+                              ))
+                          )}
+                      </TableBody>
+                  </Table>
+              </div>
+              <div className="flex items-center justify-end space-x-2 py-4">
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                  >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                  </Button>
+                  <div className="text-sm font-medium">Page {page + 1}</div>
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => p + 1)}
+                      disabled={viewProducts.length < pageSize}
+                  >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                  </Button>
+              </div>
+          </CardContent>
+      </Card>
     </div>
   );
 }
