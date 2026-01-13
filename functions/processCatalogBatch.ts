@@ -10,26 +10,36 @@ async function processSafely(items, batchSize, delayMs, bulkFn, singleFn, onFail
     const batch = items.slice(i, i + batchSize);
     const currentBatch = Math.floor(i / batchSize) + 1;
 
-    try {
-      // Try bulk operation first
-      await bulkFn(batch);
-    } catch (err) {
-      console.warn(`[${label}] Batch ${currentBatch}/${totalBatches} failed, falling back to individual processing: ${err.message}`);
-      
-      // Fallback to individual processing
-      for (const item of batch) {
-        try {
-          await singleFn(item);
-        } catch (singleErr) {
-          console.error(`[${label}] Item failed: ${singleErr.message}`);
-          if (onFail) onFail(item, singleErr);
-        }
+    // If bulkFn is provided, try it. Otherwise skip directly to individual (sequential) processing.
+    // This avoids "process all at once" triggers for operations that don't support true bulk (like updates via Promise.all)
+    if (bulkFn) {
+      try {
+        await bulkFn(batch);
+      } catch (err) {
+        console.warn(`[${label}] Batch ${currentBatch}/${totalBatches} failed (or bulk skipped), falling back to individual processing: ${err.message}`);
+        await processSequentially(batch, singleFn, onFail, label);
       }
+    } else {
+      await processSequentially(batch, singleFn, onFail, label);
     }
 
     if (i + batchSize < items.length) {
       await delay(delayMs);
     }
+  }
+}
+
+// Helper for strict sequential processing to avoid rate limits
+async function processSequentially(items, singleFn, onFail, label) {
+  for (const item of items) {
+    try {
+      await singleFn(item);
+    } catch (singleErr) {
+      console.error(`[${label}] Item failed: ${singleErr.message}`);
+      if (onFail) onFail(item, singleErr);
+    }
+    // Tiny delay between individual operations to be gentle on rate limits
+    await delay(20); 
   }
 }
 
