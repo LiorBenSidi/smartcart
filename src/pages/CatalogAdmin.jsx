@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, CheckCircle, AlertCircle, Database, Upload, FileText, RefreshCw } from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
+import { Loader2, Download, CheckCircle, AlertCircle, Database, Upload, FileText } from 'lucide-react';
 
 export default function CatalogAdmin() {
   const [username, setUsername] = useState('');
@@ -21,7 +20,6 @@ export default function CatalogAdmin() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   const runCatalogUpdate = async () => {
     setIsLoading(true);
@@ -62,59 +60,24 @@ export default function CatalogAdmin() {
     setIsUploading(true);
     setUploadResult(null);
     setUploadError(null);
-    setUploadProgress(0);
 
     try {
       // Step 1: Upload file to get URL
       const { file_url } = await base44.integrations.Core.UploadFile({ file: xmlFile });
-      
-      let batch = 0;
-      let hasMore = true;
-      let currentResult = null;
 
-      // Step 2: Process in batches loop
-      while (hasMore) {
-        const response = await base44.functions.invoke('uploadCatalog', { 
-          fileUrl: file_url,
-          chain_name: chainName.trim(),
-          batch: batch
-        });
+      // Step 2: Process the uploaded file
+      const response = await base44.functions.invoke('uploadCatalog', { 
+        fileUrl: file_url,
+        chain_name: chainName.trim()
+      });
 
-        if (response.data.error) {
-          throw new Error(response.data.error);
-        }
-
-        const data = response.data;
-        currentResult = data;
-        hasMore = data.hasMore;
-        
-        // Update progress
-        if (data.totalItems > 0) {
-            setUploadProgress(Math.round((data.processed / data.totalItems) * 100));
-        }
-
-        // Update result state with latest batch info
-        setUploadResult(prev => {
-            if (!prev) return data;
-            return {
-                ...data,
-                newProducts: (prev.newProducts || 0) + data.newProducts,
-                updatedProducts: (prev.updatedProducts || 0) + data.updatedProducts,
-                newPrices: (prev.newPrices || 0) + data.newPrices,
-                updatedPrices: (prev.updatedPrices || 0) + data.updatedPrices
-            };
-        });
-
-        if (hasMore) {
-            batch++;
-            // Wait 5 seconds before next batch as requested
-            await new Promise(resolve => setTimeout(resolve, 5000));
-        }
+      if (response.data.error) {
+        setUploadError(response.data.error);
+      } else {
+        setUploadResult(response.data);
+        setXmlFile(null);
+        setChainName('');
       }
-
-      setXmlFile(null);
-      setChainName('');
-
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message || 'Failed to upload file';
       setUploadError(errorMsg);
@@ -174,26 +137,15 @@ export default function CatalogAdmin() {
             </div>
           </div>
 
-          {isUploading && (
-            <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm text-gray-600">
-                    <span>Processing...</span>
-                    <span>{uploadProgress}%</span>
-                </div>
-                <Progress value={uploadProgress} className="h-2" />
-                <p className="text-xs text-gray-500 text-center">Syncing catalog in batches...</p>
-            </div>
-          )}
-
           <Button 
             onClick={handleFileUpload} 
             disabled={isUploading || !xmlFile || !chainName.trim()}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
             {isUploading ? (
-              <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Syncing...</>
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading...</>
             ) : (
-              <><Upload className="w-4 h-4 mr-2" /> Sync Catalog (.gz)</>
+              <><Upload className="w-4 h-4 mr-2" /> Upload & Process .gz File</>
             )}
           </Button>
         </CardContent>

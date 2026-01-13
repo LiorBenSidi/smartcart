@@ -52,14 +52,14 @@ Deno.serve(async (req) => {
 
     // Step 2: Get file URL and chain name from request
     const body = await req.json();
-    const { fileUrl, chain_name, batch = 0 } = body;
-    const batchSize = 1000;
+    const fileUrl = body.fileUrl;
+    const chainName = body.chain_name;
 
     if (!fileUrl) {
       return Response.json({ error: "fileUrl is required" }, { status: 400 });
     }
     
-    if (!chain_name) {
+    if (!chainName) {
       return Response.json({ error: "chain_name is required" }, { status: 400 });
     }
 
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
     });
 
     const parsed = parser.parse(xmlText);
+    // Dynamically get the root element regardless of its casing (root or Root)
     const rootKey = Object.keys(parsed)[0];
     const root = parsed[rootKey];
 
@@ -96,60 +97,57 @@ Deno.serve(async (req) => {
     const chainId = root.ChainId?.toString() || "";
     const storeId = root.StoreId?.toString() || "";
     const subChainId = root.SubChainId?.toString() || "";
+
+    console.log("Root keys:", Object.keys(root));
+    console.log("Root.Items:", root.Items);
+    console.log("Root.Items type:", typeof root.Items);
+    if (root.Items) {
+      console.log("Root.Items keys:", Object.keys(root.Items));
+      console.log("Root.Items.Item:", root.Items.Item);
+    }
     
-    let allItems = root?.Items?.Item || [];
-    if (!Array.isArray(allItems)) {
-      allItems = [allItems];
+    let items = root?.Items?.Item || [];
+    if (!Array.isArray(items)) {
+      items = [items];
     }
 
-    const totalItems = allItems.length;
-    const startIndex = batch * batchSize;
-    // Get only the current batch
-    const items = allItems.slice(startIndex, startIndex + batchSize);
-
-    console.log(`Processing batch ${batch}: items ${startIndex} to ${startIndex + items.length} of ${totalItems}`);
+    console.log(`Found ${items.length} items to process`);
 
     // Step 6: Update entities using service role
     const svc = base44.asServiceRole;
 
     // Create or get chain - use the provided chain name
-    // Only search/create on first batch or if missing to save time
     console.log("Setting up chain and store...");
     let chains = await svc.entities.Chain.filter({ external_chain_code: chainId });
     let chain = chains[0];
     let isNewChain = false;
     
     if (!chain) {
-      // Search the web for chain information - only on first batch
-      console.log(`Searching web for ${chain_name} information...`);
+      // Search the web for chain information
+      console.log(`Searching web for ${chainName} information...`);
       let chainInfo = {};
-      
-      // Optimization: Only do LLM lookup for the first batch to avoid timeout/cost on every batch
-      // But if chain is missing we must create it.
-      if (batch === 0) {
-        try {
-            const llmResponse = await base44.integrations.Core.InvokeLLM({
-            prompt: `Find information about the Israeli supermarket chain "${chain_name}". Provide: website URL, logo image URL, brief description, and chain type (supermarket, discount_store, premium_store, organic_store, kosher_store, or convenience_store).`,
-            add_context_from_internet: true,
-            response_json_schema: {
-                type: "object",
-                properties: {
-                website_url: { type: "string" },
-                logo_url: { type: "string" },
-                description: { type: "string" },
-                chain_type: { type: "string", enum: ["supermarket", "discount_store", "premium_store", "organic_store", "kosher_store", "convenience_store"] }
-                }
+      try {
+        const llmResponse = await base44.integrations.Core.InvokeLLM({
+          prompt: `Find information about the Israeli supermarket chain "${chainName}". Provide: website URL, logo image URL, brief description, and chain type (supermarket, discount_store, premium_store, organic_store, kosher_store, or convenience_store).`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              website_url: { type: "string" },
+              logo_url: { type: "string" },
+              description: { type: "string" },
+              chain_type: { type: "string", enum: ["supermarket", "discount_store", "premium_store", "organic_store", "kosher_store", "convenience_store"] }
             }
-            });
-            chainInfo = llmResponse;
-            console.log("Found chain info:", chainInfo);
-        } catch (error) {
-            console.error("Failed to fetch chain info from web:", error);
-        }
+          }
+        });
+        chainInfo = llmResponse;
+        console.log("Found chain info:", chainInfo);
+      } catch (error) {
+        console.error("Failed to fetch chain info from web:", error);
       }
       
       chain = await svc.entities.Chain.create({
-        name: chain_name,
+        name: chainName,
         external_chain_code: chainId,
         logo_url: chainInfo.logo_url || "",
         website_url: chainInfo.website_url || "",
@@ -157,23 +155,22 @@ Deno.serve(async (req) => {
         chain_type: chainInfo.chain_type || "supermarket"
       });
       isNewChain = true;
-    } else if (batch === 0) {
-      // Update chain name if provided (only on first batch)
+    } else {
+      // Update chain name if provided
       await svc.entities.Chain.update(chain.id, {
-        name: chain_name
+        name: chainName
       });
-      chain.name = chain_name;
+      chain.name = chainName;
     }
 
     // Fetch store locations from OpenStreetMap if this is a new chain or no stores exist yet
     const existingStores = await svc.entities.Store.filter({ chain_id: chain.id });
     
-    // Only fetch locations on first batch
-    if (batch === 0 && (isNewChain || existingStores.length === 0)) {
-      console.log(`Fetching branch locations for ${chain_name} from OpenStreetMap...`);
+    if (isNewChain || existingStores.length === 0) {
+      console.log(`Fetching branch locations for ${chainName} from OpenStreetMap...`);
       try {
         // Search for chain branches in Israel
-        const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(chain_name + ' Israel')}&format=json&countrycodes=il&limit=50&addressdetails=1`;
+        const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(chainName + ' Israel')}&format=json&countrycodes=il&limit=50&addressdetails=1`;
         const response = await fetch(searchUrl, {
           headers: {
             'User-Agent': 'SmartCart-CatalogIngestion/1.0'
@@ -182,7 +179,7 @@ Deno.serve(async (req) => {
         
         if (response.ok) {
           const locations = await response.json();
-          console.log(`Found ${locations.length} potential locations for ${chain_name}`);
+          console.log(`Found ${locations.length} potential locations for ${chainName}`);
           
           // Create store records for each location
           const storesToCreate = [];
@@ -198,7 +195,7 @@ Deno.serve(async (req) => {
             storesToCreate.push({
               chain_id: chain.id,
               external_store_code: `OSM_${i + 1}`,
-              name: chain_name,
+              name: chainName,
               address_line: loc.display_name,
               city: city,
               latitude: parseFloat(loc.lat),
@@ -231,12 +228,12 @@ Deno.serve(async (req) => {
         chain_id: chain.id,
         external_store_code: storeId,
         sub_chain_code: subChainId,
-        name: chain_name
+        name: chainName
       });
-    } else if (batch === 0) {
-      // Update store name if needed (only on first batch)
+    } else {
+      // Update store name if needed
       await svc.entities.Store.update(store.id, {
-        name: chain_name
+        name: chainName
       });
     }
 
@@ -374,18 +371,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Batch processing complete!");
+    console.log("Processing complete!");
 
     return Response.json({
       success: true,
       chainId,
       storeId,
-      batch,
-      batchSize,
-      totalItems,
-      processed: startIndex + items.length,
-      processedInBatch: items.length,
-      hasMore: startIndex + items.length < totalItems,
+      totalItems: items.length,
+      processed: items.length,
       newProducts: newProducts.length,
       updatedProducts: updateProducts.length,
       newPrices: newPrices.length,

@@ -3,10 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShieldCheck, Database, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-
+import SystemValidationPanel from '../components/SystemValidationPanel';
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -16,11 +16,6 @@ export default function Admin() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  
-  // Pagination
-  const [page, setPage] = useState(0);
-  const pageSize = 10;
-  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -49,6 +44,16 @@ export default function Admin() {
         const allStores = await base44.entities.Store.list();
         setStoreCount(allStores.length);
 
+        // Fetch real users (admin only operation)
+        const allUsers = await base44.entities.User.list();
+
+        // Calculate stats
+        const usersWithStats = allUsers.map((u) => ({
+          ...u,
+          receipts: allReceipts.filter((r) => r.created_by === u.email).length
+        }));
+        setUsers(usersWithStats);
+
       } catch (e) {
         console.error("Admin access denied or error", e);
         setIsLoading(false);
@@ -58,31 +63,6 @@ export default function Admin() {
     };
     fetchAdminData();
   }, []);
-
-  // Fetch users with pagination
-  useEffect(() => {
-    const fetchUsers = async () => {
-        const skip = page * pageSize;
-        // Fetch one extra to check if there are more
-        const userList = await base44.entities.User.list('-created_date', pageSize + 1, skip);
-        
-        setHasMore(userList.length > pageSize);
-        const pageUsers = userList.slice(0, pageSize);
-        
-        // We need to fetch receipt counts for these specific users
-        // Since we can't do a join, we filter in memory from the 'receipts' state which contains all receipts (fetched above)
-        // If receipts list is huge, this should be optimized, but for now it works as per existing logic
-        const usersWithStats = pageUsers.map((u) => ({
-            ...u,
-            receipts: receipts.filter((r) => r.created_by === u.email).length
-        }));
-        
-        setUsers(usersWithStats);
-    };
-    if (receipts.length > 0 || !isLoading) {
-        fetchUsers();
-    }
-  }, [page, receipts, isLoading]);
 
   const handleDeleteAllReceipts = async () => {
     setIsDeleting(true);
@@ -197,7 +177,7 @@ export default function Admin() {
 
 
 
-
+        <SystemValidationPanel />
 
         {showConfirm &&
       <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
@@ -253,29 +233,6 @@ export default function Admin() {
             )}
                 </TableBody>
             </Table>
-            <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t dark:border-gray-700">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                </Button>
-                <div className="text-sm text-gray-500">
-                    Page {page + 1}
-                </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={!hasMore}
-                >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            </div>
         </div>
     </div>);
 
