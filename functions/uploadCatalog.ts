@@ -5,10 +5,10 @@ import { XMLParser } from "npm:fast-xml-parser@4.5.0";
 // Helper to delay execution
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function categorizeItems(base44, items) {
+async function enrichProductData(base44, items) {
   if (items.length === 0) return;
   
-  console.log(`Categorizing ${items.length} items via LLM...`);
+  console.log(`Enriching ${items.length} items via LLM...`);
   
   const promptItems = items.map((item, idx) => {
       // Handle both flat items (new) and update objects (existing)
@@ -16,10 +16,13 @@ async function categorizeItems(base44, items) {
       return `${idx + 1}. ${data.canonical_name || data.display_name} (${data.description || ''})`;
   }).join('\n');
   
-  const prompt = `Categorize the following grocery products into standard categories (e.g. "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen").
-  
-  Return ONLY a JSON object where keys are the item indices (1 to ${items.length}) and values are the category names.
-  
+  const prompt = `Analyze the following grocery products and provide:
+  1. A standard category (e.g. "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen").
+  2. Kosher Level (guess based on product/description). Allowed values: "none", "basic_kosher", "strict_kosher", "glatt_kosher", "mehadrin". Default to "basic_kosher" if it looks kosher but unspecified, or "none" if likely not.
+  3. Food Allergies. Check for presence of: "Gluten", "Nuts", "Soy", "Fish", "Wheat", "Lactose", "Peanuts", "Eggs", "Shellfish", "Sesame". Return list of detected allergens.
+
+  Return a JSON object where keys are item indices (1 to ${items.length}) and values are objects with "category", "kosher_level", and "allergen_tags".
+
   Items:
   ${promptItems}`;
   
@@ -28,26 +31,34 @@ async function categorizeItems(base44, items) {
           prompt: prompt,
           response_json_schema: {
               type: "object",
-              additionalProperties: { type: "string" }
-          }
-      });
-      
-      // Apply categories
-      Object.entries(response).forEach(([idx, category]) => {
-          const itemIndex = parseInt(idx) - 1;
-          if (items[itemIndex]) {
-              const item = items[itemIndex];
-              if (item.data) {
-                  item.data.category = category;
-              } else {
-                  item.category = category;
+              additionalProperties: {
+                  type: "object",
+                  properties: {
+                      category: { type: "string" },
+                      kosher_level: { type: "string", enum: ["none", "basic_kosher", "strict_kosher", "glatt_kosher", "mehadrin"] },
+                      allergen_tags: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["category", "kosher_level", "allergen_tags"]
               }
           }
       });
       
+      // Apply enrichment
+      Object.entries(response).forEach(([idx, data]) => {
+          const itemIndex = parseInt(idx) - 1;
+          if (items[itemIndex]) {
+              const item = items[itemIndex];
+              const target = item.data || item;
+              
+              target.category = data.category;
+              target.kosher_level = data.kosher_level;
+              target.allergen_tags = data.allergen_tags;
+          }
+      });
+      
   } catch (err) {
-      console.error("Error categorizing items:", err);
-      // Continue without categories
+      console.error("Error enriching items:", err);
+      // Continue without enrichment
   }
 }
 
@@ -345,7 +356,7 @@ Deno.serve(async (req) => {
         20, // Reduced batch size for LLM
         1000,
         async (batch) => {
-            await categorizeItems(base44, batch);
+            await enrichProductData(base44, batch);
             const created = await svc.entities.Product.bulkCreate(batch);
             for (const p of created) {
                 productMap.set(p.gtin, p);
@@ -364,9 +375,14 @@ Deno.serve(async (req) => {
         2000, // delay 2 seconds between batches
         async (batch) => {
           // Filter items needing category
-          const itemsToCategorize = batch.filter(item => item.data._needsCategory);
-          if (itemsToCategorize.length > 0) {
-            await categorizeItems(base44, itemsToCategorize);
+          // Always enrich if _needsCategory or if we want to update tags for existing items
+          // For now, let's enrich if missing category OR if we force update (which we can assume for now to backfill)
+          // Actually, let's stick to _needsCategory logic for efficiency, but maybe rename it to _needsEnrichment in future.
+          // For now, let's assume we want to enrich items that are being updated too if they lack these fields.
+          
+          const itemsToEnrich = batch.filter(item => item.data._needsCategory || !item.data.kosher_level);
+          if (itemsToEnrich.length > 0) {
+            await enrichProductData(base44, itemsToEnrich);
           }
           
           for (const update of batch) {
