@@ -1,5 +1,38 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 
+// Helper to delay execution
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Robust batch processor with fallback to individual items
+async function processSafely(items, batchSize, delayMs, bulkFn, singleFn, onFail, label) {
+  const totalBatches = Math.ceil(items.length / batchSize);
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const currentBatch = Math.floor(i / batchSize) + 1;
+
+    try {
+      // Try bulk operation first
+      await bulkFn(batch);
+    } catch (err) {
+      console.warn(`[${label}] Batch ${currentBatch}/${totalBatches} failed, falling back to individual processing: ${err.message}`);
+      
+      // Fallback to individual processing
+      for (const item of batch) {
+        try {
+          await singleFn(item);
+        } catch (singleErr) {
+          console.error(`[${label}] Item failed: ${singleErr.message}`);
+          if (onFail) onFail(item, singleErr);
+        }
+      }
+    }
+
+    if (i + batchSize < items.length) {
+      await delay(delayMs);
+    }
+  }
+}
+
 export default Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -21,7 +54,7 @@ export default Deno.serve(async (req) => {
     const stagedBatch = await svc.entities.StagedCatalogItem.filter({
       job_id: jobId,
       status: 'pending'
-    }, 'created_date', limit); // sort by created_date to be deterministic
+    }, 'created_date', limit);
 
     if (stagedBatch.length === 0) {
       return Response.json({ processed: 0, hasMore: false });
@@ -35,36 +68,19 @@ export default Deno.serve(async (req) => {
     const pricesToUpdate = [];
     const pricesToCreate = [];
 
-    // Pre-fetch existing products to avoid duplicates? 
-    // Optimization: Just filter by GTINs in this batch
+    // Track failures
+    const failedGtins = new Map(); // GTIN -> Error Message
+
+    // Pre-fetch existing products
     const gtins = stagedBatch.map(s => JSON.parse(s.item_json).ItemCode?.toString().trim()).filter(Boolean);
-    
-    // Check existing products
-    // Note: filter with 'in' array might be limited in size. 
-    // Doing a list() and map is expensive if DB is huge.
-    // For now, let's fetch products matching these GTINs if possible or just list all (bad for scale).
-    // Better: Iterate and find? No, N+1 queries.
-    // Let's assume we can filter by GTIN list if small, or rely on upsert if available (not available).
-    // We'll fetch all products? No.
-    // We'll try to fetch existing products for this batch.
-    // If we can't efficiently check existence, we might fail on uniqueness constraint or create dupes.
-    // Assuming GTIN is unique field?
-    
-    // Workaround: We'll fetch all products just once? No memory limit.
-    // Let's rely on `filter` accepting an array if supported, otherwise loop.
-    // Base44 filter support for $in:
-    // "gtin": { "$in": gtins }
     
     let existingProducts = [];
     if (gtins.length > 0) {
-        // Chunk GTINs for query if needed, but 1000 might fit
         existingProducts = await svc.entities.Product.filter({ gtin: { $in: gtins } });
     }
     const existingProductMap = new Map(existingProducts.map(p => [p.gtin, p]));
     
-    // Check existing prices (chain level)
-    // We need chain_id. It's in the staged item.
-    // Assuming all items in batch have same chain_id (likely if from same file/job).
+    // Check existing prices
     const chainId = stagedBatch[0].chain_id; 
     let existingPrices = [];
     if (gtins.length > 0) {
@@ -77,7 +93,15 @@ export default Deno.serve(async (req) => {
     const existingPriceMap = new Map(existingPrices.map(p => [p.gtin, p]));
 
     for (const staged of stagedBatch) {
-        const item = JSON.parse(staged.item_json);
+        let item;
+        try {
+            item = JSON.parse(staged.item_json);
+        } catch (e) {
+            // If JSON parse fails, mark this specific item as failed immediately
+            failedGtins.set(`STAGED_ID_${staged.id}`, "Invalid JSON in staged item");
+            continue;
+        }
+
         const itemCode = item.ItemCode?.toString().trim();
         if (!itemCode) continue;
 
@@ -97,7 +121,6 @@ export default Deno.serve(async (req) => {
             const p = existingProductMap.get(itemCode);
             productsToUpdate.push({ id: p.id, data: productData });
         } else {
-            // Deduplicate within batch
             if (!productsToCreate.find(p => p.gtin === itemCode)) {
                 productsToCreate.push(productData);
             }
@@ -107,7 +130,7 @@ export default Deno.serve(async (req) => {
         const priceData = {
             gtin: itemCode,
             chain_id: staged.chain_id,
-            store_id: null, // Chain level
+            store_id: null,
             current_price: parseFloat(item.ItemPrice) || 0,
             unit_price: parseFloat(item.UnitOfMeasurePrice) || 0,
             allow_discount: item.AllowDiscount === "1",
@@ -124,35 +147,114 @@ export default Deno.serve(async (req) => {
         }
     }
 
-    // Execute Bulk Ops
-    if (productsToCreate.length) await svc.entities.Product.bulkCreate(productsToCreate);
-    if (pricesToCreate.length) await svc.entities.ProductPrice.bulkCreate(pricesToCreate);
+    // Helper to capture failures
+    const handleFailure = (item, err) => {
+        // item is either productData or priceData or {id, data}
+        const gtin = item.gtin || item.data?.gtin;
+        if (gtin) {
+            failedGtins.set(gtin, err.message);
+        }
+    };
+
+    // Execute Bulk Ops with robust fallback
     
-    // Updates
-    // Parallelize updates
-    await Promise.all([
-        ...productsToUpdate.map(p => svc.entities.Product.update(p.id, p.data)),
-        ...pricesToUpdate.map(p => svc.entities.ProductPrice.update(p.id, p.data))
-    ]);
+    // Create Products
+    if (productsToCreate.length) {
+      await processSafely(
+        productsToCreate, 100, 200, 
+        async (batch) => await svc.entities.Product.bulkCreate(batch),
+        async (item) => await svc.entities.Product.create(item),
+        handleFailure, 
+        "Product Creation"
+      );
+    }
 
-    // 3. Mark Staged Items as Processed
-    const stagedIds = stagedBatch.map(s => s.id);
-    // Since we don't have bulkUpdate, we loop or use a backend function trick?
-    // We'll loop update for now, or just delete them?
-    // "Update status to 'processed'" is cleaner for history.
-    // But bulk update isn't available in standard SDK except filter update? 
-    // update_entities tool description says "Update multiple entities based on query filter".
-    // SDK: base44.entities.Name.update(id, data) is single.
-    // Does SDK have bulk update? Not explicitly shown in prompt.
-    // We'll loop update.
-    await Promise.all(stagedIds.map(id => svc.entities.StagedCatalogItem.update(id, { status: 'processed' })));
+    // Create Prices
+    if (pricesToCreate.length) {
+      await processSafely(
+        pricesToCreate, 100, 200, 
+        async (batch) => await svc.entities.ProductPrice.bulkCreate(batch),
+        async (item) => await svc.entities.ProductPrice.create(item),
+        handleFailure, 
+        "Price Creation"
+      );
+    }
+    
+    // Update Products
+    if (productsToUpdate.length) {
+      await processSafely(
+        productsToUpdate, 50, 100, 
+        async (batch) => await Promise.all(batch.map(p => svc.entities.Product.update(p.id, p.data))),
+        async (item) => await svc.entities.Product.update(item.id, item.data),
+        handleFailure, 
+        "Product Update"
+      );
+    }
 
-    // Check if more remain
-    // We can just query count of pending
+    // Update Prices
+    if (pricesToUpdate.length) {
+      await processSafely(
+        pricesToUpdate, 50, 100, 
+        async (batch) => await Promise.all(batch.map(p => svc.entities.ProductPrice.update(p.id, p.data))),
+        async (item) => await svc.entities.ProductPrice.update(item.id, item.data),
+        handleFailure, 
+        "Price Update"
+      );
+    }
+
+    // 3. Update Staged Items Status (Success or Failed)
+    // We group by status to do efficient updates
+    const successIds = [];
+    const failedUpdates = []; // { id, message }
+
+    for (const staged of stagedBatch) {
+        let gtin;
+        try {
+             gtin = JSON.parse(staged.item_json).ItemCode?.toString().trim();
+        } catch {
+             // Already handled above
+        }
+        
+        const isJsonFail = failedGtins.has(`STAGED_ID_${staged.id}`);
+        const isGtinFail = gtin && failedGtins.has(gtin);
+
+        if (isJsonFail || isGtinFail) {
+            const msg = failedGtins.get(gtin) || failedGtins.get(`STAGED_ID_${staged.id}`);
+            failedUpdates.push({ id: staged.id, message: msg });
+        } else {
+            successIds.push(staged.id);
+        }
+    }
+
+    // Mark successful ones
+    if (successIds.length) {
+        await processSafely(
+            successIds, 50, 50,
+            async (batch) => await Promise.all(batch.map(id => svc.entities.StagedCatalogItem.update(id, { status: 'processed' }))),
+            async (id) => await svc.entities.StagedCatalogItem.update(id, { status: 'processed' }),
+            null, 
+            "Status Update: Success"
+        );
+    }
+
+    // Mark failed ones
+    if (failedUpdates.length) {
+        await processSafely(
+            failedUpdates, 50, 50,
+            async (batch) => await Promise.all(batch.map(f => svc.entities.StagedCatalogItem.update(f.id, { status: 'failed', error_message: f.message }))),
+            async (f) => await svc.entities.StagedCatalogItem.update(f.id, { status: 'failed', error_message: f.message }),
+            null,
+            "Status Update: Failed"
+        );
+    }
+
+    // Check remaining
     const remaining = await svc.entities.StagedCatalogItem.filter({ job_id: jobId, status: 'pending' });
     
     return Response.json({
       processed: stagedBatch.length,
+      successCount: successIds.length,
+      failureCount: failedUpdates.length,
       hasMore: remaining.length > 0,
       remaining: remaining.length
     });
