@@ -60,7 +60,11 @@ async function enrichProductBatch(base44, items) {
             console.log(`Applying ${updates.length} updates...`);
             // Update sequentially to avoid locks if high concurrency, or use Promise.all
             for (const update of updates) {
-                await base44.asServiceRole.entities.Product.update(update.id, update.data);
+                try {
+                    await base44.asServiceRole.entities.Product.update(update.id, update.data);
+                } catch (e) {
+                    console.warn(`Failed to update product ${update.id} with enrichment data:`, e.message);
+                }
             }
         }
 
@@ -68,7 +72,11 @@ async function enrichProductBatch(base44, items) {
         console.error("Error enriching items:", err);
         // Mark as failed so we don't retry indefinitely immediately
         for (const item of items) {
-             await base44.asServiceRole.entities.Product.update(item.id, { enrichment_status: 'failed' });
+            try {
+                 await base44.asServiceRole.entities.Product.update(item.id, { enrichment_status: 'failed' });
+            } catch (e) {
+                 console.warn(`Failed to mark product ${item.id} as failed:`, e.message);
+            }
         }
     }
 }
@@ -93,16 +101,27 @@ Deno.serve(async (req) => {
         console.log(`Found ${pendingProducts.length} pending products`);
 
         // 2. Mark as processing
+        const productsToProcess = [];
         for (const p of pendingProducts) {
-            await base44.asServiceRole.entities.Product.update(p.id, { enrichment_status: 'processing' });
+            try {
+                await base44.asServiceRole.entities.Product.update(p.id, { enrichment_status: 'processing' });
+                productsToProcess.push(p);
+            } catch (e) {
+                console.warn(`Failed to mark product ${p.id} as processing (likely deleted):`, e.message);
+            }
+        }
+        
+        // Only enrich successfully marked products
+        if (productsToProcess.length === 0) {
+            return Response.json({ message: "No products successfully marked for processing", processed: 0 });
         }
 
         // 3. Enrich
-        await enrichProductBatch(base44, pendingProducts);
+        await enrichProductBatch(base44, productsToProcess);
 
         return Response.json({ 
             success: true, 
-            processed: pendingProducts.length 
+            processed: productsToProcess.length 
         });
 
     } catch (error) {
