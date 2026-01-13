@@ -18,65 +18,63 @@ export default function Admin() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  useEffect(() => {
-    const fetchAdminData = async () => {
-      try {
-        const user = await base44.auth.me();
-
-        // Check admin status via UserProfile
-        let isAdmin = user.role === 'admin';
-        if (!isAdmin) {
+  const checkAdmin = async () => {
+      const user = await base44.auth.me();
+      let isAdmin = user.role === 'admin';
+      if (!isAdmin) {
           const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
           isAdmin = profiles.length > 0 && profiles[0].is_admin;
-        }
+      }
+      if (!isAdmin) {
+          window.location.href = '/';
+          return false;
+      }
+      return true;
+  };
 
-        if (!isAdmin) {
-          window.location.href = '/'; // Redirect if not admin
-          return;
-        }
+  const fetchTableData = async () => {
+      // Fetch visible data for table/list
+      const allReceipts = await base44.entities.Receipt.list();
+      setReceipts(allReceipts);
 
-        // Fetch backend stats for accurate total counts
-        const statsResponse = await base44.functions.invoke('getSystemStats');
-        const statsData = statsResponse.data;
-        
-        // Update stats with backend data if available, otherwise fallback (or 0)
-        setProductCount(statsData?.products || 0);
-        setStoreCount(statsData?.stores || 0);
-        // Note: For users and receipts, we use the backend count for the overview cards
-        // but fetch list for the table below (which might be limited by RLS/pagination)
-        
-        // Fetch visible data for table/list
-        const allReceipts = await base44.entities.Receipt.list();
-        setReceipts(allReceipts); // This sets the array, might be less than total statsData.receipts
-
-        const allUsers = await base44.entities.User.list();
-
-        // Calculate stats for table
-        const usersWithStats = allUsers.map((u) => ({
+      const allUsers = await base44.entities.User.list();
+      const usersWithStats = allUsers.map((u) => ({
           ...u,
           receipts: allReceipts.filter((r) => r.created_by === u.email).length
-        }));
-        setUsers(usersWithStats);
-        
-        // Override counts for display cards
-        if (statsData) {
-             // We can store these in separate state or rely on array lengths if we didn't have statsData
-             // But user wants "real value" for overview.
-             // We'll update the state variables used in the JSX to prefer statsData
-             // Since users.length and receipts.length are used directly in JSX, we might need new state variables
-             // or just update how they are rendered.
-             // Let's create new state variables for the counters to be explicit.
-             setTrueCounts(statsData);
-        }
+      }));
+      setUsers(usersWithStats);
+  };
 
+  const syncStats = async () => {
+      setIsSyncing(true);
+      try {
+          const statsResponse = await base44.functions.invoke('getSystemStats');
+          const statsData = statsResponse.data;
+          
+          setProductCount(statsData?.products || 0);
+          setStoreCount(statsData?.stores || 0);
+          setTrueCounts(statsData);
+      } catch (error) {
+          console.error("Failed to sync stats", error);
+      } finally {
+          setIsSyncing(false);
+      }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const isAdmin = await checkAdmin();
+        if (isAdmin) {
+            await fetchTableData();
+        }
       } catch (e) {
-        console.error("Admin access denied or error", e);
-        setIsLoading(false);
+        console.error("Admin init error", e);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchAdminData();
+    init();
   }, []);
 
   const handleDeleteAllReceipts = async () => {
