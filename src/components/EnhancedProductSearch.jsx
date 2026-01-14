@@ -188,7 +188,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
             </div>
 
             {/* Auto-suggestions dropdown */}
-            {suggestions.length > 0 && searchTerm && (
+            {suggestions.length > 0 && searchTerm && searchResults.length === 0 && (
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-1">
                     <div className="text-xs text-gray-500 px-2 py-1">Quick suggestions:</div>
                     {suggestions.map((product) => (
