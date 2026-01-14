@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck, Search, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { toast } from "sonner";
 import CartAlternatives from '@/components/CartAlternatives';
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 
@@ -174,8 +175,10 @@ export default function SmartCart() {
             product_name: item.product_name,
             preference: preference
         });
+        toast.success(preference === 'like' ? "Added to Liked Items" : "Added to Disliked Items");
     } catch (error) {
         console.error("Failed to save preference", error);
+        toast.error("Failed to save preference");
     }
   };
 
