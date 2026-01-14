@@ -187,27 +187,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                 )}
             </div>
 
-            {/* Auto-suggestions dropdown */}
-            {suggestions.length > 0 && searchTerm && (
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-1">
-                    <div className="text-xs text-gray-500 px-2 py-1">Quick suggestions:</div>
-                    {suggestions.map((product) => (
-                        <button
-                            key={product.id}
-                            onClick={() => setSearchTerm(product.canonical_name)}
-                            className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                            <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                                {product.canonical_name}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {product.brand_name && <span>{product.brand_name} • </span>}
-                                {product.current_price && <span>₪{product.current_price.toFixed(2)}</span>}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            )}
+
 
             {/* Filter and Sort Controls */}
             <div className="flex items-center gap-2">
