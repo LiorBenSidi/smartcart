@@ -32,19 +32,21 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (rating === 0) return;
+        if (rating === 0 || !displayName.trim()) return;
 
         setSubmitting(true);
         try {
             const res = await base44.functions.invoke('submitStoreReview', {
                 store_id: storeId,
                 rating,
-                comment
+                comment,
+                user_display_name: displayName.trim()
             });
 
             if (res.data.success) {
                 setRating(0);
                 setComment('');
+                setDisplayName('');
                 fetchReviews();
             }
         } catch (error) {
