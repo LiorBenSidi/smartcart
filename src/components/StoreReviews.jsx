@@ -31,23 +31,47 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
         if (storeId) fetchReviews();
     }, [storeId]);
 
+    const parseRelativeTime = (timeStr) => {
+        if (!timeStr.trim()) return new Date();
+        
+        const match = timeStr.match(/(\d+)\s+(week|month|year|day|hour)s?\s+ago/i);
+        if (!match) return new Date();
+        
+        const amount = parseInt(match[1]);
+        const unit = match[2].toLowerCase();
+        const now = new Date();
+        
+        switch (unit) {
+            case 'week': return subWeeks(now, amount);
+            case 'month': return subMonths(now, amount);
+            case 'year': return subYears(now, amount);
+            case 'day': return subDays(now, amount);
+            case 'hour': return subHours(now, amount);
+            default: return now;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (rating === 0 || !displayName.trim()) return;
 
         setSubmitting(true);
         try {
+            const reviewDate = parseRelativeTime(reviewTime);
+            
             const res = await base44.functions.invoke('submitStoreReview', {
                 store_id: storeId,
                 rating,
                 comment,
-                user_display_name: displayName.trim()
+                user_display_name: displayName.trim(),
+                review_date: reviewDate.toISOString()
             });
 
             if (res.data.success) {
                 setRating(0);
                 setComment('');
                 setDisplayName('');
+                setReviewTime('');
                 fetchReviews();
             }
         } catch (error) {
