@@ -13,6 +13,7 @@ import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
   const [stores, setStores] = useState([]);
+  const [chains, setChains] = useState([]);
   const [products, setProducts] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -75,12 +76,14 @@ export default function SmartCart() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [storesList, productsList, savedCartsList] = await Promise.all([
+      const [storesList, chainsList, productsList, savedCartsList] = await Promise.all([
         base44.entities.Store.list(),
+        base44.entities.Chain.list(),
         base44.entities.Product.list('-updated_date', 100),
         base44.entities.SavedCart.list('-created_date')
       ]);
       setStores(storesList);
+      setChains(chainsList);
       setProducts(productsList);
       setSavedCarts(savedCartsList);
     };
@@ -177,19 +180,9 @@ export default function SmartCart() {
                 { gtin: { $regex: searchTerm, $options: 'i' } },
                 { brand_name: { $regex: searchTerm, $options: 'i' } }
             ]
-        }, undefined, 20);
+        }, undefined, 50);
         
-        // Deduplicate by GTIN
-        const uniqueProducts = [];
-        const seenGtins = new Set();
-        for (const p of results) {
-            if (p.gtin && !seenGtins.has(p.gtin)) {
-                seenGtins.add(p.gtin);
-                uniqueProducts.push(p);
-            }
-        }
-        
-        setSearchResults(uniqueProducts);
+        setSearchResults(results);
       } catch (error) {
         console.error("Failed to search products", error);
       } finally {
@@ -406,28 +399,42 @@ export default function SmartCart() {
 
           {searchResults.length > 0 && (
             <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
-              {searchResults.map((product) => (
-                <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <div className="flex-1 min-w-0 mr-3">
-                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {product.brand_name && <span>{product.brand_name} • </span>}
-                      {product.gtin}
+              {searchResults.map((product) => {
+                const storeName = stores.find(s => s.id === product.store_id)?.name;
+                const chainName = chains.find(c => c.id === product.chain_id)?.name;
+                const sourceName = storeName || chainName || 'Unknown Source';
+
+                return (
+                  <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                        {product.brand_name && <span>{product.brand_name} • </span>}
+                        {product.gtin}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                              {sourceName}
+                          </Badge>
+                          <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                              ₪{product.current_price?.toFixed(2)}
+                          </span>
+                      </div>
                     </div>
+                    <Button 
+                      size="sm" 
+                      className="flex-shrink-0 h-8 w-8 p-0"
+                      onClick={() => {
+                        addToCart(product);
+                        setSearchTerm('');
+                        setSearchResults([]);
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button 
-                    size="sm" 
-                    className="flex-shrink-0"
-                    onClick={() => {
-                      addToCart(product);
-                      setSearchTerm('');
-                      setSearchResults([]);
-                    }}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
