@@ -14,7 +14,7 @@ export default function Layout({ children, currentPageName }) {
   const [isWebView, setIsWebView] = useState(true);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : true;
+    return saved ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {
