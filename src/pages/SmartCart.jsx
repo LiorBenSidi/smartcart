@@ -336,12 +336,18 @@ export default function SmartCart() {
                                           Why? {expandedSuggestion === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                       </button>
                                       {expandedSuggestion === idx && (
-                                          <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
+                                          <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded space-y-1">
                                               {item.reason_type.includes('Weekly') && (
-                                                  <p> bought {item.evidence.occurrences} times on this weekday in last {item.evidence.n_weeks} weeks.</p>
+                                                  <p>Bought {item.evidence.occurrences} times on this weekday in last {item.evidence.n_weeks} weeks.</p>
                                               )}
                                               {item.reason_type.includes('Restock') && (
-                                                  <p> Usually bought every {item.evidence.avg_cadence_days} days. Last bought {item.evidence.days_since_last_purchase} days ago.</p>
+                                                  <>
+                                                      <p><strong>Restock Suggestion</strong></p>
+                                                      <p>Based on your buying patterns:</p>
+                                                      <p>• Avg. purchase every <strong>{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)}</strong> days</p>
+                                                      <p>• Last bought <strong>{Number(item.evidence?.days_since_last_purchase || 0)}</strong> days ago</p>
+                                                      <p className="text-amber-600 font-semibold">Time to restock: {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x your cycle</p>
+                                                  </>
                                               )}
                                           </div>
                                       )}
