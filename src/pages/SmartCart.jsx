@@ -32,6 +32,7 @@ export default function SmartCart() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [expandedSuggestion, setExpandedSuggestion] = useState(null);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+  const [likedItems, setLikedItems] = useState(new Set());
 
   useEffect(() => {
       const fetchSuggestions = async () => {
@@ -40,6 +41,11 @@ export default function SmartCart() {
               const user = await base44.auth.me();
               const today = new Date().toISOString().split('T')[0];
               
+              // Fetch preferences first to initialize state
+              const prefs = await base44.entities.UserProductPreference.list();
+              const likedSet = new Set(prefs.filter(p => p.preference === 'like').map(p => p.product_gtin));
+              setLikedItems(likedSet);
+
               // Try to find existing draft for today
               const drafts = await base44.entities.SuggestedCartDraft.filter({ 
                   created_by: user.email, 
@@ -168,6 +174,17 @@ export default function SmartCart() {
 
   const handlePreference = async (item, preference) => {
     try {
+        // Update UI immediately
+        if (preference === 'like') {
+            setLikedItems(prev => new Set([...prev, item.product_id]));
+        } else if (preference === 'dislike') {
+            // Remove from suggestions locally
+            if (suggestions && suggestions.items) {
+                const newItems = suggestions.items.filter(i => i.product_id !== item.product_id);
+                setSuggestions({ ...suggestions, items: newItems });
+            }
+        }
+
         const user = await base44.auth.me();
         await base44.entities.UserProductPreference.create({
             user_id: user.email,
@@ -175,7 +192,7 @@ export default function SmartCart() {
             product_name: item.product_name,
             preference: preference
         });
-        toast.success(preference === 'like' ? "Added to Liked Items" : "Added to Disliked Items");
+        toast.success(preference === 'like' ? "Added to Liked Items" : "Removed from suggestions");
     } catch (error) {
         console.error("Failed to save preference", error);
         toast.error("Failed to save preference");
@@ -343,8 +360,13 @@ export default function SmartCart() {
                                           <Plus className="w-4 h-4" />
                                       </Button>
                                       <div className="flex gap-1">
-                                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-green-50" onClick={() => handlePreference(item, 'like')}>
-                                              <ThumbsUp className="w-3 h-3 text-green-600" />
+                                          <Button 
+                                              size="sm" 
+                                              variant="ghost" 
+                                              className={`h-6 w-6 p-0 ${likedItems.has(item.product_id) ? 'bg-green-100 hover:bg-green-200' : 'hover:bg-green-50'}`} 
+                                              onClick={() => handlePreference(item, 'like')}
+                                          >
+                                              <ThumbsUp className={`w-3 h-3 ${likedItems.has(item.product_id) ? 'text-green-700 fill-current' : 'text-green-600'}`} />
                                           </Button>
                                           <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-50" onClick={() => handlePreference(item, 'dislike')}>
                                               <ThumbsDown className="w-3 h-3 text-red-600" />
