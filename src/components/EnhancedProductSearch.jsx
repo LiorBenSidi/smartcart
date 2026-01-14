@@ -40,28 +40,10 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                 setChains(chainsList);
             } catch (error) {
                 console.error("Failed to load data", error);
-            } finally {
-                setLoading(false);
             }
         };
         loadData();
     }, []);
-
-    // Fuzzy search configuration
-    const fuse = useMemo(() => {
-        return new Fuse(allProducts, {
-            keys: [
-                { name: 'canonical_name', weight: 2 },
-                { name: 'brand_name', weight: 1.5 },
-                { name: 'gtin', weight: 1 },
-                { name: 'category', weight: 1 },
-                { name: 'description', weight: 0.5 }
-            ],
-            threshold: 0.4,
-            includeScore: true,
-            minMatchCharLength: 2
-        });
-    }, [allProducts]);
 
     // Apply filters and sorting
     const applyFiltersAndSort = (results) => {
@@ -108,9 +90,9 @@ export default function EnhancedProductSearch({ onAddToCart }) {
         return sorted;
     };
 
-    // Search with fuzzy matching
+    // Search with regex matching
     useEffect(() => {
-        const searchProducts = () => {
+        const searchProducts = async () => {
             if (!searchTerm || searchTerm.length < 2) {
                 setSearchResults([]);
                 setSuggestions([]);
@@ -118,31 +100,49 @@ export default function EnhancedProductSearch({ onAddToCart }) {
             }
 
             setIsSearching(true);
-            
-            // Fuzzy search
-            const fuseResults = fuse.search(searchTerm);
-            const products = fuseResults.map(result => result.item);
-            
-            // Apply filters and sorting
-            const filtered = applyFiltersAndSort(products);
-            
-            // Show top 5 as suggestions
-            setSuggestions(filtered.slice(0, 5));
-            
-            // Show all results (limited to 50)
-            setSearchResults(filtered.slice(0, 50));
-            
-            setIsSearching(false);
+            try {
+                const results = await base44.entities.Product.filter({
+                    $or: [
+                        { canonical_name: { $regex: searchTerm, $options: 'i' } },
+                        { gtin: { $regex: searchTerm, $options: 'i' } },
+                        { brand_name: { $regex: searchTerm, $options: 'i' } }
+                    ]
+                }, undefined, 100);
+                
+                // Apply filters and sorting
+                const filtered = applyFiltersAndSort(results);
+                
+                // Show top 5 as suggestions
+                setSuggestions(filtered.slice(0, 5));
+                
+                // Show all results (limited to 50)
+                setSearchResults(filtered.slice(0, 50));
+            } catch (error) {
+                console.error("Failed to search products", error);
+            } finally {
+                setIsSearching(false);
+            }
         };
 
         const debounce = setTimeout(searchProducts, 300);
         return () => clearTimeout(debounce);
-    }, [searchTerm, filters, sortBy, fuse]);
+    }, [searchTerm, filters, sortBy]);
 
-    // Get unique categories for filter
-    const categories = useMemo(() => {
-        return [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-    }, [allProducts]);
+    // Get unique categories for filter (async load when needed)
+    const [categories, setCategories] = useState([]);
+    
+    useEffect(() => {
+        const loadCategories = async () => {
+            try {
+                const products = await base44.entities.Product.list('-updated_date', 500);
+                const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
+                setCategories(cats);
+            } catch (error) {
+                console.error("Failed to load categories", error);
+            }
+        };
+        loadCategories();
+    }, []);
 
     const clearFilters = () => {
         setFilters({
@@ -169,14 +169,6 @@ export default function EnhancedProductSearch({ onAddToCart }) {
         setSearchResults([]);
         setSuggestions([]);
     };
-
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-4">
