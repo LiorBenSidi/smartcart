@@ -13,6 +13,7 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [displayName, setDisplayName] = useState('');
+    const [reviewTime, setReviewTime] = useState('');
     const [hoverRating, setHoverRating] = useState(0);
 
     const fetchReviews = async () => {
