@@ -333,12 +333,18 @@ export default function SmartCart() {
                                           Why? {expandedSuggestion === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                       </button>
                                       {expandedSuggestion === idx && (
-                                          <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
+                                          <div className="mt-2 text-xs text-gray-600 bg-gray-50 dark:bg-gray-700 p-3 rounded space-y-2">
                                               {item.reason_type.includes('Weekly') && (
-                                                  <p> bought {item.evidence.occurrences} times on this weekday in last {item.evidence.n_weeks} weeks.</p>
+                                                  <p>You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
                                               )}
                                               {item.reason_type.includes('Restock') && (
-                                                  <p> Usually bought every {item.evidence.avg_cadence_days} days. Last bought {item.evidence.days_since_last_purchase} days ago.</p>
+                                                  <>
+                                                      <p className="font-semibold text-gray-800 dark:text-gray-200">Restock Recommendation</p>
+                                                      <p>Based on your buying patterns:</p>
+                                                      <p className="text-gray-600 dark:text-gray-300">• Average purchase every <span className="font-semibold">{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)} days</span></p>
+                                                      <p className="text-gray-600 dark:text-gray-300">• Last purchased <span className="font-semibold">{Number(item.evidence?.days_since_last_purchase || 0)} days ago</span></p>
+                                                      <p className="text-amber-600 dark:text-amber-400 font-semibold mt-1">You're {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x through your cycle - time to restock!</p>
+                                                  </>
                                               )}
                                           </div>
                                       )}
