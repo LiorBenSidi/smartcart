@@ -61,6 +61,13 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-3">Write a Review for {storeName}</h3>
                 <div className="flex flex-col gap-4">
+                    <Input 
+                        placeholder="Your name" 
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        className="bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
+                    />
+
                     <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -95,7 +102,7 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                     
                     <Button 
                         onClick={handleSubmit} 
-                        disabled={rating === 0 || submitting}
+                        disabled={rating === 0 || !displayName.trim() || submitting}
                         className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto self-end"
                     >
                         {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <MessageSquare className="w-4 h-4 mr-2" />}
