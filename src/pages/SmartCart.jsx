@@ -174,28 +174,66 @@ export default function SmartCart() {
 
   const handlePreference = async (item, preference) => {
     try {
-        // Update UI immediately
+        const user = await base44.auth.me();
+
         if (preference === 'like') {
-            setLikedItems(prev => new Set([...prev, item.product_id]));
+            if (likedItems.has(item.product_id)) {
+                // Toggle OFF (Unlike)
+                setLikedItems(prev => {
+                    const next = new Set(prev);
+                    next.delete(item.product_id);
+                    return next;
+                });
+
+                // Find and delete existing like preference
+                const existing = await base44.entities.UserProductPreference.filter({
+                    user_id: user.email,
+                    product_gtin: item.product_id,
+                    preference: 'like'
+                });
+                
+                // Delete all matches to clean up duplicates
+                await Promise.all(existing.map(p => base44.entities.UserProductPreference.delete(p.id)));
+                toast.success("Removed from Liked Items");
+            } else {
+                // Toggle ON (Like)
+                setLikedItems(prev => new Set([...prev, item.product_id]));
+                
+                // Check for existing to prevent duplicates
+                const existing = await base44.entities.UserProductPreference.filter({
+                    user_id: user.email,
+                    product_gtin: item.product_id,
+                    preference: 'like'
+                });
+
+                if (existing.length === 0) {
+                    await base44.entities.UserProductPreference.create({
+                        user_id: user.email,
+                        product_gtin: item.product_id,
+                        product_name: item.product_name,
+                        preference: 'like'
+                    });
+                }
+                toast.success("Added to Liked Items");
+            }
         } else if (preference === 'dislike') {
             // Remove from suggestions locally
             if (suggestions && suggestions.items) {
                 const newItems = suggestions.items.filter(i => i.product_id !== item.product_id);
                 setSuggestions({ ...suggestions, items: newItems });
             }
+            
+            await base44.entities.UserProductPreference.create({
+                user_id: user.email,
+                product_gtin: item.product_id,
+                product_name: item.product_name,
+                preference: 'dislike'
+            });
+            toast.success("Removed from suggestions");
         }
-
-        const user = await base44.auth.me();
-        await base44.entities.UserProductPreference.create({
-            user_id: user.email,
-            product_gtin: item.product_id,
-            product_name: item.product_name,
-            preference: preference
-        });
-        toast.success(preference === 'like' ? "Added to Liked Items" : "Removed from suggestions");
     } catch (error) {
-        console.error("Failed to save preference", error);
-        toast.error("Failed to save preference");
+        console.error("Failed to update preference", error);
+        toast.error("Failed to update preference");
     }
   };
 
