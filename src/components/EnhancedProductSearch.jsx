@@ -4,15 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, Plus, SlidersHorizontal, X } from 'lucide-react';
-import Fuse from 'fuse.js';
 
 export default function EnhancedProductSearch({ onAddToCart }) {
-    const [allProducts, setAllProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     
     // Filter states
@@ -32,20 +29,17 @@ export default function EnhancedProductSearch({ onAddToCart }) {
     const [stores, setStores] = useState([]);
     const [chains, setChains] = useState([]);
 
-    // Load all products and related data
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [productsList, storesList, chainsList] = await Promise.all([
-                    base44.entities.Product.list('-updated_date', 500),
+                const [storesList, chainsList] = await Promise.all([
                     base44.entities.Store.list(),
                     base44.entities.Chain.list()
                 ]);
-                setAllProducts(productsList);
                 setStores(storesList);
                 setChains(chainsList);
             } catch (error) {
-                console.error("Failed to load products", error);
+                console.error("Failed to load data", error);
             } finally {
                 setLoading(false);
             }
