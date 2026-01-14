@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2, Moon, Sun, MessageSquarePlus, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Onboarding from '../components/Onboarding';
