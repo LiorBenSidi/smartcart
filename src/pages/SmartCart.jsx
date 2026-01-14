@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck, Search, Loader2 } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck, Search, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import CartAlternatives from '@/components/CartAlternatives';
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 
@@ -165,6 +165,20 @@ export default function SmartCart() {
     }).filter(Boolean));
   };
 
+  const handlePreference = async (item, preference) => {
+    try {
+        const user = await base44.auth.me();
+        await base44.entities.UserProductPreference.create({
+            user_id: user.email,
+            product_gtin: item.product_id,
+            product_name: item.product_name,
+            preference: preference
+        });
+    } catch (error) {
+        console.error("Failed to save preference", error);
+    }
+  };
+
   useEffect(() => {
     const searchProducts = async () => {
       if (!searchTerm || searchTerm.length < 2) {
@@ -315,17 +329,24 @@ export default function SmartCart() {
                                           </div>
                                       )}
                                   </div>
-                                  <div className="flex flex-col gap-2">
+                                  <div className="flex flex-col gap-2 items-center">
                                       <Button 
                                           size="sm" 
-                                          className="h-8 bg-indigo-600 hover:bg-indigo-700"
+                                          className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 mb-1"
                                           onClick={() => {
                                               addToCart({ gtin: item.product_id, canonical_name: item.product_name });
-                                              // Ideally mark as added in local state or remove from view?
                                           }}
                                       >
                                           <Plus className="w-4 h-4" />
                                       </Button>
+                                      <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-green-50" onClick={() => handlePreference(item, 'like')}>
+                                              <ThumbsUp className="w-3 h-3 text-green-600" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-50" onClick={() => handlePreference(item, 'dislike')}>
+                                              <ThumbsDown className="w-3 h-3 text-red-600" />
+                                          </Button>
+                                      </div>
                                   </div>
                               </div>
                           </div>
