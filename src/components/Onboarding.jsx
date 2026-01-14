@@ -180,19 +180,31 @@ export default function Onboarding({ onComplete }) {
       // Create user profile
       await base44.entities.UserProfile.create(profile);
 
-      // Generate recommendations using AI with hybrid approach
-      const stores = await base44.entities.Store.list();
-      const storeNames = stores.slice(0, 5).map(s => s.name).join(', ');
+      // Generate recommendations using AI with hybrid approach including sentiment
+      const stores = await base44.entities.Store.list('', 50);
 
-      // Check for similar users to incorporate collaborative filtering
-      const user = await base44.auth.me();
-      const similarUsers = await base44.entities.SimilarUserEdge.filter(
-        { user_id: user.email },
-        '-similarity',
-        3
-      ).catch(() => []);
+      // Fetch sentiment data for stores
+      const sentiments = await base44.entities.StoreSentiment.list('', 1000).catch(() => []);
+      const sentimentMap = {};
+      sentiments.forEach(s => {
+          sentimentMap[s.store_id] = s;
+      });
 
-      const prompt = `Generate personalized shopping recommendations for a new user based on their detailed profile. Prioritize practical, actionable advice.\n\nUser Profile:\n- Budget Focus: ${finalAnswers.budget} (monthly target: ₪${profile.monthly_budget || 'not specified'})\n- Dietary Restrictions: ${finalAnswers.restrictions.join(', ')}\n${profile.kashrut_level && profile.kashrut_level !== 'none' ? `- Kashrut Level: ${profile.kashrut_level}\n` : ''}\n${profile.allergen_avoid_list && profile.allergen_avoid_list.length > 0 ? `- Allergies: ${profile.allergen_avoid_list.join(', ')}\n` : ''}\n- Shopping Style: ${finalAnswers.style}\n- Household Size: ${profile.household_size}\n${profile.age_range ? `- Age Range: ${profile.age_range}\n` : ''}\n${profile.user_role ? `- User Role: ${profile.user_role}\n` : ''}\n\nAvailable stores to recommend from: ${storeNames}.\n\nProvide concise, data-driven recommendations in JSON format:\n1. Best store recommendation from the available list, and a specific, compelling reason why it's suitable for this user based on their profile.\n2. Two specific product categories the user should focus on for their shopping, with clear reasons aligning to their preferences.\n3. A brief, encouraging, and helpful overall summary (2-3 sentences) that ties together the recommendations and persona.`;
+      // Score stores by sentiment + rating
+      const scoredStores = stores.map(s => {
+          const sentiment = sentimentMap[s.id];
+          const sentimentScore = sentiment ? sentiment.sentiment_score : 0;
+          const ratingScore = (s.average_rating || 3) / 5;
+          const combinedScore = (sentimentScore * 0.4) + (ratingScore * 0.6);
+          return { ...s, combinedScore, sentiment };
+      }).sort((a, b) => b.combinedScore - a.combinedScore);
+
+      const storeNames = scoredStores.slice(0, 5).map(s => s.name).join(', ');
+      const storeInfo = scoredStores.slice(0, 5).map(s => 
+          `${s.name} (Sentiment: ${s.sentiment?.overall_sentiment || 'neutral'}, Rating: ${s.average_rating || 'N/A'}/5)`
+      ).join('\n');
+
+      const prompt = `Generate personalized shopping recommendations for a new user based on their detailed profile and store sentiment analysis. Prioritize practical, actionable advice.\n\nUser Profile:\n- Budget Focus: ${finalAnswers.budget} (monthly target: ₪${profile.monthly_budget || 'not specified'})\n- Dietary Restrictions: ${finalAnswers.restrictions.join(', ')}\n${profile.kashrut_level && profile.kashrut_level !== 'none' ? `- Kashrut Level: ${profile.kashrut_level}\n` : ''}\n${profile.allergen_avoid_list && profile.allergen_avoid_list.length > 0 ? `- Allergies: ${profile.allergen_avoid_list.join(', ')}\n` : ''}\n- Shopping Style: ${finalAnswers.style}\n- Household Size: ${profile.household_size}\n${profile.age_range ? `- Age Range: ${profile.age_range}\n` : ''}\n${profile.user_role ? `- User Role: ${profile.user_role}\n` : ''}\n\nStore Options with Sentiment Analysis:\n${storeInfo}\n\nProvide concise, data-driven recommendations in JSON format:\n1. Best store recommendation from the available list, with a specific, compelling reason that considers user preferences AND store sentiment/ratings.\n2. Two specific product categories the user should focus on for their shopping, with clear reasons aligning to their preferences.\n3. A brief, encouraging, and helpful overall summary (2-3 sentences) that ties together the recommendations and persona.`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
