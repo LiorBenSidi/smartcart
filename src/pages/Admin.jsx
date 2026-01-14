@@ -143,6 +143,17 @@ export default function Admin() {
     }
   };
 
+  const handleAnalyzeSentiment = async () => {
+    setIsAnalyzingSentiment(true);
+    try {
+      await base44.functions.invoke('analyzeStoreSentiment');
+    } catch (error) {
+      console.error('Failed to analyze sentiment', error);
+    } finally {
+      setIsAnalyzingSentiment(false);
+    }
+  };
+
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
