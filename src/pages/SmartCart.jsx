@@ -430,7 +430,6 @@ export default function SmartCart() {
                   )}
               </CardContent>
               </Card>
-              </TooltipProvider>
               )}
 
               {/* Enhanced Product Search */}
