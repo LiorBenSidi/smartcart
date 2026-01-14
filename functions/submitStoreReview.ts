@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { store_id, rating, comment } = await req.json();
+    const { store_id, rating, comment, user_display_name } = await req.json();
 
     if (!store_id || !rating) {
       return Response.json({ error: 'Store ID and rating are required' }, { status: 400 });
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
       store_id,
       rating,
       comment,
-      user_display_name: user.full_name || user.email.split('@')[0]
+      user_display_name: user_display_name || user.full_name || user.email.split('@')[0]
     });
 
     // Use service role to update store aggregations (since regular users can't update stores)
