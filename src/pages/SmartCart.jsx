@@ -289,7 +289,8 @@ export default function SmartCart() {
         <TabsContent value="build" className="space-y-6">
 
       {/* Suggested for Today */}
-      {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 && (
+      {suggestions && suggestions.status === 'draft' && (
+          suggestions.items && suggestions.items.length > 0 ? (
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -413,6 +414,21 @@ export default function SmartCart() {
                   )}
               </CardContent>
           </Card>
+          ) : suggestions.note ? (
+          <Card className="border-gray-200 bg-gray-50/50 dark:bg-gray-800/50 dark:border-gray-700">
+              <CardContent className="p-6 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                          <CalendarDays className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <div>
+                          <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">No Suggestions Today</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{suggestions.note}</p>
+                      </div>
+                  </div>
+              </CardContent>
+          </Card>
+          ) : null
       )}
 
       {/* Enhanced Product Search */}
