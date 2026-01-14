@@ -733,6 +733,7 @@ export default function SmartCart() {
         </>
       )}
       </TabsContent>
+      </TooltipProvider>
 
       <TabsContent value="ai">
         <CartAlternatives />
