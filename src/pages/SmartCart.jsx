@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck, Search, Loader2 } from 'lucide-react';
 import CartAlternatives from '@/components/CartAlternatives';
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 
@@ -14,6 +14,8 @@ export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
   const [stores, setStores] = useState([]);
   const [products, setProducts] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [storeComparisons, setStoreComparisons] = useState([]);
   const [optimizedCart, setOptimizedCart] = useState(null);
   const [loadingComparisons, setLoadingComparisons] = useState(false);
@@ -160,13 +162,44 @@ export default function SmartCart() {
     }).filter(Boolean));
   };
 
-  const filteredProducts = searchTerm ?
-  products.filter((p) =>
-  p.canonical_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  p.gtin?.includes(searchTerm) ||
-  p.brand_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  ).slice(0, 5) :
-  [];
+  useEffect(() => {
+    const searchProducts = async () => {
+      if (!searchTerm || searchTerm.length < 2) {
+        if (searchTerm.length === 0) setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const results = await base44.entities.Product.filter({
+            $or: [
+                { canonical_name: { $regex: searchTerm, $options: 'i' } },
+                { gtin: { $regex: searchTerm, $options: 'i' } },
+                { brand_name: { $regex: searchTerm, $options: 'i' } }
+            ]
+        }, undefined, 20);
+        
+        // Deduplicate by GTIN
+        const uniqueProducts = [];
+        const seenGtins = new Set();
+        for (const p of results) {
+            if (p.gtin && !seenGtins.has(p.gtin)) {
+                seenGtins.add(p.gtin);
+                uniqueProducts.push(p);
+            }
+        }
+        
+        setSearchResults(uniqueProducts);
+      } catch (error) {
+        console.error("Failed to search products", error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounce = setTimeout(searchProducts, 500);
+    return () => clearTimeout(debounce);
+  }, [searchTerm]);
 
   const getReasonIcon = (reason) => {
     if (reason.includes('cheaper')) return <TrendingDown className="w-3 h-3" />;
@@ -351,28 +384,52 @@ export default function SmartCart() {
           <CardTitle className="text-lg">Add Products to Cart</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search products by name, barcode, or brand..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500" 
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
+            )}
+          </div>
 
-          {filteredProducts.length > 0 &&
-          <div className="space-y-2">
-              {filteredProducts.map((product) =>
-            <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">{product.canonical_name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{product.brand_name} • {product.gtin}</div>
+          {!isSearching && searchTerm && searchResults.length === 0 && (
+              <div className="text-center text-gray-500 text-sm py-2">
+                  No products found.
+              </div>
+          )}
+
+          {searchResults.length > 0 && (
+            <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
+              {searchResults.map((product) => (
+                <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <div className="flex-1 min-w-0 mr-3">
+                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {product.brand_name && <span>{product.brand_name} • </span>}
+                      {product.gtin}
+                    </div>
                   </div>
-                  <Button size="sm" onClick={() => {addToCart(product);setSearchTerm('');}}>
+                  <Button 
+                    size="sm" 
+                    className="flex-shrink-0"
+                    onClick={() => {
+                      addToCart(product);
+                      setSearchTerm('');
+                      setSearchResults([]);
+                    }}
+                  >
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
-            )}
+              ))}
             </div>
-          }
+          )}
         </CardContent>
       </Card>
 
