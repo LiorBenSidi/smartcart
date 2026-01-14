@@ -214,12 +214,20 @@ export default function Admin() {
             </Card>
         </div>
 
-        <div className="w-full">
-            <Link to={createPageUrl('CatalogAdmin')}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link to={createPageUrl('CatalogAdmin')} className="w-full">
                 <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
                     <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
                 </Button>
             </Link>
+            <Button 
+                onClick={handleAnalyzeSentiment}
+                disabled={isAnalyzingSentiment}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+                <Zap className={`w-4 h-4 mr-2 ${isAnalyzingSentiment ? 'animate-spin' : ''}`} />
+                {isAnalyzingSentiment ? 'Analyzing...' : 'Analyze Store Sentiment'}
+            </Button>
         </div>
 
 
