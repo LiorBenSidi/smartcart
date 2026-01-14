@@ -379,11 +379,15 @@ export default function SmartCart() {
                   <div className="mt-4 flex gap-3">
                       <Button 
                           className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                          onClick={() => {
+                          onClick={async () => {
                               suggestions.items.forEach(item => {
-                                  addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                                  const existing = cartItems.find(ci => ci.gtin === item.product_id);
+                                  if (!existing) {
+                                      addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                                  }
                               });
-                              // Mark draft as accepted?
+                              await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'accepted' });
+                              toast.success("Added all items to cart");
                           }}
                       >
                           Add All to Cart
