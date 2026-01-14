@@ -168,8 +168,8 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                                             {review.user_display_name?.[0]?.toUpperCase() || <User className="w-4 h-4" />}
                                         </div>
                                         <div>
-                                            <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{review.user_display_name || 'Anonymous'}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(review.created_date), 'PPP')}</div>
+                                           <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{review.user_display_name || 'Anonymous'}</div>
+                                           <div className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(review.review_date || review.created_date), 'PPP')}</div>
                                         </div>
                                     </div>
                                     <div className="flex text-yellow-400">
