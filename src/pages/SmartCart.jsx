@@ -434,7 +434,7 @@ export default function SmartCart() {
               </TooltipProvider>
               )}
 
-      {/* Enhanced Product Search */}
+              {/* Enhanced Product Search */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Add Products to Cart</CardTitle>
