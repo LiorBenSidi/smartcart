@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, Plus, SlidersHorizontal, X } from 'lucide-react';
-import ProductDetails from '@/components/ProductDetails';
 
 export default function EnhancedProductSearch({ onAddToCart }) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -381,44 +380,40 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                                             {product.gtin}
                                         </div>
                                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                             <Badge
-                                                 variant="outline"
-                                                 className={`text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 ${
-                                                     isCheapest ? 'border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'
-                                                 }`}
-                                             >
-                                                 {sourceName}
-                                             </Badge>
-                                             {product.current_price && (
-                                                 <span className={`text-sm font-bold ${isCheapest ? 'text-green-700 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                                                     ₪{product.current_price.toFixed(2)}
-                                                 </span>
-                                             )}
-                                             {isCheapest && (
-                                                 <Badge className="text-[9px] px-1 py-0 h-4 bg-green-600 text-white border-0">
-                                                     Best Price
-                                                 </Badge>
-                                             )}
-                                             {product.is_vegan && (
-                                                 <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">Vegan</Badge>
-                                             )}
-                                             {product.is_kosher && (
-                                                 <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">Kosher</Badge>
-                                             )}
-                                             {product.is_gluten_free && (
-                                                 <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">GF</Badge>
-                                             )}
-                                             {product.is_organic && (
-                                                 <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">Organic</Badge>
-                                             )}
-                                             {product.category && (
-                                                 <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
-                                                     {product.category}
-                                                 </Badge>
-                                             )}
-                                         </div>
-                                         <ProductDetails product={product} />
+                                            <Badge
+                                                variant="outline"
+                                                className={`text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 ${
+                                                    isCheapest ? 'border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'
+                                                }`}
+                                            >
+                                                {sourceName}
+                                            </Badge>
+                                            {product.current_price && (
+                                                <span className={`text-sm font-bold ${isCheapest ? 'text-green-700 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                                    ₪{product.current_price.toFixed(2)}
+                                                </span>
+                                            )}
+                                            {isCheapest && (
+                                                <Badge className="text-[9px] px-1 py-0 h-4 bg-green-600 text-white border-0">
+                                                    Best Price
+                                                </Badge>
+                                            )}
+                                            {product.is_vegan && (
+                                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">Vegan</Badge>
+                                            )}
+                                            {product.is_kosher && (
+                                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">Kosher</Badge>
+                                            )}
+                                            {product.is_gluten_free && (
+                                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">GF</Badge>
+                                            )}
+                                            {product.category && (
+                                                <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
+                                                    {product.category}
+                                                </Badge>
+                                            )}
                                         </div>
+                                    </div>
                                     <Button
                                         size="sm"
                                         className={`flex-shrink-0 h-8 w-8 p-0 ${isCheapest ? 'bg-green-600 hover:bg-green-700' : ''}`}
