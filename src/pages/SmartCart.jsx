@@ -289,7 +289,7 @@ export default function SmartCart() {
         <TabsContent value="build" className="space-y-6">
 
       {/* Suggested for Today */}
-      {suggestions && suggestions.status === 'draft' && (
+      {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 && (
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -303,28 +303,8 @@ export default function SmartCart() {
                   </div>
               </CardHeader>
               <CardContent>
-                  {(!suggestions.items || suggestions.items.length === 0) && suggestions.note ? (
-                      <div className="text-center py-8">
-                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-amber-800 dark:text-amber-200">
-                              <p className="text-sm">{suggestions.note}</p>
-                          </div>
-                          <Button 
-                              variant="outline"
-                              className="mt-4 text-gray-500"
-                              onClick={async () => {
-                                  try {
-                                      await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
-                                      setSuggestions(null);
-                                  } catch(e) { console.error(e); }
-                              }}
-                          >
-                              Dismiss
-                          </Button>
-                      </div>
-                  ) : (
-                  <>
                   <div className="space-y-3">
-                      {suggestions.items?.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) => (
+                      {suggestions.items.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) => (
                           <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
                               <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
@@ -430,8 +410,6 @@ export default function SmartCart() {
                               {showAllSuggestions ? 'Show Less' : `Show ${suggestions.items.length - 6} More`}
                           </button>
                       </div>
-                  )}
-                  </>
                   )}
               </CardContent>
           </Card>
