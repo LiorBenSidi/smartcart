@@ -70,9 +70,14 @@ Provide:
                                 type: 'array',
                                 items: { type: 'string' }
                             }
-                        }
+                        },
+                        required: ['overall_sentiment', 'sentiment_score', 'positive_count', 'neutral_count', 'negative_count', 'themes']
                     }
                 });
+
+                if (!analysis) {
+                    throw new Error('LLM analysis returned no data');
+                }
 
                 // Calculate average rating
                 const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
