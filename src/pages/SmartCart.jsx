@@ -326,9 +326,9 @@ export default function SmartCart() {
                                                           <div className="text-xs space-y-1">
                                                               <p className="font-semibold">Restock Suggestion</p>
                                                               <p>Based on your buying patterns:</p>
-                                                              <p className="text-gray-300">• Avg. purchase every <span className="font-semibold">{item.evidence?.avg_cadence_days?.toFixed(0)}</span> days</p>
-                                                              <p className="text-gray-300">• Last bought <span className="font-semibold">{item.evidence?.days_since_last_purchase}</span> days ago</p>
-                                                              <p className="text-amber-300 mt-1">Time to restock: {(item.evidence?.due_score?.toFixed(1))}x your cycle</p>
+                                                              <p className="text-gray-300">• Avg. purchase every <span className="font-semibold">{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)}</span> days</p>
+                                                              <p className="text-gray-300">• Last bought <span className="font-semibold">{Number(item.evidence?.days_since_last_purchase || 0)}</span> days ago</p>
+                                                              <p className="text-amber-300 mt-1">Time to restock: {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x your cycle</p>
                                                           </div>
                                                       </TooltipContent>
                                                   )}
