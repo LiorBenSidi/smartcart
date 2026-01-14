@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2, RefreshCw, Tag } from 'lucide-react';
+import { ShieldCheck, Database, Trash2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import SystemValidationPanel from '../components/SystemValidationPanel';
@@ -18,8 +18,6 @@ export default function Admin() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isCategorizing, setIsCategorizing] = useState(false);
-  const [categorizationResult, setCategorizationResult] = useState(null);
 
   const checkAdmin = async () => {
       const user = await base44.auth.me();
@@ -144,20 +142,6 @@ export default function Admin() {
     }
   };
 
-  const handleCategorizeReceiptItems = async () => {
-    setIsCategorizing(true);
-    setCategorizationResult(null);
-    try {
-      const response = await base44.functions.invoke('categorizeReceiptItems');
-      setCategorizationResult(response.data);
-    } catch (error) {
-      console.error('Failed to categorize receipt items', error);
-      setCategorizationResult({ error: error.message });
-    } finally {
-      setIsCategorizing(false);
-    }
-  };
-
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
@@ -218,56 +202,13 @@ export default function Admin() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="w-full">
             <Link to={createPageUrl('CatalogAdmin')}>
                 <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
                     <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
                 </Button>
             </Link>
-            <Button 
-                className="w-full bg-indigo-600 hover:bg-indigo-700" 
-                onClick={handleCategorizeReceiptItems}
-                disabled={isCategorizing}
-            >
-                <Tag className={`w-4 h-4 mr-2 ${isCategorizing ? 'animate-spin' : ''}`} />
-                {isCategorizing ? 'Categorizing...' : 'Categorize Receipt Items'}
-            </Button>
         </div>
-
-        {categorizationResult && (
-            <Card className={`${categorizationResult.error ? 'border-red-200 bg-red-50 dark:bg-red-900/20' : 'border-green-200 bg-green-50 dark:bg-green-900/20'}`}>
-                <CardContent className="p-4">
-                    {categorizationResult.error ? (
-                        <div>
-                            <h3 className="font-bold text-red-900 dark:text-red-300">❌ Categorization Failed</h3>
-                            <p className="text-sm text-red-700 dark:text-red-400 mt-2">{categorizationResult.error}</p>
-                        </div>
-                    ) : (
-                        <div>
-                            <h3 className="font-bold text-green-900 dark:text-green-300">✅ Categorization Complete</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Items</p>
-                                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{categorizationResult.totalItems}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">From Products</p>
-                                    <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{categorizationResult.categorized}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">From LLM</p>
-                                    <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{categorizationResult.llmCategorized}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Updated</p>
-                                    <p className="text-xl font-bold text-green-600 dark:text-green-400">{categorizationResult.totalUpdated}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        )}
 
 
 
