@@ -18,6 +18,7 @@ export default function Admin() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
 
   const checkAdmin = async () => {
       const user = await base44.auth.me();
