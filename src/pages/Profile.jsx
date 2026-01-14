@@ -195,9 +195,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* User Similarity Section */}
-      <UserSimilarityDisplay currentUser={user} />
-
       {/* Product Preferences */}
       <div className="bg-white p-6 rounded-2xl dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
         <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mb-4">
