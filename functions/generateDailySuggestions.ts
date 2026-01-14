@@ -237,7 +237,50 @@ export default Deno.serve(async (req) => {
         // await base44.entities.UserProductHabit.delete({ created_by: user.email }); // Not supported in one call
         // Let's skip the delete/recreate loop to avoid timeouts and just focus on the Draft generation which is the goal.
 
-        // C) MERGE + DEDUP
+        // C) COLLABORATIVE FILTERING - Identify similar users and their preferred items
+        const collaborativeSuggestions = [];
+        const userVectors = await base44.entities.UserVectorSnapshot.filter({ created_by: user.email }, '-computed_at', 1).catch(() => []);
+
+        if (userVectors.length > 0) {
+            // Get similar users
+            const similarUsers = await base44.entities.SimilarUserEdge.filter(
+                { user_id: user.email },
+                '-similarity',
+                5
+            ).catch(() => []);
+
+            if (similarUsers.length > 0) {
+                const neighborIds = similarUsers.map(su => su.neighbor_user_id);
+
+                // Get top products purchased by similar users (that this user hasn't strongly interacted with)
+                for (const neighborId of neighborIds) {
+                    const neighborHabits = await base44.entities.UserProductHabit.filter(
+                        { created_by: neighborId },
+                        '-purchase_count',
+                        10
+                    ).catch(() => []);
+
+                    neighborHabits.forEach(habit => {
+                        // Only include if user doesn't already have this product in their habits
+                        if (!productPurchases[habit.product_id]) {
+                            collaborativeSuggestions.push({
+                                product_id: habit.product_id,
+                                product_name: habit.product_name,
+                                suggested_qty: Math.round(habit.avg_quantity) || 1,
+                                reason_type: "Collaborative",
+                                confidence: 0.5 * habit.confidence_score, // Dampen collaborative confidence
+                                evidence: {
+                                    similar_users_count: similarUsers.length,
+                                    based_on_avg_cadence: habit.avg_cadence_days
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        }
+
+        // D) MERGE + DEDUP
         const suggestionMap = new Map();
 
         // Add Weekly
@@ -252,9 +295,15 @@ export default Deno.serve(async (req) => {
                 existing.reason_type = "Weekly+Restock";
                 existing.confidence = Math.max(existing.confidence, s.confidence);
                 existing.evidence = { ...existing.evidence, ...s.evidence };
-                // Keep max qty?
                 existing.suggested_qty = Math.max(existing.suggested_qty, s.suggested_qty);
             } else {
+                suggestionMap.set(s.product_id, { ...s });
+            }
+        });
+
+        // Add Collaborative (only if not already present from content-based)
+        collaborativeSuggestions.forEach(s => {
+            if (!suggestionMap.has(s.product_id)) {
                 suggestionMap.set(s.product_id, { ...s });
             }
         });
