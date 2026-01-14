@@ -26,7 +26,29 @@ Deno.serve(async (req) => {
                 const reviews = await base44.entities.StoreReview.filter({ store_id: store.id }, '', 1000);
 
                 if (reviews.length === 0) {
-                    // No reviews yet, skip
+                    // No reviews yet, assign neutral sentiment
+                    const existing = await base44.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
+                    
+                    const sentimentData = {
+                        store_id: store.id,
+                        overall_sentiment: 'neutral',
+                        sentiment_score: 0,
+                        review_count: 0,
+                        average_rating: 0,
+                        positive_reviews: 0,
+                        neutral_reviews: 0,
+                        negative_reviews: 0,
+                        common_themes: [],
+                        last_analyzed_at: new Date().toISOString()
+                    };
+
+                    if (existing.length > 0) {
+                        await base44.entities.StoreSentiment.update(existing[0].id, sentimentData);
+                    } else {
+                        await base44.entities.StoreSentiment.create(sentimentData);
+                    }
+                    
+                    results.push({ store_id: store.id, action: 'no_reviews' });
                     continue;
                 }
 
