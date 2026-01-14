@@ -310,14 +310,13 @@ export default Deno.serve(async (req) => {
 
         let finalSuggestions = Array.from(suggestionMap.values());
 
-        // C) ANTI-SPAM FILTERS + LIMITING
-        // Exclude single purchase items (already done via MIN_PURCHASE_COUNT_FOR_HABIT in restock, but weekly might pick up sparse ones if N_WEEKS is small? 
-        // Weekly logic required 3 occurrences, so count >= 3. Safe.)
-        
-        // Sorting
+        // E) ANTI-SPAM FILTERS + LIMITING + SORTING
+        // Exclude single purchase items
+
+        // Sorting: Content-based (Weekly/Restock) before Collaborative
         finalSuggestions.sort((a, b) => {
-            // Priority: Weekly+Restock > Restock > Weekly
-            const priority = { "Weekly+Restock": 3, "Restock": 2, "Weekly": 1 };
+            // Priority: Weekly+Restock > Restock > Weekly > Collaborative
+            const priority = { "Weekly+Restock": 4, "Restock": 3, "Weekly": 2, "Collaborative": 1 };
             if (priority[a.reason_type] !== priority[b.reason_type]) {
                 return priority[b.reason_type] - priority[a.reason_type];
             }
