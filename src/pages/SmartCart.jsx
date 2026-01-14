@@ -312,14 +312,27 @@ export default function SmartCart() {
                                   <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
                                           <span className="font-semibold text-gray-900 dark:text-gray-100">{item.product_name}</span>
-                                          <button
-                                              onClick={() => setExpandedSuggestion(expandedSuggestion === idx ? null : idx)}
-                                              className={`text-[10px] px-1.5 py-0 h-5 cursor-pointer flex items-center gap-1 rounded ${
-                                                  item.reason_type.includes('Weekly') ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                              }`}>
-                                              {item.reason_type}
-                                              {item.reason_type.includes('Restock') && <HelpCircle className="w-2.5 h-2.5" />}
-                                          </button>
+                                          <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                  <Badge className={`text-[10px] px-1.5 py-0 h-5 cursor-help flex items-center gap-1 ${
+                                                      item.reason_type.includes('Weekly') ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                                  }`}>
+                                                      {item.reason_type}
+                                                      {item.reason_type.includes('Restock') && <HelpCircle className="w-2.5 h-2.5" />}
+                                                  </Badge>
+                                              </TooltipTrigger>
+                                              {item.reason_type.includes('Restock') && (
+                                                  <TooltipContent side="right" className="max-w-xs">
+                                                      <div className="text-xs space-y-1">
+                                                          <p className="font-semibold">Restock Suggestion</p>
+                                                          <p>Based on your buying patterns:</p>
+                                                          <p className="text-gray-300">• Avg. purchase every <span className="font-semibold">{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)}</span> days</p>
+                                                          <p className="text-gray-300">• Last bought <span className="font-semibold">{Number(item.evidence?.days_since_last_purchase || 0)}</span> days ago</p>
+                                                          <p className="text-amber-300 mt-1">Time to restock: {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x your cycle</p>
+                                                      </div>
+                                                  </TooltipContent>
+                                              )}
+                                          </Tooltip>
                                       </div>
                                       <div className="text-xs text-gray-500 flex items-center gap-3">
                                           <span>Qty: {item.suggested_qty}</span>
@@ -336,18 +349,12 @@ export default function SmartCart() {
                                           Why? {expandedSuggestion === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                       </button>
                                       {expandedSuggestion === idx && (
-                                          <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded space-y-1">
+                                          <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
                                               {item.reason_type.includes('Weekly') && (
-                                                  <p>Bought {item.evidence.occurrences} times on this weekday in last {item.evidence.n_weeks} weeks.</p>
+                                                  <p> bought {item.evidence.occurrences} times on this weekday in last {item.evidence.n_weeks} weeks.</p>
                                               )}
                                               {item.reason_type.includes('Restock') && (
-                                                  <>
-                                                      <p><strong>Restock Suggestion</strong></p>
-                                                      <p>Based on your buying patterns:</p>
-                                                      <p>• Avg. purchase every <strong>{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)}</strong> days</p>
-                                                      <p>• Last bought <strong>{Number(item.evidence?.days_since_last_purchase || 0)}</strong> days ago</p>
-                                                      <p className="text-amber-600 font-semibold">Time to restock: {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x your cycle</p>
-                                                  </>
+                                                  <p> Usually bought every {item.evidence.avg_cadence_days} days. Last bought {item.evidence.days_since_last_purchase} days ago.</p>
                                               )}
                                           </div>
                                       )}
