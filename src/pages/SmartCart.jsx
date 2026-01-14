@@ -400,8 +400,14 @@ export default function SmartCart() {
                                           >
                                               <ThumbsUp className={`w-3 h-3 ${likedItems.has(item.product_id) ? 'text-green-700 fill-current' : 'text-green-600'}`} />
                                           </Button>
-                                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-50" onClick={() => handlePreference(item, 'dislike')}>
-                                              <ThumbsDown className="w-3 h-3 text-red-600" />
+                                          <Button 
+                                              size="sm" 
+                                              variant="ghost" 
+                                              className="h-6 w-6 p-0 hover:bg-red-50" 
+                                              onClick={() => handlePreference(item, 'dislike')}
+                                              disabled={likedItems.has(item.product_id)}
+                                          >
+                                              <ThumbsDown className={`w-3 h-3 ${likedItems.has(item.product_id) ? 'text-gray-300' : 'text-red-600'}`} />
                                           </Button>
                                       </div>
                                   </div>
