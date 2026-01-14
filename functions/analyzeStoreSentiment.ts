@@ -83,7 +83,7 @@ Provide:
                     response_json_schema: {
                         type: 'object',
                         properties: {
-                            overall_sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
+                            overall_sentiment: { type: 'string' },
                             sentiment_score: { type: 'number' },
                             positive_count: { type: 'number' },
                             neutral_count: { type: 'number' },
@@ -92,13 +92,12 @@ Provide:
                                 type: 'array',
                                 items: { type: 'string' }
                             }
-                        },
-                        required: ['overall_sentiment', 'sentiment_score', 'positive_count', 'neutral_count', 'negative_count', 'themes']
+                        }
                     }
                 });
 
-                if (!analysis) {
-                    throw new Error('LLM analysis returned no data');
+                if (!analysis || typeof analysis !== 'object') {
+                    throw new Error(`Invalid analysis response: ${JSON.stringify(analysis)}`);
                 }
 
                 // Calculate average rating
