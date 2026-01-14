@@ -176,6 +176,13 @@ export default function SmartCart() {
     try {
         const user = await base44.auth.me();
 
+        // First, remove any existing preferences for this product
+        const allExisting = await base44.entities.UserProductPreference.filter({
+            user_id: user.email,
+            product_gtin: item.product_id
+        });
+        await Promise.all(allExisting.map(p => base44.entities.UserProductPreference.delete(p.id)));
+
         if (preference === 'like') {
             if (likedItems.has(item.product_id)) {
                 // Toggle OFF (Unlike)
@@ -184,39 +191,26 @@ export default function SmartCart() {
                     next.delete(item.product_id);
                     return next;
                 });
-
-                // Find and delete existing like preference
-                const existing = await base44.entities.UserProductPreference.filter({
-                    user_id: user.email,
-                    product_gtin: item.product_id,
-                    preference: 'like'
-                });
-                
-                // Delete all matches to clean up duplicates
-                await Promise.all(existing.map(p => base44.entities.UserProductPreference.delete(p.id)));
                 toast.success("Removed from Liked Items");
             } else {
                 // Toggle ON (Like)
                 setLikedItems(prev => new Set([...prev, item.product_id]));
-                
-                // Check for existing to prevent duplicates
-                const existing = await base44.entities.UserProductPreference.filter({
+                await base44.entities.UserProductPreference.create({
                     user_id: user.email,
                     product_gtin: item.product_id,
+                    product_name: item.product_name,
                     preference: 'like'
                 });
-
-                if (existing.length === 0) {
-                    await base44.entities.UserProductPreference.create({
-                        user_id: user.email,
-                        product_gtin: item.product_id,
-                        product_name: item.product_name,
-                        preference: 'like'
-                    });
-                }
                 toast.success("Added to Liked Items");
             }
         } else if (preference === 'dislike') {
+            // Remove from liked state if it was liked
+            setLikedItems(prev => {
+                const next = new Set(prev);
+                next.delete(item.product_id);
+                return next;
+            });
+
             // Remove from suggestions locally
             if (suggestions && suggestions.items) {
                 const newItems = suggestions.items.filter(i => i.product_id !== item.product_id);
