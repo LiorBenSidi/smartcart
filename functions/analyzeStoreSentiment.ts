@@ -30,9 +30,14 @@ Deno.serve(async (req) => {
                     continue;
                 }
 
-                // Prepare review texts for analysis
+                // Prepare review texts and ratings for analysis
                 const reviewTexts = reviews.map(r => r.comment || '').filter(Boolean);
                 const ratings = reviews.map(r => r.rating).filter(Boolean);
+
+                // Include reviewer name and date in context for better analysis
+                const enrichedReviews = reviews
+                    .filter(r => r.comment)
+                    .map(r => `By ${r.user_display_name || 'Anonymous'} on ${new Date(r.review_date || r.created_date).toLocaleDateString()}: ${r.comment}`);
 
                 if (reviewTexts.length === 0) {
                     // No comments to analyze
