@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
+import EnhancedProductSearch from '@/components/EnhancedProductSearch';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,15 +14,9 @@ import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
-  const [stores, setStores] = useState([]);
-  const [chains, setChains] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [storeComparisons, setStoreComparisons] = useState([]);
   const [optimizedCart, setOptimizedCart] = useState(null);
   const [loadingComparisons, setLoadingComparisons] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [savedCarts, setSavedCarts] = useState([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [cartName, setCartName] = useState('');
@@ -83,15 +78,7 @@ export default function SmartCart() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [storesList, chainsList, productsList, savedCartsList] = await Promise.all([
-        base44.entities.Store.list(),
-        base44.entities.Chain.list(),
-        base44.entities.Product.list('-updated_date', 100),
-        base44.entities.SavedCart.list('-created_date')
-      ]);
-      setStores(storesList);
-      setChains(chainsList);
-      setProducts(productsList);
+      const savedCartsList = await base44.entities.SavedCart.list('-created_date');
       setSavedCarts(savedCartsList);
     };
     loadData();
@@ -231,34 +218,7 @@ export default function SmartCart() {
     }
   };
 
-  useEffect(() => {
-    const searchProducts = async () => {
-      if (!searchTerm || searchTerm.length < 2) {
-        if (searchTerm.length === 0) setSearchResults([]);
-        return;
-      }
 
-      setIsSearching(true);
-      try {
-        const results = await base44.entities.Product.filter({
-            $or: [
-                { canonical_name: { $regex: searchTerm, $options: 'i' } },
-                { gtin: { $regex: searchTerm, $options: 'i' } },
-                { brand_name: { $regex: searchTerm, $options: 'i' } }
-            ]
-        }, undefined, 50);
-        
-        setSearchResults(results);
-      } catch (error) {
-        console.error("Failed to search products", error);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    const debounce = setTimeout(searchProducts, 500);
-    return () => clearTimeout(debounce);
-  }, [searchTerm]);
 
   const getReasonIcon = (reason) => {
     if (reason.includes('cheaper')) return <TrendingDown className="w-3 h-3" />;
@@ -455,90 +415,13 @@ export default function SmartCart() {
           </Card>
       )}
 
-      {/* Add Products */}
+      {/* Enhanced Product Search */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Add Products to Cart</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search products by name, barcode, or brand..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500" 
-            />
-            {isSearching && (
-              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
-            )}
-          </div>
-
-          {!isSearching && searchTerm && searchResults.length === 0 && (
-              <div className="text-center text-gray-500 text-sm py-2">
-                  No products found.
-              </div>
-          )}
-
-          {searchResults.length > 0 && (
-            <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
-              {searchResults.map((product) => {
-                const storeName = stores.find(s => s.id === product.store_id)?.name;
-                const chainName = chains.find(c => c.id === product.chain_id)?.name;
-                const sourceName = storeName || chainName || 'Unknown Source';
-                
-                // Find minimum price for this GTIN in the current search results
-                const minPriceForGtin = Math.min(
-                    ...searchResults
-                        .filter(p => p.gtin === product.gtin && p.current_price)
-                        .map(p => p.current_price)
-                );
-                const isCheapest = product.current_price === minPriceForGtin;
-
-                return (
-                  <div 
-                    key={product.id} 
-                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                        isCheapest 
-                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30' 
-                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0 mr-3">
-                      <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                        {product.brand_name && <span>{product.brand_name} • </span>}
-                        {product.gtin}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 ${isCheapest ? 'border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'}`}>
-                              {sourceName}
-                          </Badge>
-                          <span className={`text-sm font-bold ${isCheapest ? 'text-green-700 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                              ₪{product.current_price?.toFixed(2)}
-                          </span>
-                          {isCheapest && (
-                              <Badge className="text-[9px] px-1 py-0 h-4 bg-green-600 text-white border-0">Best Price</Badge>
-                          )}
-                      </div>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      className={`flex-shrink-0 h-8 w-8 p-0 ${isCheapest ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                      onClick={() => {
-                        addToCart(product);
-                        setSearchTerm('');
-                        setSearchResults([]);
-                      }}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <CardContent>
+          <EnhancedProductSearch onAddToCart={addToCart} />
         </CardContent>
       </Card>
 
