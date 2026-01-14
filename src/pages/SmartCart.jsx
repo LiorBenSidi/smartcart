@@ -291,7 +291,6 @@ export default function SmartCart() {
 
       {/* Suggested for Today */}
       {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 && (
-          <TooltipProvider>
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
