@@ -47,8 +47,8 @@ Deno.serve(async (req) => {
                 // Use LLM for sentiment analysis
                 const analysisPrompt = `Analyze the sentiment of these store reviews and provide a comprehensive summary.
 
-Reviews:
-${reviewTexts.map((text, idx) => `${idx + 1}. "${text}"`).join('\n')}
+                Reviews (with reviewer name and date):
+                ${enrichedReviews.join('\n\n')}
 
 Provide:
 1. Overall sentiment (positive/neutral/negative)
