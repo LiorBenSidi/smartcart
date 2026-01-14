@@ -433,7 +433,7 @@ export default function SmartCart() {
               )}
 
               {/* Enhanced Product Search */}
-      <Card>
+              <Card>
         <CardHeader>
           <CardTitle className="text-lg">Add Products to Cart</CardTitle>
         </CardHeader>
