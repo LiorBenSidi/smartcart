@@ -1,5 +1,6 @@
 import Admin from './pages/Admin';
 import CatalogAdmin from './pages/CatalogAdmin';
+import Feedback from './pages/Feedback';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import NearbyStores from './pages/NearbyStores';
@@ -9,13 +10,13 @@ import Receipt from './pages/Receipt';
 import Recommendations from './pages/Recommendations';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
-import Feedback from './pages/Feedback';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Admin": Admin,
     "CatalogAdmin": CatalogAdmin,
+    "Feedback": Feedback,
     "Home": Home,
     "Landing": Landing,
     "NearbyStores": NearbyStores,
@@ -25,7 +26,6 @@ export const PAGES = {
     "Recommendations": Recommendations,
     "SmartCart": SmartCart,
     "Upload": Upload,
-    "Feedback": Feedback,
 }
 
 export const pagesConfig = {

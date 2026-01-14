@@ -14,6 +14,8 @@ export default function CartAlternatives() {
     const [selectedChain, setSelectedChain] = useState("");
     const [recommendations, setRecommendations] = useState([]);
     const [materializing, setMaterializing] = useState(false);
+    const [showSimilar, setShowSimilar] = useState(false);
+    const [relaxFilters, setRelaxFilters] = useState(false);
 
     useEffect(() => {
         const init = async () => {
@@ -55,7 +57,9 @@ export default function CartAlternatives() {
             const res = await base44.functions.invoke('api_materializeRecommendationRun', {
                 run_id: runId,
                 store_chain_id: selectedChain,
-                limits: { max_items: 15, max_alternatives_per_item: 3 }
+                limits: { max_items: 15, max_alternatives_per_item: 3 },
+                show_similar: showSimilar,
+                relax_non_allergy_filters: relaxFilters
             });
             
             // New API returns { results: [...] }
@@ -103,22 +107,48 @@ export default function CartAlternatives() {
                     <p className="text-gray-500">Checking prices and verifying ingredients...</p>
                 </div>
             ) : recommendations.length === 0 ? (
-                <div className="text-center py-20 bg-gray-50 rounded-xl">
-                    <Info className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600">No recommendations found matching your strict criteria for this store.</p>
+                <div className="text-center py-12 bg-gray-50 rounded-xl space-y-4">
+                    <Info className="w-10 h-10 text-gray-400 mx-auto" />
+                    <p className="text-gray-600">No exact matches found for your strict criteria.</p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-3">
+                         <Button 
+                             variant={showSimilar ? "default" : "outline"} 
+                             onClick={() => { setShowSimilar(!showSimilar); setRelaxFilters(false); }}
+                         >
+                             {showSimilar ? "Hide Similar" : "Show Similar Items"}
+                         </Button>
+                         <Button 
+                             variant={relaxFilters ? "default" : "outline"} 
+                             onClick={() => { setRelaxFilters(!relaxFilters); setShowSimilar(false); }}
+                         >
+                             {relaxFilters ? "Restore Filters" : "Relax Filters (Keep Allergies)"}
+                         </Button>
+                    </div>
                 </div>
             ) : (
                 <div className="grid gap-4">
+                    {(showSimilar || relaxFilters) && (
+                        <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                            <Info className="w-4 h-4" />
+                            {showSimilar ? "Showing similar items. Allergy constraints maintained." : "Showing items with relaxed preference filters. Allergy constraints maintained."}
+                            <Button variant="ghost" size="sm" className="h-6 ml-auto hover:bg-blue-100" onClick={() => { setShowSimilar(false); setRelaxFilters(false); }}>
+                                Clear
+                            </Button>
+                        </div>
+                    )}
                     {recommendations.map((rec, i) => (
                         <Card key={i} className="overflow-hidden border-indigo-50 shadow-sm hover:shadow-md transition-shadow">
                             <CardHeader className="bg-gray-50/50 pb-3 py-3">
                                 <CardTitle className="flex justify-between items-center text-base">
                                     <div className="flex items-center gap-2">
                                         <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full">Base Item</span>
-                                        <span>{rec.canonical_product.canonical_name || `Product ${rec.canonical_product.gtin}`}</span>
+                                        <div className="flex flex-col">
+                                            <span>{rec.canonical_product.canonical_name || `Product ${rec.canonical_product.gtin}`}</span>
+                                            {rec.reason_short && <span className="text-[10px] text-gray-400 font-normal">{rec.reason_short}</span>}
+                                        </div>
                                     </div>
-                                    <Badge variant="outline" className="bg-white text-xs font-normal text-gray-500">
-                                        Match Score: {rec.score?.toFixed(1) || 'N/A'}
+                                    <Badge variant="outline" className="bg-white text-xs font-normal text-gray-500" title={rec.reason_short}>
+                                        Match Score: {rec.score?.toFixed(1) || 'N/A'} <Info className="w-3 h-3 ml-1 inline-block" />
                                     </Badge>
                                 </CardTitle>
                             </CardHeader>

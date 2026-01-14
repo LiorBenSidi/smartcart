@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -20,6 +20,7 @@ export default function Recommendations() {
   const [loading, setLoading] = useState(true);
   const [runId, setRunId] = useState(null);
   const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
+  const [insights, setInsights] = useState([]);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
 
@@ -65,6 +66,14 @@ export default function Recommendations() {
                 products: res.data.candidates.items || []
             });
         }
+
+        // 2. Fetch Insights
+        const insightsRes = await base44.entities.Insight.filter({ 
+            user_id: currentUser.email, 
+            status: 'active' 
+        });
+        setInsights(insightsRes);
+
       } catch (error) {
         console.error("Failed to load recommendations", error);
         toast.error("Failed to generate recommendations");
@@ -134,7 +143,33 @@ export default function Recommendations() {
         <p className="text-gray-500 dark:text-gray-400">Personalized picks based on people with similar taste.</p>
       </div>
 
-      <UserSimilarityDisplay currentUser={user} />
+      {/* Smart Insights */}
+      {insights.length > 0 && (
+          <section>
+              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
+                  <Lightbulb className="w-5 h-5 text-yellow-500" /> Smart Insights
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {insights.map((insight, i) => (
+                       <Card key={i} className="border-yellow-100 bg-yellow-50/30 dark:bg-yellow-900/10 dark:border-yellow-900/30">
+                           <CardContent className="p-4">
+                               <div className="flex gap-3">
+                                   <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg h-fit">
+                                       <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                   </div>
+                                   <div>
+                                       <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1">{insight.title}</h3>
+                                       <p className="text-sm text-gray-600 dark:text-gray-300">{insight.message}</p>
+                                   </div>
+                               </div>
+                           </CardContent>
+                       </Card>
+                  ))}
+              </div>
+          </section>
+      )}
+
+      <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />
 
       {/* 1. Stores */}
       {candidates.chains.length > 0 && (
@@ -162,11 +197,18 @@ export default function Recommendations() {
                                   </div>
                                   <h3 className="font-bold text-lg mb-1">{c.name || `Chain #${c.store_chain_id}`}</h3>
                                   
-                                  <div className="flex items-center gap-1.5 mb-2">
+                                  <div className="flex items-center gap-1.5 mb-2" title={c.reason_short || "Recommended for you"}>
                                       <div className={`w-2 h-2 rounded-full ${matchQuality.color}`} />
-                                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                          {Math.round(c.score * 100)}% Match
-                                      </span>
+                                      {c.estimated_savings ? (
+                                          <span className="text-xs font-bold text-green-600 dark:text-green-400">
+                                              Save ₪{c.estimated_savings}
+                                          </span>
+                                      ) : (
+                                          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                              {Math.round(c.score * 100)}% Match
+                                          </span>
+                                      )}
+                                      <Info className="w-3 h-3 text-gray-400 cursor-help ml-1" />
                                   </div>
 
                                   <p className="text-xs text-gray-500 mb-4 line-clamp-2 min-h-[2.5em]">

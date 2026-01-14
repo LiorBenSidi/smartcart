@@ -3,10 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Users, Shield, User, Sparkles, TrendingUp } from 'lucide-react';
+import { Users, Shield, User, Sparkles, TrendingUp, Lightbulb } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export default function UserSimilarityDisplay({ currentUser }) {
+export default function UserSimilarityDisplay({ currentUser, learningSnippet }) {
     const [edges, setEdges] = useState([]);
     const [loading, setLoading] = useState(true);
     const [neighborDetails, setNeighborDetails] = useState({});
@@ -163,6 +163,12 @@ export default function UserSimilarityDisplay({ currentUser }) {
                 </div>
             </CardHeader>
             <CardContent>
+                {learningSnippet && (
+                    <div className="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg mb-4 flex gap-3 text-sm text-indigo-800 dark:text-indigo-200 border border-indigo-100 dark:border-indigo-900">
+                        <Lightbulb className="w-5 h-5 flex-shrink-0 text-yellow-500" />
+                        <p>{learningSnippet}</p>
+                    </div>
+                )}
                 <div className="space-y-4">
                     {edges.map((edge, i) => {
                         const score = Math.round(edge.similarity * 100);
