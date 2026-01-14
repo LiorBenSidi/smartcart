@@ -6,7 +6,7 @@ export default Deno.serve(async (req) => {
         const user = await base44.auth.me();
         
         const payload = await req.json().catch(() => ({}));
-        const { run_id, store_chain_id, limits } = payload;
+        const { run_id, store_chain_id, limits, relax_non_allergy_filters, show_similar } = payload;
         const max_items = limits?.max_items || 15;
         const max_alternatives_per_item = limits?.max_alternatives_per_item || 3;
 
@@ -17,6 +17,10 @@ export default Deno.serve(async (req) => {
         if (runs.length === 0) return Response.json({ error: "Run not found" }, { status: 404 });
         const run = runs[0];
         
+        // Load Source Meta for Reason
+        const sourceMetas = await base44.entities.RecommendationSourceMeta.filter({ recommendation_id: run_id });
+        const reasonShort = sourceMetas[0]?.reason_short || "Based on your profile";
+
         // Auth check
         if (user && run.user_id !== user.email && user.role !== 'admin') {
              return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -50,8 +54,15 @@ export default Deno.serve(async (req) => {
 
         const validCandidates = [];
         const hard_filters_applied = [];
-        if (profile.kosher_level && profile.kosher_level !== 'none') hard_filters_applied.push('kosher');
-        if (profile.diet && profile.diet !== 'none') hard_filters_applied.push('diet');
+        
+        // Determine active filters
+        const relaxMode = relax_non_allergy_filters === true || show_similar === true;
+        
+        if (!relaxMode) {
+            if (profile.kosher_level && profile.kosher_level !== 'none') hard_filters_applied.push('kosher');
+            if (profile.diet && profile.diet !== 'none') hard_filters_applied.push('diet');
+        }
+        // Allergies ALWAYS applied
         if (profile.allergies && profile.allergies.length > 0) hard_filters_applied.push('allergies');
 
         for (const cand of topCandidates) {
@@ -61,7 +72,7 @@ export default Deno.serve(async (req) => {
             let allowed = true;
             
             // Kosher Check
-            if (profile.kosher_level && profile.kosher_level !== 'none') {
+            if (!relaxMode && profile.kosher_level && profile.kosher_level !== 'none') {
                  const pTags = prod.kosher_tags || [];
                  if (profile.kosher_level === 'strict' || profile.kosher_level === 'strict_kosher') {
                      if (!pTags.some(t => ['strict', 'strict_kosher', 'glatt_kosher', 'mehadrin'].includes(t))) allowed = false;
@@ -71,7 +82,7 @@ export default Deno.serve(async (req) => {
             }
             
             // Diet Check
-            if (allowed && profile.diet && profile.diet !== 'none') {
+            if (allowed && !relaxMode && profile.diet && profile.diet !== 'none') {
                 const pTags = prod.dietary_tags || [];
                 if (profile.diet === 'vegan') {
                     if (!pTags.includes('vegan')) allowed = false;
@@ -82,7 +93,7 @@ export default Deno.serve(async (req) => {
                 }
             }
             
-            // Allergies Check
+            // Allergies Check (ALWAYS)
             if (allowed && profile.allergies && profile.allergies.length > 0) {
                  const pAllergens = prod.allergen_tags || [];
                  if (profile.allergies.some(a => pAllergens.includes(a))) allowed = false;
@@ -138,6 +149,9 @@ export default Deno.serve(async (req) => {
             // Rank by savings score
             alternatives.sort((a, b) => b.savings_score - a.savings_score);
             
+            // Calculate max potential savings for this item
+            const maxSavings = alternatives.length > 0 ? Math.max(...alternatives.map(a => a.savings_score)) : 0;
+
             finalResults.push({
                 canonical_product: {
                     canonical_product_id: prod.gtin,
@@ -146,9 +160,14 @@ export default Deno.serve(async (req) => {
                 },
                 cf_score: cand.score,
                 filtered_out: false,
-                alternatives: alternatives.slice(0, max_alternatives_per_item)
+                alternatives: alternatives.slice(0, max_alternatives_per_item),
+                estimated_savings: maxSavings,
+                reason_short: reasonShort
             });
         }
+
+        // Calculate total estimated savings for the basket
+        const totalEstimatedSavings = finalResults.reduce((sum, item) => sum + (item.estimated_savings || 0), 0);
 
         return Response.json({
             run_id,
@@ -156,7 +175,10 @@ export default Deno.serve(async (req) => {
             results: finalResults,
             meta: {
                 hard_filters_applied,
-                ranking: { final_score: "0.6*cf + 0.4*savings", max_alternatives_per_item }
+                ranking: { final_score: "0.6*cf + 0.4*savings", max_alternatives_per_item },
+                relaxed_filters: relaxMode ? "Non-safety filters relaxed" : null,
+                total_estimated_savings: totalEstimatedSavings,
+                reason_short: reasonShort
             }
         });
 
