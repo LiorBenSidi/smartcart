@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Star, MessageSquare, User, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -11,6 +12,7 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
     const [submitting, setSubmitting] = useState(false);
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
+    const [displayName, setDisplayName] = useState('');
     const [hoverRating, setHoverRating] = useState(0);
 
     const fetchReviews = async () => {
