@@ -93,6 +93,13 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                         className="bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                     />
 
+                    <Input 
+                        placeholder="Review date (e.g. 3 weeks ago, 6 months ago)" 
+                        value={reviewTime}
+                        onChange={(e) => setReviewTime(e.target.value)}
+                        className="bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 text-sm"
+                    />
+
                     <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
