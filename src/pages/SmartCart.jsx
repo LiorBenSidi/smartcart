@@ -403,9 +403,24 @@ export default function SmartCart() {
                 const storeName = stores.find(s => s.id === product.store_id)?.name;
                 const chainName = chains.find(c => c.id === product.chain_id)?.name;
                 const sourceName = storeName || chainName || 'Unknown Source';
+                
+                // Find minimum price for this GTIN in the current search results
+                const minPriceForGtin = Math.min(
+                    ...searchResults
+                        .filter(p => p.gtin === product.gtin && p.current_price)
+                        .map(p => p.current_price)
+                );
+                const isCheapest = product.current_price === minPriceForGtin;
 
                 return (
-                  <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <div 
+                    key={product.id} 
+                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                        isCheapest 
+                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30' 
+                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent'
+                    }`}
+                  >
                     <div className="flex-1 min-w-0 mr-3">
                       <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
@@ -413,17 +428,20 @@ export default function SmartCart() {
                         {product.gtin}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 ${isCheapest ? 'border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'}`}>
                               {sourceName}
                           </Badge>
-                          <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                          <span className={`text-sm font-bold ${isCheapest ? 'text-green-700 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
                               ₪{product.current_price?.toFixed(2)}
                           </span>
+                          {isCheapest && (
+                              <Badge className="text-[9px] px-1 py-0 h-4 bg-green-600 text-white border-0">Best Price</Badge>
+                          )}
                       </div>
                     </div>
                     <Button 
                       size="sm" 
-                      className="flex-shrink-0 h-8 w-8 p-0"
+                      className={`flex-shrink-0 h-8 w-8 p-0 ${isCheapest ? 'bg-green-600 hover:bg-green-700' : ''}`}
                       onClick={() => {
                         addToCart(product);
                         setSearchTerm('');
