@@ -1,5 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
@@ -13,7 +15,12 @@ Deno.serve(async (req) => {
         const stores = await base44.entities.Store.list('', 1000);
         const results = [];
 
-        for (const store of stores) {
+        for (let i = 0; i < stores.length; i++) {
+            const store = stores[i];
+            // Add delay between requests to avoid rate limiting (500ms between LLM calls)
+            if (i > 0) {
+                await delay(500);
+            }
             try {
                 // Fetch all reviews for this store
                 const reviews = await base44.entities.StoreReview.filter({ store_id: store.id }, '', 1000);
