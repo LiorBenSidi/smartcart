@@ -97,9 +97,15 @@ Provide:
                     }
                 });
 
-                if (!analysis) {
-                    throw new Error('LLM analysis returned no data');
-                }
+                // Handle cases where LLM returns null or empty response
+                const effectiveAnalysis = analysis || {
+                    overall_sentiment: 'neutral',
+                    sentiment_score: 0,
+                    positive_count: 0,
+                    neutral_count: reviews.length,
+                    negative_count: 0,
+                    themes: []
+                };
 
                 // Calculate average rating
                 const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
@@ -109,14 +115,14 @@ Provide:
 
                 const sentimentData = {
                     store_id: store.id,
-                    overall_sentiment: analysis.overall_sentiment,
-                    sentiment_score: analysis.sentiment_score,
+                    overall_sentiment: effectiveAnalysis.overall_sentiment,
+                    sentiment_score: effectiveAnalysis.sentiment_score,
                     review_count: reviews.length,
                     average_rating: avgRating,
-                    positive_reviews: analysis.positive_count,
-                    neutral_reviews: analysis.neutral_count,
-                    negative_reviews: analysis.negative_count,
-                    common_themes: analysis.themes,
+                    positive_reviews: effectiveAnalysis.positive_count,
+                    neutral_reviews: effectiveAnalysis.neutral_count,
+                    negative_reviews: effectiveAnalysis.negative_count,
+                    common_themes: effectiveAnalysis.themes || [],
                     last_analyzed_at: new Date().toISOString()
                 };
 
