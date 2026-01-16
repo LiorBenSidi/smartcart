@@ -145,23 +145,11 @@ export default function Admin() {
   };
 
   const handleAnalyzeSentiment = async () => {
-    setIsAnalyzingSentiment(true);
     setSentimentResults(null);
-    try {
-      const response = await base44.functions.invoke('analyzeStoreSentiment');
-      setSentimentResults(response.data);
-    } catch (error) {
-      console.error('Failed to analyze sentiment', error);
-      if (error.message?.includes('504') || error.message?.includes('timeout')) {
-        setSentimentResults({ 
-          error: 'Analysis is taking longer than expected. The process may still be running in the background. Please check back in a few minutes.' 
-        });
-      } else {
-        setSentimentResults({ error: error.message });
-      }
-    } finally {
-      setIsAnalyzingSentiment(false);
-    }
+    base44.functions.invoke('analyzeStoreSentiment').catch(err => console.error('Sentiment analysis error:', err));
+    setSentimentResults({ 
+      message: 'Sentiment analysis started. Check the function logs in the dashboard to see the results.' 
+    });
   };
 
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
@@ -232,11 +220,10 @@ export default function Admin() {
             </Link>
             <Button 
                 onClick={handleAnalyzeSentiment}
-                disabled={isAnalyzingSentiment}
                 className="w-full bg-blue-600 hover:bg-blue-700"
             >
-                <Zap className={`w-4 h-4 mr-2 ${isAnalyzingSentiment ? 'animate-spin' : ''}`} />
-                {isAnalyzingSentiment ? 'Analyzing...' : 'Analyze Store Sentiment'}
+                <Zap className="w-4 h-4 mr-2" />
+                Analyze Store Sentiment
             </Button>
         </div>
 
@@ -248,10 +235,12 @@ export default function Admin() {
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-6">
                     <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
-                        Sentiment Analysis Results
+                        Sentiment Analysis
                     </h3>
                     {sentimentResults.error ? (
                         <p className="text-red-600 dark:text-red-400">{sentimentResults.error}</p>
+                    ) : sentimentResults.message && !sentimentResults.results ? (
+                        <p className="text-blue-600 dark:text-blue-400">{sentimentResults.message}</p>
                     ) : (
                         <div className="space-y-4">
                             <p className="text-sm text-gray-600 dark:text-gray-400">{sentimentResults.message}</p>
