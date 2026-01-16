@@ -212,10 +212,10 @@ Deno.serve(async (req) => {
                 .map(s => ({ store: s, sentiment: sentimentMap[s.id] }))
                 .filter(x => x.sentiment);
 
-            if (storesWithSentiment.length === 0) continue;
-
-            // Mean rating
-            const avgRating = storesWithSentiment.reduce((sum, x) => sum + (x.sentiment.average_rating || 0), 0) / storesWithSentiment.length;
+            // Mean rating (0 if no sentiment data)
+            const avgRating = storesWithSentiment.length > 0 
+                ? storesWithSentiment.reduce((sum, x) => sum + (x.sentiment.average_rating || 0), 0) / storesWithSentiment.length
+                : 0;
 
             // Majority sentiment
             const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
@@ -224,7 +224,8 @@ Deno.serve(async (req) => {
                 if (s) sentimentCounts[s]++;
             });
 
-            const majoritysentiment = sentimentCounts.positive >= sentimentCounts.negative && sentimentCounts.positive >= sentimentCounts.neutral ? 'positive'
+            const majoritysentiment = storesWithSentiment.length === 0 ? 'neutral'
+                : sentimentCounts.positive >= sentimentCounts.negative && sentimentCounts.positive >= sentimentCounts.neutral ? 'positive'
                 : sentimentCounts.negative >= sentimentCounts.neutral ? 'negative' : 'neutral';
 
             const chainData = {
@@ -242,10 +243,10 @@ Deno.serve(async (req) => {
             const existing = await base44.asServiceRole.entities.ChainSentiment.filter({ chain_id: chainId }, '', 1);
             if (existing.length > 0) {
                 await base44.asServiceRole.entities.ChainSentiment.update(existing[0].id, chainData);
-                chainResults.push({ chain_id: chainId, action: 'updated' });
+                chainResults.push({ chain_id: chainId, chain_name: chainMap[chainId] || 'Unknown', action: 'updated' });
             } else {
                 await base44.asServiceRole.entities.ChainSentiment.create(chainData);
-                chainResults.push({ chain_id: chainId, action: 'created' });
+                chainResults.push({ chain_id: chainId, chain_name: chainMap[chainId] || 'Unknown', action: 'created' });
             }
             }
 
