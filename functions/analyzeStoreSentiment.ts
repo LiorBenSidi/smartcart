@@ -96,39 +96,32 @@ Deno.serve(async (req) => {
                 
                 console.log(`Store ${store.id}: Sentiment - ${likes} likes, ${dislikes} dislikes -> ${overallSentiment}`);
 
-                const effectiveAnalysis = {
-                    overall_sentiment: overallSentiment,
-                    sentiment_score: sentimentScore,
-                    positive_count: likes,
-                    neutral_count: 0,
-                    negative_count: dislikes,
-                    themes: []
-                };
-
                 // Check if sentiment record exists
                 const existing = await base44.asServiceRole.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
 
                 const sentimentData = {
                     store_id: store.id,
-                    overall_sentiment: effectiveAnalysis.overall_sentiment,
-                    sentiment_score: effectiveAnalysis.sentiment_score,
+                    overall_sentiment: overallSentiment,
+                    sentiment_score: sentimentScore / reviews.length, // Normalize to -1 to 1 range
                     review_count: reviews.length,
                     average_rating: avgRating,
-                    positive_reviews: effectiveAnalysis.positive_count,
-                    neutral_reviews: effectiveAnalysis.neutral_count,
-                    negative_reviews: effectiveAnalysis.negative_count,
-                    common_themes: effectiveAnalysis.themes || [],
+                    positive_reviews: likes,
+                    neutral_reviews: 0,
+                    negative_reviews: dislikes,
                     last_analyzed_at: new Date().toISOString()
                 };
 
-                if (existing.length > 0) {
-                    // Update existing
-                    await base44.asServiceRole.entities.StoreSentiment.update(existing[0].id, sentimentData);
-                    results.push({ store_id: store.id, action: 'updated' });
-                } else {
-                    // Create new
-                    await base44.asServiceRole.entities.StoreSentiment.create(sentimentData);
-                    results.push({ store_id: store.id, action: 'created' });
+                try {
+                    if (existing.length > 0) {
+                        await base44.asServiceRole.entities.StoreSentiment.update(existing[0].id, sentimentData);
+                        results.push({ store_id: store.id, action: 'updated' });
+                    } else {
+                        await base44.asServiceRole.entities.StoreSentiment.create(sentimentData);
+                        results.push({ store_id: store.id, action: 'created' });
+                    }
+                } catch (entityError) {
+                    console.error(`Failed to save sentiment for store ${store.id}:`, entityError);
+                    throw entityError;
                     }
 
                     // Reset consecutive error counter on success
