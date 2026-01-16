@@ -101,69 +101,21 @@ Deno.serve(async (req) => {
                     continue;
                 }
 
-                // Use LLM for sentiment analysis with error handling
+                // Use LLM for sentiment analysis - fallback to rating-based analysis
                 let effectiveAnalysis;
-                try {
-                    console.log(`Analyzing store ${store.id} with ${reviewTexts.length} review texts`);
-                    
-                    const analysisPrompt = `Analyze the sentiment of these store reviews and provide a comprehensive summary.
 
-                    Reviews (with reviewer name and date):
-                    ${enrichedReviews.join('\n\n')}
+                // Calculate average rating for fallback
+                const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
 
-Provide:
-1. Overall sentiment (positive/neutral/negative)
-2. Sentiment score from -1 (very negative) to 1 (very positive)
-3. Count of positive, neutral, and negative reviews
-4. Common themes mentioned (both positive and negative)`;
-
-                    console.log(`Calling InvokeLLM for store ${store.id}...`);
-                    const analysis = await base44.integrations.Core.InvokeLLM({
-                        prompt: analysisPrompt,
-                        response_json_schema: {
-                            type: 'object',
-                            properties: {
-                                overall_sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
-                                sentiment_score: { type: 'number' },
-                                positive_count: { type: 'number' },
-                                neutral_count: { type: 'number' },
-                                negative_count: { type: 'number' },
-                                themes: {
-                                    type: 'array',
-                                    items: { type: 'string' }
-                                }
-                            },
-                            required: ['overall_sentiment', 'sentiment_score', 'positive_count', 'neutral_count', 'negative_count', 'themes']
-                        }
-                    });
-                    
-                    console.log(`LLM returned for store ${store.id}:`, JSON.stringify(analysis));
-                    console.log(`Analysis type: ${typeof analysis}, is null: ${analysis === null}, is undefined: ${analysis === undefined}`);
-
-                    // Handle cases where LLM returns null or empty response
-                    effectiveAnalysis = analysis || {
-                        overall_sentiment: 'neutral',
-                        sentiment_score: 0,
-                        positive_count: 0,
-                        neutral_count: reviews.length,
-                        negative_count: 0,
-                        themes: []
-                    };
-                    
-                    console.log(`Using effectiveAnalysis for store ${store.id}:`, JSON.stringify(effectiveAnalysis));
-                } catch (llmError) {
-                    // If LLM call fails, default to neutral sentiment
-                    console.error(`LLM analysis failed for store ${store.id}:`, llmError.message);
-                    console.error(`Full error:`, JSON.stringify(llmError));
-                    effectiveAnalysis = {
-                        overall_sentiment: 'neutral',
-                        sentiment_score: 0,
-                        positive_count: 0,
-                        neutral_count: reviews.length,
-                        negative_count: 0,
-                        themes: []
-                    };
-                }
+                // Default to rating-based analysis
+                effectiveAnalysis = {
+                    overall_sentiment: avgRating >= 4 ? 'positive' : avgRating >= 3 ? 'neutral' : 'negative',
+                    sentiment_score: (avgRating - 3) / 2,
+                    positive_count: reviews.filter(r => r.rating >= 4).length,
+                    neutral_count: reviews.filter(r => r.rating === 3).length,
+                    negative_count: reviews.filter(r => r.rating <= 2).length,
+                    themes: []
+                };
 
                 // Calculate average rating
                 const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
