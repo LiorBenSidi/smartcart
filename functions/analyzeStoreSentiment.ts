@@ -74,22 +74,53 @@ Deno.serve(async (req) => {
                     continue;
                 }
 
-                // Analyze each review with LLM (like=1, dislike=-1)
+                // Analyze each review with LLM (like=1, dislike=-1) with explanations and themes
                 console.log(`Store ${store.id}: Analyzing ${reviewsWithComments.length} reviews with LLM`);
                 const sentimentScores = [];
+                const sentimentDetails = [];
                 
                 for (const review of reviewsWithComments) {
                     try {
                         const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-                            prompt: `Analyze this store review and determine if it's a "like" or "dislike". Review: "${review.comment}". Return only 1 for like or -1 for dislike.`,
+                            prompt: `You are an expert sentiment analyst specializing in customer reviews for grocery stores.
+
+Your task: Analyze the following store review and classify the sentiment as either positive (like) or negative (dislike).
+
+Review: "${review.comment}"
+
+Provide:
+1. Sentiment classification (1 for positive/like, -1 for negative/dislike)
+2. A brief explanation (1-2 sentences) justifying your classification
+3. Key themes mentioned in the review (e.g., "cleanliness", "staff friendliness", "product quality", "prices", "wait times")
+
+Think carefully about the overall tone and specific details mentioned in the review.`,
                             response_json_schema: {
                                 type: "object",
                                 properties: {
-                                    sentiment: { type: "number", enum: [1, -1] }
-                                }
+                                    sentiment: { 
+                                        type: "number", 
+                                        enum: [1, -1],
+                                        description: "1 for positive/like, -1 for negative/dislike"
+                                    },
+                                    explanation: {
+                                        type: "string",
+                                        description: "Brief explanation for the sentiment classification"
+                                    },
+                                    themes: {
+                                        type: "array",
+                                        items: { type: "string" },
+                                        description: "Key themes or topics mentioned in the review"
+                                    }
+                                },
+                                required: ["sentiment", "explanation", "themes"]
                             }
                         });
                         sentimentScores.push(result.sentiment);
+                        sentimentDetails.push({
+                            sentiment: result.sentiment,
+                            explanation: result.explanation,
+                            themes: result.themes || []
+                        });
                         await delay(500); // Small delay between LLM calls
                     } catch (llmError) {
                         console.error(`LLM error for review:`, llmError.message);
@@ -118,13 +149,29 @@ Deno.serve(async (req) => {
                 
                 console.log(`Store ${store.id}: Sentiment - ${likes} likes, ${dislikes} dislikes -> ${overallSentiment}`);
 
+                // Aggregate themes from all reviews
+                const allThemes = {};
+                sentimentDetails.forEach(detail => {
+                    detail.themes.forEach(theme => {
+                        const themeLower = theme.toLowerCase();
+                        allThemes[themeLower] = (allThemes[themeLower] || 0) + 1;
+                    });
+                });
+                
+                // Get top 5 most mentioned themes
+                const topThemes = Object.entries(allThemes)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([theme]) => theme);
+
                 const effectiveAnalysis = {
                     overall_sentiment: overallSentiment,
                     sentiment_score: sentimentScore,
                     positive_count: likes,
                     neutral_count: 0,
                     negative_count: dislikes,
-                    themes: []
+                    themes: topThemes,
+                    sentiment_details: sentimentDetails
                 };
 
                 // Check if sentiment record exists
@@ -140,6 +187,7 @@ Deno.serve(async (req) => {
                     neutral_reviews: effectiveAnalysis.neutral_count,
                     negative_reviews: effectiveAnalysis.negative_count,
                     common_themes: effectiveAnalysis.themes || [],
+                    sentiment_explanations: effectiveAnalysis.sentiment_details.map(d => d.explanation),
                     last_analyzed_at: new Date().toISOString()
                 };
 
