@@ -389,9 +389,22 @@ export default function SmartCart() {
                           className="flex-1 bg-indigo-600 hover:bg-indigo-700"
                           onClick={() => {
                               suggestions.items.forEach(item => {
-                                  addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                                  const existing = cartItems.find((i) => i.gtin === item.product_id);
+                                  if (existing) {
+                                      setCartItems(cartItems.map((i) =>
+                                          i.gtin === item.product_id ?
+                                          { ...i, quantity: i.quantity + item.suggested_qty } :
+                                          i
+                                      ));
+                                  } else {
+                                      setCartItems(prev => [...prev, { 
+                                          gtin: item.product_id, 
+                                          name: item.product_name, 
+                                          quantity: item.suggested_qty || 1 
+                                      }]);
+                                  }
                               });
-                              // Mark draft as accepted?
+                              toast.success(`Added ${suggestions.items.length} items to cart`);
                           }}
                       >
                           Add All to Cart
