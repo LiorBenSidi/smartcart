@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
 
         const results = [];
         let consecutiveErrors = 0;
-        const MAX_CONSECUTIVE_ERRORS = 3;
+        const MAX_CONSECUTIVE_ERRORS = 1;
 
         for (let i = 0; i < stores.length; i++) {
             // Stop processing if too many consecutive errors
@@ -29,9 +29,9 @@ Deno.serve(async (req) => {
                 break;
             }
             const store = stores[i];
-            // Add delay between requests to avoid rate limiting (2000ms between LLM calls)
+            // Add delay between requests to avoid rate limiting (1000ms between LLM calls)
             if (i > 0) {
-                await delay(2000);
+                await delay(1000);
             }
             try {
                 // Fetch all reviews for this store
