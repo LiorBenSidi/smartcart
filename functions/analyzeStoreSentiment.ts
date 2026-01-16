@@ -275,8 +275,8 @@ Deno.serve(async (req) => {
             total_chains: chainResults.length
             });
 
-            console.log("\n📊 STORE RESULTS:");
-            console.log(JSON.stringify(results, null, 2));
+            // console.log("\n📊 STORE RESULTS:");
+            // console.log(JSON.stringify(results, null, 2));
 
             console.log("\n🏢 CHAIN RESULTS:");
             console.log(JSON.stringify(chainResults, null, 2));
