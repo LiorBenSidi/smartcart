@@ -36,11 +36,11 @@ Deno.serve(async (req) => {
             try {
                 // Fetch all reviews for this store
                 const reviews = await base44.entities.StoreReview.filter({ store_id: store.id }, '', 1000);
-                console.log(`Store ${store.id}: Found ${reviews.length} reviews`);
+                // console.log(`Store ${store.id}: Found ${reviews.length} reviews`);
 
                 if (reviews.length === 0) {
                     // No reviews yet, skip this store
-                    console.log(`Store ${store.id}: No reviews, skipping`);
+                    // console.log(`Store ${store.id}: No reviews, skipping`);
                     results.push({ 
                         index: i + 1,
                         store_id: store.id, 
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
                 
                 if (reviewsWithComments.length === 0) {
                     // No comments to analyze, skip
-                    console.log(`Store ${store.id}: No comments, skipping`);
+                    // console.log(`Store ${store.id}: No comments, skipping`);
                     results.push({ 
                         index: i + 1,
                         store_id: store.id,
