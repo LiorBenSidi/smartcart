@@ -152,7 +152,13 @@ export default function Admin() {
       setSentimentResults(response.data);
     } catch (error) {
       console.error('Failed to analyze sentiment', error);
-      setSentimentResults({ error: error.message });
+      if (error.message?.includes('504') || error.message?.includes('timeout')) {
+        setSentimentResults({ 
+          error: 'Analysis is taking longer than expected. The process may still be running in the background. Please check back in a few minutes.' 
+        });
+      } else {
+        setSentimentResults({ error: error.message });
+      }
     } finally {
       setIsAnalyzingSentiment(false);
     }
