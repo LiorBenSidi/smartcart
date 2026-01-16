@@ -182,12 +182,7 @@ Deno.serve(async (req) => {
                     }
                     }
 
-                    console.log("✅ Sentiment analysis completed:", {
-                    total_stores: results.length,
-                    total_chains: chainResults.length
-                    });
-
-        // Calculate chain-level aggregations
+                    // Calculate chain-level aggregations
         console.log("Calculating chain-level sentiment...");
         const chainResults = [];
 
@@ -252,9 +247,14 @@ Deno.serve(async (req) => {
                 await base44.asServiceRole.entities.ChainSentiment.create(chainData);
                 chainResults.push({ chain_id: chainId, action: 'created' });
             }
-        }
+            }
 
-        return Response.json({
+            console.log("✅ Sentiment analysis completed:", {
+            total_stores: results.length,
+            total_chains: chainResults.length
+            });
+
+            return Response.json({
             success: true,
             message: `Sentiment analysis completed for ${results.length} stores and ${chainResults.length} chains`,
             results,
