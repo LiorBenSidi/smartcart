@@ -293,6 +293,35 @@ export default function Admin() {
                                                         {chain.action}
                                                     </span>
                                                 </div>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    <div>
+                                                        <span className="text-gray-500 dark:text-gray-400">Rating:</span>
+                                                        <span className="ml-1 font-semibold text-gray-900 dark:text-gray-100">
+                                                            {chain.average_rating || 0}/5
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500 dark:text-gray-400">Sentiment:</span>
+                                                        <span className={`ml-1 font-semibold ${
+                                                            chain.overall_sentiment === 'positive' ? 'text-green-600 dark:text-green-400' :
+                                                            chain.overall_sentiment === 'negative' ? 'text-red-600 dark:text-red-400' :
+                                                            'text-gray-600 dark:text-gray-400'
+                                                        }`}>
+                                                            {chain.overall_sentiment || 'neutral'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <span className="text-gray-500 dark:text-gray-400">Stores:</span>
+                                                        <span className="ml-1 text-green-600 dark:text-green-400">{chain.positive_stores || 0}+</span>
+                                                        <span className="mx-1 text-gray-400">/</span>
+                                                        <span className="text-gray-600 dark:text-gray-400">{chain.neutral_stores || 0}○</span>
+                                                        <span className="mx-1 text-gray-400">/</span>
+                                                        <span className="text-red-600 dark:text-red-400">{chain.negative_stores || 0}-</span>
+                                                        <span className="ml-2 text-gray-500 dark:text-gray-400">
+                                                            ({chain.total_stores_analyzed || 0} total)
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
