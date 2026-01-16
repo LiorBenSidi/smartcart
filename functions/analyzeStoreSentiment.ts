@@ -14,8 +14,16 @@ Deno.serve(async (req) => {
         // Fetch all stores
         const stores = await base44.entities.Store.list('', 1000);
         const results = [];
+        let consecutiveErrors = 0;
+        const MAX_CONSECUTIVE_ERRORS = 3;
 
         for (let i = 0; i < stores.length; i++) {
+            // Stop processing if too many consecutive errors
+            if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                console.error(`Stopping analysis after ${consecutiveErrors} consecutive errors`);
+                results.push({ error: `Stopped after ${consecutiveErrors} consecutive errors` });
+                break;
+            }
             const store = stores[i];
             // Add delay between requests to avoid rate limiting (2000ms between LLM calls)
             if (i > 0) {
@@ -184,13 +192,17 @@ Provide:
                     // Create new
                     await base44.entities.StoreSentiment.create(sentimentData);
                     results.push({ store_id: store.id, action: 'created' });
-                }
+                    }
 
-            } catch (storeError) {
-                console.error(`Failed to analyze store ${store.id}:`, storeError);
-                results.push({ store_id: store.id, action: 'failed', error: storeError.message });
-            }
-        }
+                    // Reset consecutive error counter on success
+                    consecutiveErrors = 0;
+
+                    } catch (storeError) {
+                    console.error(`Failed to analyze store ${store.id}:`, storeError);
+                    results.push({ store_id: store.id, action: 'failed', error: storeError.message });
+                    consecutiveErrors++;
+                    }
+                    }
 
         return Response.json({
             success: true,
