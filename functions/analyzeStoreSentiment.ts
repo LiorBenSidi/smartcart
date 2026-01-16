@@ -11,8 +11,12 @@ Deno.serve(async (req) => {
             return Response.json({ error: "Admin access required" }, { status: 403 });
         }
 
-        // Fetch all stores
+        // Fetch all stores and chains
         const stores = await base44.entities.Store.list('', 1000);
+        const chains = await base44.entities.Chain.list('', 1000);
+        const chainMap = {};
+        chains.forEach(c => chainMap[c.id] = c.name);
+
         const results = [];
         let consecutiveErrors = 0;
         const MAX_CONSECUTIVE_ERRORS = 3;
@@ -37,7 +41,13 @@ Deno.serve(async (req) => {
                 if (reviews.length === 0) {
                     // No reviews yet, skip this store
                     console.log(`Store ${store.id}: No reviews, skipping`);
-                    results.push({ store_id: store.id, action: 'no_reviews' });
+                    results.push({ 
+                        index: i + 1,
+                        store_id: store.id, 
+                        chain_name: chainMap[store.chain_id] || 'Unknown',
+                        external_store_code: store.external_store_code,
+                        action: 'no_reviews' 
+                    });
                     consecutiveErrors = 0; // Reset error counter
                     continue;
                 }
@@ -53,7 +63,13 @@ Deno.serve(async (req) => {
                 if (reviewsWithComments.length === 0) {
                     // No comments to analyze, skip
                     console.log(`Store ${store.id}: No comments, skipping`);
-                    results.push({ store_id: store.id, action: 'no_comments' });
+                    results.push({ 
+                        index: i + 1,
+                        store_id: store.id,
+                        chain_name: chainMap[store.chain_id] || 'Unknown',
+                        external_store_code: store.external_store_code,
+                        action: 'no_comments' 
+                    });
                     consecutiveErrors = 0;
                     continue;
                 }
@@ -83,7 +99,13 @@ Deno.serve(async (req) => {
 
                 if (sentimentScores.length === 0) {
                     console.log(`Store ${store.id}: LLM analysis failed for all reviews, skipping`);
-                    results.push({ store_id: store.id, action: 'llm_failed' });
+                    results.push({ 
+                        index: i + 1,
+                        store_id: store.id,
+                        chain_name: chainMap[store.chain_id] || 'Unknown',
+                        external_store_code: store.external_store_code,
+                        action: 'llm_failed' 
+                    });
                     consecutiveErrors++;
                     continue;
                 }
@@ -124,11 +146,23 @@ Deno.serve(async (req) => {
                 if (existing.length > 0) {
                     // Update existing
                     await base44.asServiceRole.entities.StoreSentiment.update(existing[0].id, sentimentData);
-                    results.push({ store_id: store.id, action: 'updated' });
+                    results.push({ 
+                        index: i + 1,
+                        store_id: store.id,
+                        chain_name: chainMap[store.chain_id] || 'Unknown',
+                        external_store_code: store.external_store_code,
+                        action: 'updated' 
+                    });
                 } else {
                     // Create new
                     await base44.asServiceRole.entities.StoreSentiment.create(sentimentData);
-                    results.push({ store_id: store.id, action: 'created' });
+                    results.push({ 
+                        index: i + 1,
+                        store_id: store.id,
+                        chain_name: chainMap[store.chain_id] || 'Unknown',
+                        external_store_code: store.external_store_code,
+                        action: 'created' 
+                    });
                     }
 
                     // Reset consecutive error counter on success
@@ -136,10 +170,22 @@ Deno.serve(async (req) => {
 
                     } catch (storeError) {
                     console.error(`Failed to analyze store ${store.id}:`, storeError);
-                    results.push({ store_id: store.id, action: 'failed', error: storeError.message });
+                    results.push({ 
+                        index: i + 1,
+                        store_id: store.id,
+                        chain_name: chainMap[store.chain_id] || 'Unknown',
+                        external_store_code: store.external_store_code,
+                        action: 'failed', 
+                        error: storeError.message 
+                    });
                     consecutiveErrors++;
                     }
                     }
+
+                    console.log("✅ Sentiment analysis completed:", {
+                    total_stores: results.length,
+                    total_chains: chainResults.length
+                    });
 
         // Calculate chain-level aggregations
         console.log("Calculating chain-level sentiment...");

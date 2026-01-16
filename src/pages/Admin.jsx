@@ -250,6 +250,28 @@ export default function Admin() {
                         <div className="space-y-4">
                             <p className="text-sm text-gray-600 dark:text-gray-400">{sentimentResults.message}</p>
                             
+                            {sentimentResults.results && sentimentResults.results.length > 0 && (
+                                <div className="mt-4">
+                                    <h4 className="font-semibold mb-2 text-gray-800 dark:text-gray-200">Store Analysis Details</h4>
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-64 overflow-y-auto space-y-1">
+                                        {sentimentResults.results.map((store) => (
+                                            <div key={store.store_id} className="text-xs flex items-center gap-2">
+                                                <span className="font-mono text-gray-500 dark:text-gray-500 w-8">#{store.index}</span>
+                                                <span className="font-medium text-gray-700 dark:text-gray-300 flex-1">{store.chain_name}</span>
+                                                <span className="text-gray-500 dark:text-gray-500">({store.external_store_code})</span>
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                                    store.action === 'created' || store.action === 'updated' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 
+                                                    store.action === 'no_reviews' || store.action === 'no_comments' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' :
+                                                    'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                                                }`}>
+                                                    {store.action}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
                             {sentimentResults.chainResults && sentimentResults.chainResults.length > 0 && (
                                 <div className="mt-4">
                                     <h4 className="font-semibold mb-2 text-gray-800 dark:text-gray-200">Chain Sentiment Summary</h4>
