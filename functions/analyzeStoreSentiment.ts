@@ -243,10 +243,30 @@ Deno.serve(async (req) => {
             const existing = await base44.asServiceRole.entities.ChainSentiment.filter({ chain_id: chainId }, '', 1);
             if (existing.length > 0) {
                 await base44.asServiceRole.entities.ChainSentiment.update(existing[0].id, chainData);
-                chainResults.push({ chain_id: chainId, chain_name: chainMap[chainId] || 'Unknown', action: 'updated' });
+                chainResults.push({ 
+                    chain_id: chainId, 
+                    chain_name: chainMap[chainId] || 'Unknown', 
+                    action: 'updated',
+                    average_rating: chainData.average_rating,
+                    overall_sentiment: chainData.overall_sentiment,
+                    positive_stores: chainData.positive_stores,
+                    neutral_stores: chainData.neutral_stores,
+                    negative_stores: chainData.negative_stores,
+                    total_stores_analyzed: chainData.total_stores_analyzed
+                });
             } else {
                 await base44.asServiceRole.entities.ChainSentiment.create(chainData);
-                chainResults.push({ chain_id: chainId, chain_name: chainMap[chainId] || 'Unknown', action: 'created' });
+                chainResults.push({ 
+                    chain_id: chainId, 
+                    chain_name: chainMap[chainId] || 'Unknown', 
+                    action: 'created',
+                    average_rating: chainData.average_rating,
+                    overall_sentiment: chainData.overall_sentiment,
+                    positive_stores: chainData.positive_stores,
+                    neutral_stores: chainData.neutral_stores,
+                    negative_stores: chainData.negative_stores,
+                    total_stores_analyzed: chainData.total_stores_analyzed
+                });
             }
             }
 

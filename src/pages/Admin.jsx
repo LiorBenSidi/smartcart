@@ -280,17 +280,19 @@ export default function Admin() {
                             
                             {sentimentResults.chainResults && sentimentResults.chainResults.length > 0 && (
                                 <div className="mt-4">
-                                    <h4 className="font-semibold mb-2 text-gray-800 dark:text-gray-200">Chain Sentiment Summary</h4>
-                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-2">
+                                    <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Chain Sentiment Summary</h4>
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-3">
                                         {sentimentResults.chainResults.map((chain, idx) => (
-                                            <div key={idx} className="text-sm">
-                                                <span className="font-medium text-gray-700 dark:text-gray-300">Chain {chain.chain_id}:</span>
-                                                <span className={`ml-2 px-2 py-1 rounded text-xs font-bold ${
-                                                    chain.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 
-                                                    'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                                                }`}>
-                                                    {chain.action}
-                                                </span>
+                                            <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="font-bold text-gray-900 dark:text-gray-100">{chain.chain_name}</span>
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                                        chain.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 
+                                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                                                    }`}>
+                                                        {chain.action}
+                                                    </span>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
