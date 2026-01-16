@@ -35,30 +35,10 @@ Deno.serve(async (req) => {
                 console.log(`Store ${store.id}: Found ${reviews.length} reviews`);
 
                 if (reviews.length === 0) {
-                    // No reviews yet, assign neutral sentiment
-                    console.log(`Store ${store.id}: No reviews, assigning neutral sentiment`);
-                    const existing = await base44.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
-
-                    const sentimentData = {
-                        store_id: store.id,
-                        overall_sentiment: 'neutral',
-                        sentiment_score: 0,
-                        review_count: 0,
-                        average_rating: 0,
-                        positive_reviews: 0,
-                        neutral_reviews: 0,
-                        negative_reviews: 0,
-                        common_themes: [],
-                        last_analyzed_at: new Date().toISOString()
-                    };
-
-                    if (existing.length > 0) {
-                        await base44.entities.StoreSentiment.update(existing[0].id, sentimentData);
-                    } else {
-                        await base44.entities.StoreSentiment.create(sentimentData);
-                    }
-
+                    // No reviews yet, skip this store
+                    console.log(`Store ${store.id}: No reviews, skipping`);
                     results.push({ store_id: store.id, action: 'no_reviews' });
+                    consecutiveErrors = 0; // Reset error counter
                     continue;
                 }
 
@@ -73,31 +53,10 @@ Deno.serve(async (req) => {
                     .map(r => `By ${r.user_display_name || 'Anonymous'} on ${new Date(r.review_date || r.created_date).toLocaleDateString()}: ${r.comment}`);
 
                 if (reviewTexts.length === 0) {
-                    // No comments to analyze, but we have ratings - assign based on average
-                    console.log(`Store ${store.id}: No comments, but has ratings`);
-                    const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-                    const existing = await base44.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
-
-                    const sentimentData = {
-                        store_id: store.id,
-                        overall_sentiment: avgRating >= 4 ? 'positive' : avgRating >= 3 ? 'neutral' : 'negative',
-                        sentiment_score: (avgRating - 3) / 2, // Map 1-5 to -1 to 1
-                        review_count: reviews.length,
-                        average_rating: avgRating,
-                        positive_reviews: reviews.filter(r => r.rating >= 4).length,
-                        neutral_reviews: reviews.filter(r => r.rating === 3).length,
-                        negative_reviews: reviews.filter(r => r.rating <= 2).length,
-                        common_themes: [],
-                        last_analyzed_at: new Date().toISOString()
-                    };
-
-                    if (existing.length > 0) {
-                        await base44.entities.StoreSentiment.update(existing[0].id, sentimentData);
-                    } else {
-                        await base44.entities.StoreSentiment.create(sentimentData);
-                    }
-
+                    // No comments to analyze, skip
+                    console.log(`Store ${store.id}: No comments, skipping`);
                     results.push({ store_id: store.id, action: 'no_comments' });
+                    consecutiveErrors = 0; // Reset error counter
                     continue;
                 }
 
@@ -117,11 +76,8 @@ Deno.serve(async (req) => {
                     themes: []
                 };
 
-                // Calculate average rating
-                const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-
                 // Check if sentiment record exists
-                const existing = await base44.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
+                const existing = await base44.asServiceRole.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
 
                 const sentimentData = {
                     store_id: store.id,
@@ -138,11 +94,11 @@ Deno.serve(async (req) => {
 
                 if (existing.length > 0) {
                     // Update existing
-                    await base44.entities.StoreSentiment.update(existing[0].id, sentimentData);
+                    await base44.asServiceRole.entities.StoreSentiment.update(existing[0].id, sentimentData);
                     results.push({ store_id: store.id, action: 'updated' });
                 } else {
                     // Create new
-                    await base44.entities.StoreSentiment.create(sentimentData);
+                    await base44.asServiceRole.entities.StoreSentiment.create(sentimentData);
                     results.push({ store_id: store.id, action: 'created' });
                     }
 
