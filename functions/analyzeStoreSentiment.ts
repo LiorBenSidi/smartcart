@@ -42,37 +42,66 @@ Deno.serve(async (req) => {
                     continue;
                 }
 
-                // Prepare review texts and ratings for analysis
-                const reviewTexts = reviews.map(r => r.comment || '').filter(Boolean);
+                // Calculate mean rating
                 const ratings = reviews.map(r => r.rating).filter(Boolean);
-                console.log(`Store ${store.id}: ${reviewTexts.length} review texts, ${ratings.length} ratings`);
+                const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+                console.log(`Store ${store.id}: ${reviews.length} reviews, avg rating: ${avgRating.toFixed(2)}`);
 
-                // Include reviewer name and date in context for better analysis
-                const enrichedReviews = reviews
-                    .filter(r => r.comment)
-                    .map(r => `By ${r.user_display_name || 'Anonymous'} on ${new Date(r.review_date || r.created_date).toLocaleDateString()}: ${r.comment}`);
-
-                if (reviewTexts.length === 0) {
+                // Get reviews with comments for sentiment analysis
+                const reviewsWithComments = reviews.filter(r => r.comment && r.comment.trim());
+                
+                if (reviewsWithComments.length === 0) {
                     // No comments to analyze, skip
                     console.log(`Store ${store.id}: No comments, skipping`);
                     results.push({ store_id: store.id, action: 'no_comments' });
-                    consecutiveErrors = 0; // Reset error counter
+                    consecutiveErrors = 0;
                     continue;
                 }
 
-                // Use LLM for sentiment analysis - fallback to rating-based analysis
-                let effectiveAnalysis;
+                // Analyze each review with LLM (like=1, dislike=-1)
+                console.log(`Store ${store.id}: Analyzing ${reviewsWithComments.length} reviews with LLM`);
+                const sentimentScores = [];
+                
+                for (const review of reviewsWithComments) {
+                    try {
+                        const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+                            prompt: `Analyze this store review and determine if it's a "like" or "dislike". Review: "${review.comment}". Return only 1 for like or -1 for dislike.`,
+                            response_json_schema: {
+                                type: "object",
+                                properties: {
+                                    sentiment: { type: "number", enum: [1, -1] }
+                                }
+                            }
+                        });
+                        sentimentScores.push(result.sentiment);
+                        await delay(500); // Small delay between LLM calls
+                    } catch (llmError) {
+                        console.error(`LLM error for review:`, llmError.message);
+                        // Continue with other reviews
+                    }
+                }
 
-                // Calculate average rating for fallback
-                const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+                if (sentimentScores.length === 0) {
+                    console.log(`Store ${store.id}: LLM analysis failed for all reviews, skipping`);
+                    results.push({ store_id: store.id, action: 'llm_failed' });
+                    consecutiveErrors++;
+                    continue;
+                }
 
-                // Default to rating-based analysis
-                effectiveAnalysis = {
-                    overall_sentiment: avgRating >= 4 ? 'positive' : avgRating >= 3 ? 'neutral' : 'negative',
-                    sentiment_score: (avgRating - 3) / 2,
-                    positive_count: reviews.filter(r => r.rating >= 4).length,
-                    neutral_count: reviews.filter(r => r.rating === 3).length,
-                    negative_count: reviews.filter(r => r.rating <= 2).length,
+                // Calculate majority sentiment
+                const likes = sentimentScores.filter(s => s === 1).length;
+                const dislikes = sentimentScores.filter(s => s === -1).length;
+                const sentimentScore = likes > dislikes ? 1 : (dislikes > likes ? -1 : 0);
+                const overallSentiment = sentimentScore > 0 ? 'positive' : (sentimentScore < 0 ? 'negative' : 'neutral');
+                
+                console.log(`Store ${store.id}: Sentiment - ${likes} likes, ${dislikes} dislikes -> ${overallSentiment}`);
+
+                const effectiveAnalysis = {
+                    overall_sentiment: overallSentiment,
+                    sentiment_score: sentimentScore,
+                    positive_count: likes,
+                    neutral_count: 0,
+                    negative_count: dislikes,
                     themes: []
                 };
 
