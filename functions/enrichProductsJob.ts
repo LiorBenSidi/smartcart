@@ -9,15 +9,42 @@ async function enrichProductBatch(base44, items) {
         return `${idx + 1}. ${item.canonical_name || item.display_name} (${item.description || ''})`;
     }).join('\n');
 
-    const prompt = `Analyze the following grocery products and provide:
-    1. A standard category (e.g. "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen").
-    2. Kosher Level (guess based on product/description). Allowed values: "none", "basic_kosher", "strict_kosher", "glatt_kosher", "mehadrin". Default to "basic_kosher" if it looks kosher but unspecified, or "none" if likely not.
-    3. Food Allergies. Check for presence of: "Gluten", "Nuts", "Soy", "Fish", "Wheat", "Lactose", "Peanuts", "Eggs", "Shellfish", "Sesame". Return list of detected allergens.
+    // const prompt = `Analyze the following grocery products and provide:
+    // 1. A standard category (e.g. "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen").
+    // 2. Kosher Level (guess based on product/description). Allowed values: "none", "basic_kosher", "strict_kosher", "glatt_kosher", "mehadrin". Default to "basic_kosher" if it looks kosher but unspecified, or "none" if likely not.
+    // 3. Food Allergies. Check for presence of: "Gluten", "Nuts", "Soy", "Fish", "Wheat", "Lactose", "Peanuts", "Eggs", "Shellfish", "Sesame". Return list of detected allergens.
 
-    Return a JSON object where keys are item indices (1 to ${items.length}) and values are objects with "category", "kosher_level", and "allergen_tags".
+    // Return a JSON object where keys are item indices (1 to ${items.length}) and values are objects with "category", "kosher_level", and "allergen_tags".
 
-    Items:
-    ${promptItems}`;
+    // Items:
+    // ${promptItems}`;
+    
+    const prompt = `You are an expert product categorizer and dietary analyst for a grocery store. Your task is to accurately extract detailed attributes for a batch of grocery products.
+
+                    For each product provided, you must identify:
+                    1.  **Category**: Assign a single, standard category from this list: "Dairy", "Meat", "Produce", "Bakery", "Beverages", "Snacks", "Pantry", "Household", "Personal Care", "Frozen", "Other". Choose the most specific and appropriate category.
+                    2.  **Kosher Level**: Determine the Kosher certification level. Use product name, description, and common knowledge. Allowed values are strictly: "none", "basic_kosher", "strict_kosher", "glatt_kosher", "mehadrin". If it appears kosher but no specific level is mentioned, default to "basic_kosher". If it's clearly not kosher or unknown, use "none".
+                    3.  **Allergen Tags**: Identify common food allergens present. Scan product details for any mention of: "Gluten", "Nuts", "Soy", "Fish", "Wheat", "Lactose", "Peanuts", "Eggs", "Shellfish", "Sesame". Return a list of all detected allergens. If no allergens from the list are found, return an empty array.
+
+                    Output Format:
+                    Return a single JSON object where each key is the 1-based index of the product from the input list, and each value is an object containing the 'category', 'kosher_level', and 'allergen_tags' for that product. Ensure the output strictly adheres to the provided JSON schema.
+
+                    Example Output Structure (for 2 items):
+                    {
+                      "1": {
+                        "category": "Produce",
+                        "kosher_level": "none",
+                        "allergen_tags": []
+                      },
+                      "2": {
+                        "category": "Dairy",
+                        "kosher_level": "basic_kosher",
+                        "allergen_tags": ["Lactose"]
+                      }
+                    }
+
+                    Products to Analyze:
+                    ${promptItems}`;
 
     try {
         const response = await base44.integrations.Core.InvokeLLM({
