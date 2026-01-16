@@ -69,6 +69,8 @@ Deno.serve(async (req) => {
                 // Use LLM for sentiment analysis with error handling
                 let effectiveAnalysis;
                 try {
+                    console.log(`Analyzing store ${store.id} with ${reviewTexts.length} review texts`);
+                    
                     const analysisPrompt = `Analyze the sentiment of these store reviews and provide a comprehensive summary.
 
                     Reviews (with reviewer name and date):
@@ -80,6 +82,7 @@ Provide:
 3. Count of positive, neutral, and negative reviews
 4. Common themes mentioned (both positive and negative)`;
 
+                    console.log(`Calling InvokeLLM for store ${store.id}...`);
                     const analysis = await base44.integrations.Core.InvokeLLM({
                         prompt: analysisPrompt,
                         response_json_schema: {
@@ -98,6 +101,9 @@ Provide:
                             required: ['overall_sentiment', 'sentiment_score', 'positive_count', 'neutral_count', 'negative_count', 'themes']
                         }
                     });
+                    
+                    console.log(`LLM returned for store ${store.id}:`, JSON.stringify(analysis));
+                    console.log(`Analysis type: ${typeof analysis}, is null: ${analysis === null}, is undefined: ${analysis === undefined}`);
 
                     // Handle cases where LLM returns null or empty response
                     effectiveAnalysis = analysis || {
@@ -108,9 +114,12 @@ Provide:
                         negative_count: 0,
                         themes: []
                     };
+                    
+                    console.log(`Using effectiveAnalysis for store ${store.id}:`, JSON.stringify(effectiveAnalysis));
                 } catch (llmError) {
                     // If LLM call fails, default to neutral sentiment
                     console.error(`LLM analysis failed for store ${store.id}:`, llmError.message);
+                    console.error(`Full error:`, JSON.stringify(llmError));
                     effectiveAnalysis = {
                         overall_sentiment: 'neutral',
                         sentiment_score: 0,
