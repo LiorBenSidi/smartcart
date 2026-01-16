@@ -141,10 +141,78 @@ Deno.serve(async (req) => {
                     }
                     }
 
+        // Calculate chain-level aggregations
+        console.log("Calculating chain-level sentiment...");
+        const chainResults = [];
+
+        // Get all stores with their chains
+        const storesWithChains = await base44.asServiceRole.entities.Store.list('', 5000);
+
+        // Get all store sentiments
+        const storeSentiments = await base44.asServiceRole.entities.StoreSentiment.list('', 5000);
+        const sentimentMap = {};
+        storeSentiments.forEach(s => {
+            sentimentMap[s.store_id] = s;
+        });
+
+        // Group stores by chain
+        const chainGroups = {};
+        storesWithChains.forEach(store => {
+            if (!store.chain_id) return;
+            if (!chainGroups[store.chain_id]) {
+                chainGroups[store.chain_id] = [];
+            }
+            chainGroups[store.chain_id].push(store);
+        });
+
+        // Calculate for each chain
+        for (const [chainId, chainStores] of Object.entries(chainGroups)) {
+            const storesWithSentiment = chainStores
+                .map(s => ({ store: s, sentiment: sentimentMap[s.id] }))
+                .filter(x => x.sentiment);
+
+            if (storesWithSentiment.length === 0) continue;
+
+            // Mean rating
+            const avgRating = storesWithSentiment.reduce((sum, x) => sum + (x.sentiment.average_rating || 0), 0) / storesWithSentiment.length;
+
+            // Majority sentiment
+            const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
+            storesWithSentiment.forEach(x => {
+                const s = x.sentiment.overall_sentiment;
+                if (s) sentimentCounts[s]++;
+            });
+
+            const majoritysentiment = sentimentCounts.positive >= sentimentCounts.negative && sentimentCounts.positive >= sentimentCounts.neutral ? 'positive'
+                : sentimentCounts.negative >= sentimentCounts.neutral ? 'negative' : 'neutral';
+
+            const chainData = {
+                chain_id: chainId,
+                average_rating: Number(avgRating.toFixed(2)),
+                overall_sentiment: majoritysentiment,
+                positive_stores: sentimentCounts.positive,
+                neutral_stores: sentimentCounts.neutral,
+                negative_stores: sentimentCounts.negative,
+                total_stores_analyzed: storesWithSentiment.length,
+                last_analyzed_at: new Date().toISOString()
+            };
+
+            // Check if exists
+            const existing = await base44.asServiceRole.entities.ChainSentiment.filter({ chain_id: chainId }, '', 1);
+            if (existing.length > 0) {
+                await base44.asServiceRole.entities.ChainSentiment.update(existing[0].id, chainData);
+                chainResults.push({ chain_id: chainId, action: 'updated' });
+            } else {
+                await base44.asServiceRole.entities.ChainSentiment.create(chainData);
+                chainResults.push({ chain_id: chainId, action: 'created' });
+            }
+        }
+
         return Response.json({
             success: true,
-            message: `Sentiment analysis completed for ${results.length} stores`,
-            results
+            message: `Sentiment analysis completed for ${results.length} stores and ${chainResults.length} chains`,
+            results,
+            chainResults
         });
 
     } catch (error) {
