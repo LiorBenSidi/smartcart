@@ -19,6 +19,7 @@ export default function Admin() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
+  const [sentimentResults, setSentimentResults] = useState(null);
 
   const checkAdmin = async () => {
       const user = await base44.auth.me();
@@ -145,10 +146,13 @@ export default function Admin() {
 
   const handleAnalyzeSentiment = async () => {
     setIsAnalyzingSentiment(true);
+    setSentimentResults(null);
     try {
-      await base44.functions.invoke('analyzeStoreSentiment');
+      const response = await base44.functions.invoke('analyzeStoreSentiment');
+      setSentimentResults(response.data);
     } catch (error) {
       console.error('Failed to analyze sentiment', error);
+      setSentimentResults({ error: error.message });
     } finally {
       setIsAnalyzingSentiment(false);
     }
@@ -233,6 +237,42 @@ export default function Admin() {
 
 
         <SystemValidationPanel />
+
+        {sentimentResults && (
+            <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
+                <CardContent className="p-6">
+                    <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                        Sentiment Analysis Results
+                    </h3>
+                    {sentimentResults.error ? (
+                        <p className="text-red-600 dark:text-red-400">{sentimentResults.error}</p>
+                    ) : (
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{sentimentResults.message}</p>
+                            
+                            {sentimentResults.chainResults && sentimentResults.chainResults.length > 0 && (
+                                <div className="mt-4">
+                                    <h4 className="font-semibold mb-2 text-gray-800 dark:text-gray-200">Chain Sentiment Summary</h4>
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-2">
+                                        {sentimentResults.chainResults.map((chain, idx) => (
+                                            <div key={idx} className="text-sm">
+                                                <span className="font-medium text-gray-700 dark:text-gray-300">Chain {chain.chain_id}:</span>
+                                                <span className={`ml-2 px-2 py-1 rounded text-xs font-bold ${
+                                                    chain.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 
+                                                    'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                                                }`}>
+                                                    {chain.action}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        )}
 
         {showConfirm &&
       <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
