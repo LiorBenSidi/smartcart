@@ -275,11 +275,15 @@ Deno.serve(async (req) => {
             total_chains: chainResults.length
             });
 
+            console.log("\n📊 STORE RESULTS:");
+            console.log(JSON.stringify(results, null, 2));
+
+            console.log("\n🏢 CHAIN RESULTS:");
+            console.log(JSON.stringify(chainResults, null, 2));
+
             return Response.json({
             success: true,
-            message: `Sentiment analysis completed for ${results.length} stores and ${chainResults.length} chains`,
-            results,
-            chainResults
+            message: `Sentiment analysis completed for ${results.length} stores and ${chainResults.length} chains`
         });
 
     } catch (error) {
