@@ -528,14 +528,23 @@ export default function NearbyStores() {
                                 <div className="mb-1">
                                     <h4 className="font-bold text-sm">{store.name}</h4>
                                     {store.average_rating > 0 &&
-                  <div className="mt-1">
+                                <div className="mt-1 space-y-1">
                                             <div className="flex items-center text-xs text-yellow-600 font-bold">
                                                 <Star className="w-3 h-3 fill-current mr-0.5" />
                                                 {store.average_rating.toFixed(1)}/5
                                             </div>
                                             <div className="text-[10px] text-gray-400">{store.review_count} reviews</div>
+                                            {store.sentiment && (
+                                                <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded inline-block ${
+                                                    store.sentiment === 'positive' ? 'bg-green-100 text-green-700' :
+                                                    store.sentiment === 'negative' ? 'bg-red-100 text-red-700' :
+                                                    'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                    {store.sentiment.charAt(0).toUpperCase() + store.sentiment.slice(1)} sentiment
+                                                </span>
+                                            )}
                                         </div>
-                  }
+                                }
                                 </div>
                                 <p className="text-xs text-gray-600 mb-2">{store.address_line}</p>
                                 <div className="grid grid-cols-2 gap-2">
