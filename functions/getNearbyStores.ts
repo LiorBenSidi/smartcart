@@ -91,9 +91,6 @@ Deno.serve(async (req) => {
       if (storeReviews.length > 0) {
         const avgRating = storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length;
         ratingScore = avgRating / 5; // Normalize to 0-1 (assuming 5-star max)
-      } else if (ratingWeight > 0) {
-        // Penalize stores with no reviews when rating is weighted
-        ratingScore = -0.1;
       }
       
       // 3. Sentiment score (normalized 0-1)
@@ -112,26 +109,12 @@ Deno.serve(async (req) => {
         sentimentScore * sentimentWeight
       ) * 100;
       
-      // Additional preference bonuses - scaled down to not override primary factors
-      let bonusScore = 0;
-      const storeReceipts = receipts.filter(r => r.store_id === store.id);
-      if (storeReceipts.length > 0) bonusScore += 2;
-      
-      if (userProfile) {
-        if (userProfile.kashrut_level !== 'none' && store.store_tags?.includes('kosher_certified')) {
-          bonusScore += 3;
-        }
-        if (userProfile.health_preferences?.includes('organic') && store.store_tags?.includes('organic_focused')) {
-          bonusScore += 2;
-        }
-        if (userProfile.budget_focus === 'save_money' && store.store_tags?.includes('discount_store')) {
-          bonusScore += 2;
-        }
-      }
+      // Penalty for stores without reviews (always applied)
+      const noReviewPenalty = (storeReviews.length === 0) ? -5 : 0;
 
       return { 
         ...store, 
-        recommendationScore: combinedScore + bonusScore,
+        recommendationScore: combinedScore + noReviewPenalty,
         distanceScore,
         ratingScore,
         sentimentScore,
