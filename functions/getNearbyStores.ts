@@ -91,6 +91,9 @@ Deno.serve(async (req) => {
       if (storeReviews.length > 0) {
         const avgRating = storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length;
         ratingScore = avgRating / 5; // Normalize to 0-1 (assuming 5-star max)
+      } else if (ratingWeight > 0) {
+        // Penalize stores with no reviews when rating is weighted
+        ratingScore = -0.1;
       }
       
       // 3. Sentiment score (normalized 0-1)
