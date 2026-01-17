@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Play, Pause } from 'lucide-react';
+import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Play, Pause, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const ProductSearchItem = ({ product, chains, onClick }) => {
   const [prices, setPrices] = useState([]);
@@ -194,9 +195,87 @@ export default function PriceComparison() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-800 dark:to-purple-800 text-white p-6 rounded-2xl shadow-lg">
-        <h1 className="text-2xl font-bold mb-2">Price Comparison</h1>
-        <p className="text-indigo-100 text-sm">Compare prices across stores and find the best deals</p>
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-800 dark:to-purple-800 text-white p-6 rounded-2xl shadow-lg relative">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Price Comparison</h1>
+            <p className="text-indigo-100 text-sm">Compare prices across stores and find the best deals</p>
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20">
+                <HelpCircle className="h-5 w-5 text-white" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Search className="w-5 h-5 text-indigo-600" />
+                  Price Comparison - Technical Details
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <h4 className="font-semibold mb-2">Process Overview:</h4>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                    <li>Search for products by name, barcode (GTIN), or brand</li>
+                    <li>Fetch all Product records matching the GTIN across chains</li>
+                    <li>Sort by current_price (cheapest first)</li>
+                    <li>Display price distribution statistics</li>
+                  </ol>
+                </div>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                  <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Search & Deduplication:</h4>
+                  <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                    <p className="text-xs">Multi-field search with regex matching:</p>
+                    <ul className="list-disc list-inside ml-4 text-xs">
+                      <li>Queries canonical_name, gtin, and brand_name fields</li>
+                      <li>Case-insensitive partial matching</li>
+                      <li>Deduplicates results by GTIN (same product, multiple chains)</li>
+                      <li>500ms debounce to prevent excessive API calls</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                  <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Price Analysis:</h4>
+                  <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                    <p className="text-xs">For each selected product:</p>
+                    <ul className="list-disc list-inside ml-4 text-xs">
+                      <li><strong>Lowest Price:</strong> First item after sorting by current_price</li>
+                      <li><strong>Average Price:</strong> Mean of all prices across chains</li>
+                      <li><strong>Highest Price:</strong> Maximum current_price value</li>
+                      <li><strong>Price Difference:</strong> Shows how much more you'd pay vs cheapest</li>
+                      <li><strong>Deviation Alert:</strong> Flags prices ≥15% above/below average</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+                  <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Data Sources:</h4>
+                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Product prices pulled from:</p>
+                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                    <li><strong>Product entity:</strong> Contains GTIN, canonical_name, current_price, chain_id</li>
+                    <li><strong>Chain entity:</strong> Provides chain name and logo for display</li>
+                    <li><strong>Store entity:</strong> Optional store-specific pricing (if store_id set)</li>
+                  </ul>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">Note: Prices are updated via catalog ingestion (uploadCatalog function)</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Display Logic:</h4>
+                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                    <li>Cheapest option highlighted with green border and "Best Price" badge</li>
+                    <li>Shows unit_price when available (price per kg/L)</li>
+                    <li>Displays price_updated_at timestamp for data freshness</li>
+                    <li>Calculates "X more" difference for non-cheapest options</li>
+                  </ul>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search */}
