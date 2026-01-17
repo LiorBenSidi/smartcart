@@ -407,7 +407,7 @@ export default function SmartCart() {
                                               {item.reason_type.includes('Restock') && (
                                                   <>
                                                       <p className="font-semibold text-gray-800 dark:text-gray-200">Restock Recommendation</p>
-                                                      <p>Based on your buying patterns:</p>
+                                                      <p className="text-black-600 dark:text-black-300">Based on your buying patterns:</p>
                                                       <p className="text-gray-600 dark:text-gray-300">• Average purchase every <span className="font-semibold">{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)} days</span></p>
                                                       <p className="text-gray-600 dark:text-gray-300">• Last purchased <span className="font-semibold">{Number(item.evidence?.days_since_last_purchase || 0)} days ago</span></p>
                                                       <p className="text-amber-600 dark:text-amber-400 font-semibold mt-1">You're {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x through your cycle - time to restock!</p>
