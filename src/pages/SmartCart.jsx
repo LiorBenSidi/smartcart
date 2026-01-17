@@ -30,6 +30,7 @@ export default function SmartCart() {
   const [expandedSuggestion, setExpandedSuggestion] = useState(null);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [likedItems, setLikedItems] = useState(new Set());
+  const [refreshingSuggestions, setRefreshingSuggestions] = useState(false);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -66,6 +67,24 @@ export default function SmartCart() {
     };
     fetchSuggestions();
   }, []);
+
+  const refreshSuggestions = async () => {
+    try {
+      setRefreshingSuggestions(true);
+      const res = await base44.functions.invoke('generateDailySuggestions');
+      if (res.data.success) {
+        setSuggestions(res.data.draft);
+        toast.success("Suggestions refreshed!");
+      } else {
+        toast.error("Failed to refresh suggestions");
+      }
+    } catch (error) {
+      console.error("Failed to refresh suggestions", error);
+      toast.error("Failed to refresh suggestions");
+    } finally {
+      setRefreshingSuggestions(false);
+    }
+  };
 
   const applyOptimizedCart = () => {
     if (!optimizedCart) return;
@@ -296,7 +315,7 @@ export default function SmartCart() {
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1">
                           <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
                               <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                               Suggested for Today
@@ -366,9 +385,20 @@ export default function SmartCart() {
                               </DialogContent>
                           </Dialog>
                       </div>
-                      <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
-                          {suggestions.items.length} items
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                          <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={refreshSuggestions}
+                              disabled={refreshingSuggestions}
+                              className="h-8 text-xs">
+                              <RefreshCw className={`w-3 h-3 mr-1 ${refreshingSuggestions ? 'animate-spin' : ''}`} />
+                              Refresh
+                          </Button>
+                          <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+                              {suggestions.items.length} items
+                          </Badge>
+                      </div>
                   </div>
               </CardHeader>
               <CardContent>
