@@ -162,7 +162,7 @@ export default function Recommendations() {
                             <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
                                 <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. User Profile Vector Generation:</h4>
                                 <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Analyzes last 90 days of purchase history:</p>
+                                    <p className="text-xs">Analyzes all available purchase history:</p>
                                     <ul className="list-disc list-inside ml-4 text-xs">
                                         <li><strong>Category preferences:</strong> Frequency distribution across product categories</li>
                                         <li><strong>Price sensitivity:</strong> avg_item_price, price_variance, discount_preference</li>

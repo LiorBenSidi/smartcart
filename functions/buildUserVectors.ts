@@ -74,9 +74,9 @@ export default Deno.serve(async (req) => {
 
 
         // 2. Build Behavior Vector
-        // Lookback 60 days
-        const lookbackDate = new Date();
-        lookbackDate.setDate(lookbackDate.getDate() - 60);
+        // Lookback all available history
+        // const lookbackDate = new Date();
+        // lookbackDate.setDate(lookbackDate.getDate() - 60);
         
         // Fetch receipt items
         // We need to fetch items where purchased_at > lookbackDate. 
@@ -92,7 +92,7 @@ export default Deno.serve(async (req) => {
         
         items.forEach(item => {
             const daysAgo = (new Date() - new Date(item.purchased_at || new Date())) / (1000 * 60 * 60 * 24);
-            if (daysAgo > 60) return;
+            // if (daysAgo > 60) return; // Removed: now analyzing all available history
             
             const weight = Math.exp(-daysAgo / 14);
             
