@@ -112,25 +112,17 @@ Deno.serve(async (req) => {
         store.usingRouteDuration = false;
     });
 
-    // Calculate max values for proper normalization
-    const storesWithRawDuration = nearbyStores.filter(s => s.rawDuration !== undefined);
-    const storesWithoutRawDuration = nearbyStores.filter(s => s.rawDuration === undefined);
-    const maxActualRawDuration = storesWithRawDuration.length > 0
-        ? Math.max(...storesWithRawDuration.map(s => s.rawDuration))
-        : 1;
-    const maxActualDistance = storesWithoutRawDuration.length > 0
-        ? Math.max(...storesWithoutRawDuration.map(s => s.distance))
-        : 1;
-
     // Calculate weighted recommendation score for each store
     const storesWithScores = nearbyStores.map(store => {
       // 1. Distance score (normalized 0-1, closer = higher)
-      // Normalize driving duration against max driving duration, Haversine against max Haversine
+      // Prioritize driving duration if available, fall back to Haversine distance
       let distanceScore;
       if (store.rawDuration) {
-          distanceScore = 1 - (store.rawDuration / maxActualRawDuration);
+          const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || Infinity), 1);
+          distanceScore = 1 - (store.rawDuration / maxDuration);
       } else {
-          distanceScore = 1 - (store.distance / maxActualDistance);
+          const maxDistance = Math.max(...nearbyStores.map(s => s.distance), 1);
+          distanceScore = 1 - (store.distance / maxDistance);
       }
       
       // 2. Rating score (normalized 0-1)
