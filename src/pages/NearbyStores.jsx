@@ -478,9 +478,12 @@ export default function NearbyStores() {
                               </div>
                               <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate w-full">{store.name}</h3>
                               {store.average_rating > 0 &&
-                <div className="flex items-center justify-center gap-0.5 text-[10px] text-yellow-600 dark:text-yellow-400 font-bold mb-1">
-                                      <Star className="w-3 h-3 fill-current" />
-                                      {store.average_rating.toFixed(1)} <span className="text-gray-400 dark:text-gray-500 font-normal">({store.review_count})</span>
+                <div className="flex flex-col items-center mb-1">
+                                      <div className="flex items-center gap-0.5 text-[10px] text-yellow-600 dark:text-yellow-400 font-bold">
+                                          <Star className="w-3 h-3 fill-current" />
+                                          {store.average_rating.toFixed(1)}/5
+                                      </div>
+                                      <span className="text-[9px] text-gray-400 dark:text-gray-500 font-normal">{store.review_count} reviews</span>
                                   </div>
                 }
                               <p className="text-xs text-gray-500 dark:text-gray-400 truncate w-full mb-2">{store.chain_name}</p>
@@ -511,12 +514,15 @@ export default function NearbyStores() {
 
                         <Popup>
                             <div className="p-1 min-w-[200px]">
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="mb-1">
                                     <h4 className="font-bold text-sm">{store.name}</h4>
                                     {store.average_rating > 0 &&
-                  <div className="flex items-center text-xs text-yellow-600 font-bold">
-                                            <Star className="w-3 h-3 fill-current mr-0.5" />
-                                            {store.average_rating.toFixed(1)}
+                  <div className="mt-1">
+                                            <div className="flex items-center text-xs text-yellow-600 font-bold">
+                                                <Star className="w-3 h-3 fill-current mr-0.5" />
+                                                {store.average_rating.toFixed(1)}/5
+                                            </div>
+                                            <div className="text-[10px] text-gray-400">{store.review_count} reviews</div>
                                         </div>
                   }
                                 </div>
@@ -594,12 +600,15 @@ export default function NearbyStores() {
                           {chain.stores.map((store) =>
             <div key={store.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center group hover:border-indigo-200 dark:hover:border-indigo-700">
                                   <div className="cursor-pointer flex-1" onClick={() => {setSelectedStore(store);window.scrollTo({ top: 300, behavior: 'smooth' });}}>
-                                      <div className="flex items-center justify-between pr-2">
+                                      <div className="flex items-start justify-between pr-2 gap-2">
                                           <div className="font-medium text-sm text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{store.name}</div>
                                           {store.average_rating > 0 &&
-                  <div className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded">
-                                                  <Star className="w-3 h-3 fill-current" />
-                                                  <span className="font-bold">{store.average_rating.toFixed(1)}</span>
+                  <div className="flex flex-col items-end gap-0.5 bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded">
+                                                  <div className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-400">
+                                                      <Star className="w-3 h-3 fill-current" />
+                                                      <span className="font-bold">{store.average_rating.toFixed(1)}/5</span>
+                                                  </div>
+                                                  <span className="text-[9px] text-gray-500 dark:text-gray-400">{store.review_count} reviews</span>
                                               </div>
                   }
                                       </div>
