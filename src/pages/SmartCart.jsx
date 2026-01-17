@@ -323,7 +323,7 @@ export default function SmartCart() {
                                       <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
                                           <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Weekly Pattern Detection:</h4>
                                           <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                              <p className="text-xs">Analyzes purchases from last 8 weeks:</p>
+                                              <p className="text-xs">Analyzes purchases from all available historical weeks:</p>
                                               <ul className="list-disc list-inside ml-4 text-xs">
                                                   <li>Groups receipts by day of week (e.g., all your Fridays)</li>
                                                   <li>Counts how often each product appears on this weekday</li>
