@@ -347,15 +347,6 @@ export default function NearbyStores() {
                               <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Top 3 stores displayed in podium format. All stores grouped by chain and sorted alphabetically in accordion view.</p>
                       </div>
                       
-                      <div>
-                          <h4 className="font-semibold mb-2">Geocoding & Reverse Geocoding:</h4>
-                          <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                              <li><strong>Geocoding:</strong> Converts address strings to coordinates using Nominatim API</li>
-                              <li><strong>Reverse Geocoding:</strong> Converts coordinates to formatted addresses</li>
-                              <li>Results cached in GeocodeCache entity for performance</li>
-                          </ul>
-                      </div>
-                      
                       <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
                           <h4 className="font-semibold mb-2">Map Visualization:</h4>
                           <p className="text-xs text-gray-700 dark:text-gray-300">Uses Leaflet + OpenStreetMap. Custom markers show chain logos, with gold highlight for closest store. Click any marker to view details and get directions.</p>
