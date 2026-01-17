@@ -480,14 +480,23 @@ export default function NearbyStores() {
                               </div>
                               <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate w-full">{store.name}</h3>
                               {store.average_rating > 0 &&
-                <div className="flex flex-col items-center mb-1">
+                              <div className="flex flex-col items-center mb-1">
                                       <div className="flex items-center gap-0.5 text-[10px] text-yellow-600 dark:text-yellow-400 font-bold">
                                           <Star className="w-3 h-3 fill-current" />
                                           {store.average_rating.toFixed(1)}/5
                                       </div>
                                       <span className="text-[9px] text-gray-400 dark:text-gray-500 font-normal">{store.review_count} reviews</span>
+                                      {store.sentiment && (
+                                          <span className={`text-[9px] font-medium mt-0.5 px-1.5 py-0.5 rounded ${
+                                              store.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                              store.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                              'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                          }`}>
+                                              {store.sentiment.charAt(0).toUpperCase() + store.sentiment.slice(1)} sentiment
+                                          </span>
+                                      )}
                                   </div>
-                }
+                              }
                               <p className="text-xs text-gray-500 dark:text-gray-400 truncate w-full mb-2">{store.chain_name}</p>
                               <div className="flex items-center gap-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
                                   <Car className="w-3 h-3" />
