@@ -112,20 +112,20 @@ Deno.serve(async (req) => {
         sentimentScore * sentimentWeight
       ) * 100;
       
-      // Additional preference bonuses (legacy logic)
+      // Additional preference bonuses - scaled down to not override primary factors
       let bonusScore = 0;
       const storeReceipts = receipts.filter(r => r.store_id === store.id);
-      if (storeReceipts.length > 0) bonusScore += 10;
+      if (storeReceipts.length > 0) bonusScore += 2;
       
       if (userProfile) {
         if (userProfile.kashrut_level !== 'none' && store.store_tags?.includes('kosher_certified')) {
-          bonusScore += 15;
+          bonusScore += 3;
         }
         if (userProfile.health_preferences?.includes('organic') && store.store_tags?.includes('organic_focused')) {
-          bonusScore += 10;
+          bonusScore += 2;
         }
         if (userProfile.budget_focus === 'save_money' && store.store_tags?.includes('discount_store')) {
-          bonusScore += 10;
+          bonusScore += 2;
         }
       }
 
