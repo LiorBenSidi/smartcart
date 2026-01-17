@@ -614,14 +614,23 @@ export default function NearbyStores() {
                                       <div className="flex items-start justify-between pr-2 gap-2">
                                           <div className="font-medium text-sm text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{store.name}</div>
                                           {store.average_rating > 0 &&
-                  <div className="flex flex-col items-end gap-0.5 bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded">
-                                                  <div className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-400">
+                                      <div className="flex flex-col items-end gap-0.5">
+                                                  <div className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded">
                                                       <Star className="w-3 h-3 fill-current" />
                                                       <span className="font-bold">{store.average_rating.toFixed(1)}/5</span>
                                                   </div>
                                                   <span className="text-[9px] text-gray-500 dark:text-gray-400">{store.review_count} reviews</span>
+                                                  {store.sentiment && (
+                                                      <span className={`text-[9px] font-medium mt-1 px-1.5 py-0.5 rounded ${
+                                                          store.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                          store.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                          'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                                      }`}>
+                                                          {store.sentiment.charAt(0).toUpperCase() + store.sentiment.slice(1)}
+                                                      </span>
+                                                  )}
                                               </div>
-                  }
+                                      }
                                       </div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400">{store.address_line}, {store.city}</div>
                                       <div className="flex items-center gap-2 mt-1 flex-wrap">
