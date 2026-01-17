@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CartAlternatives from '@/components/CartAlternatives';
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
@@ -295,10 +296,76 @@ export default function SmartCart() {
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
-                          <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                          Suggested for Today
-                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                              <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                              Suggested for Today
+                          </CardTitle>
+                          <Dialog>
+                              <DialogTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900">
+                                      <HelpCircle className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                  </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                  <DialogHeader>
+                                      <DialogTitle className="flex items-center gap-2">
+                                          <CalendarDays className="w-5 h-5 text-indigo-600" />
+                                          Daily Suggestions - Technical Details
+                                      </DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 text-sm">
+                                      <div>
+                                          <h4 className="font-semibold mb-2">Algorithm Overview:</h4>
+                                          <p className="text-gray-700 dark:text-gray-300 mb-2">Runs daily to predict what you should buy today based on your purchase history.</p>
+                                      </div>
+                                      
+                                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                                          <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Weekly Pattern Detection:</h4>
+                                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                                              <p className="text-xs">Analyzes purchases from last 8 weeks:</p>
+                                              <ul className="list-disc list-inside ml-4 text-xs">
+                                                  <li>Groups receipts by day of week (e.g., all your Fridays)</li>
+                                                  <li>Counts how often each product appears on this weekday</li>
+                                                  <li>Threshold: Product must appear ≥50% of weeks</li>
+                                                  <li>Confidence = (occurrences / total_weeks)</li>
+                                              </ul>
+                                              <p className="text-xs mt-2"><strong>Example:</strong> If you bought milk on 6 out of 8 Fridays → 75% confidence for Friday milk suggestion</p>
+                                          </div>
+                                      </div>
+                                      
+                                      <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
+                                          <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Restock Prediction (Cadence-Based):</h4>
+                                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                                              <p className="text-xs">Uses UserProductHabit records (pre-calculated):</p>
+                                              <ul className="list-disc list-inside ml-4 text-xs">
+                                                  <li>avg_cadence_days: Average days between purchases</li>
+                                                  <li>last_purchase_date: When you last bought it</li>
+                                                  <li>days_since = (today - last_purchase_date)</li>
+                                                  <li>ratio = days_since / avg_cadence_days</li>
+                                                  <li>Suggests if ratio ≥ 0.85 (85% through cycle)</li>
+                                              </ul>
+                                              <p className="text-xs mt-2"><strong>Example:</strong> You buy eggs every 7 days. Last purchase was 6 days ago → ratio=0.86 → suggest restock!</p>
+                                          </div>
+                                      </div>
+                                      
+                                      <div>
+                                          <h4 className="font-semibold mb-2">Quantity Estimation:</h4>
+                                          <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                              <li>Weekly suggestions: Uses mode (most common quantity)</li>
+                                              <li>Restock suggestions: Uses average quantity from habits</li>
+                                              <li>Default to 1 if no history</li>
+                                          </ul>
+                                      </div>
+                                      
+                                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                                          <h4 className="font-semibold mb-2">Combination Logic:</h4>
+                                          <p className="text-xs text-gray-700 dark:text-gray-300">A product can be suggested for BOTH weekly pattern AND restock. Reason type shows "Weekly+Restock" in this case.</p>
+                                      </div>
+                                  </div>
+                              </DialogContent>
+                          </Dialog>
+                      </div>
                       <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
                           {suggestions.items.length} items
                       </Badge>
@@ -603,10 +670,76 @@ export default function SmartCart() {
             </Card>
           ) : storeComparisons.length > 0 ? (
             <div className="space-y-4">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <TrendingDown className="w-6 h-6 text-green-600" />
-                Top 3 Cheapest Supermarkets
-              </h3>
+              <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <TrendingDown className="w-6 h-6 text-green-600" />
+                    Top 3 Cheapest Supermarkets
+                  </h3>
+                  <Dialog>
+                      <DialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-8 px-2 text-xs">
+                              <HelpCircle className="h-4 w-4 mr-1" />
+                              How it works
+                          </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                              <DialogTitle className="flex items-center gap-2">
+                                  <TrendingDown className="w-5 h-5 text-green-600" />
+                                  Price Comparison - Technical Details
+                              </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 text-sm">
+                              <div>
+                                  <h4 className="font-semibold mb-2">Process (getCartRecommendations):</h4>
+                                  <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                                      <li>Receives cart items (GTIN + quantity)</li>
+                                      <li>Finds all Products matching GTINs across all chains</li>
+                                      <li>Groups products by chain_id</li>
+                                      <li>Calculates total cost per chain</li>
+                                      <li>Ranks chains by total cost (ascending)</li>
+                                      <li>Returns top 3 cheapest options</li>
+                                  </ol>
+                              </div>
+                              
+                              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                                  <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Cost Calculation:</h4>
+                                  <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
+                                      <p className="mb-2">For each chain:</p>
+                                      <code className="text-gray-700 dark:text-gray-300">
+                                          totalCost = Σ (item.current_price × item.quantity)<br/>
+                                          availableItems = count(matched products)<br/>
+                                          missingItems = cart.length - availableItems
+                                      </code>
+                                  </div>
+                              </div>
+                              
+                              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                                  <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Location Integration:</h4>
+                                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">If user location provided (lat/lon):</p>
+                                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                      <li>Finds nearest Store for each chain using Haversine distance</li>
+                                      <li>Fetches driving route from OSRM (Open Source Routing Machine)</li>
+                                      <li>Optionally fetches transit route if available</li>
+                                      <li>Displays distance, duration, and branch address</li>
+                                  </ul>
+                              </div>
+                              
+                              <div className="bg-violet-50 dark:bg-violet-900/20 p-3 rounded">
+                                  <h4 className="font-semibold mb-2 text-violet-900 dark:text-violet-200">Smart Cart Optimization:</h4>
+                                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Multi-store split algorithm:</p>
+                                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                      <li>For each cart item, finds the chain with lowest price</li>
+                                      <li>Creates optimized cart splitting items across stores</li>
+                                      <li>Calculates total savings vs. single-store shopping</li>
+                                      <li>Shows breakdown of which items to buy where</li>
+                                  </ul>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">Note: Doesn't account for travel costs between stores</p>
+                              </div>
+                          </div>
+                      </DialogContent>
+                  </Dialog>
+              </div>
               {storeComparisons.map((comparison, idx) => (
                 <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : idx === 1 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'}`}>
                   <CardContent className="p-5">
@@ -738,7 +871,90 @@ export default function SmartCart() {
       </TabsContent>
 
       <TabsContent value="ai">
-        <CartAlternatives />
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI-Curated Alternatives</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Personalized product recommendations</p>
+                </div>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button size="sm" variant="outline">
+                            <HelpCircle className="h-4 w-4 mr-1" />
+                            How it works
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-purple-600" />
+                                AI Recommendations - Technical Details
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 text-sm">
+                            <div>
+                                <h4 className="font-semibold mb-2">Hybrid Recommendation System:</h4>
+                                <p className="text-gray-700 dark:text-gray-300">Combines collaborative filtering + content-based filtering</p>
+                            </div>
+                            
+                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. User Vector Generation:</h4>
+                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                                    <p className="text-xs">Analyzes last 90 days of receipts to build preference vector:</p>
+                                    <ul className="list-disc list-inside ml-4 text-xs">
+                                        <li><strong>Category preferences:</strong> Normalized purchase frequency per category</li>
+                                        <li><strong>Price sensitivity:</strong> avg_item_price, price_variance</li>
+                                        <li><strong>Brand loyalty:</strong> top_brands[] list</li>
+                                        <li><strong>Dietary flags:</strong> organic_ratio, health_conscious_ratio</li>
+                                        <li><strong>Shopping patterns:</strong> avg_basket_size, purchase_frequency</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Collaborative Filtering:</h4>
+                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                                    <p className="text-xs">Finds similar users using cosine similarity:</p>
+                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1">
+                                        <code className="text-gray-700 dark:text-gray-300">
+                                            similarity = (A · B) / (||A|| × ||B||)<br/>
+                                            where A, B = user preference vectors
+                                        </code>
+                                    </div>
+                                    <ul className="list-disc list-inside ml-4 text-xs mt-2">
+                                        <li>Finds top 10 most similar users</li>
+                                        <li>Extracts products they bought that you haven't</li>
+                                        <li>Scores by similarity weight × frequency</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">3. Candidate Ranking:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Each recommendation scored by:</p>
+                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                    <li>Collaborative score (from similar users)</li>
+                                    <li>Category match (your preference × product category)</li>
+                                    <li>Price appropriateness (how it fits your budget)</li>
+                                    <li>Recency boost (newer products ranked higher)</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h4 className="font-semibold mb-2">4. Chain Filtering:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">Results can be filtered by chain to show alternatives available at specific supermarkets.</p>
+                            </div>
+                            
+                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                                <h4 className="font-semibold mb-2">Feedback Loop:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">User interactions (views, clicks, adds to cart) are logged to RecommendationFeedback and used to improve future recommendations.</p>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
+            <CartAlternatives />
+        </div>
       </TabsContent>
 
       </Tabs>
