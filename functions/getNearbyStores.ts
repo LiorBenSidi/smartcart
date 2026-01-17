@@ -161,6 +161,11 @@ Deno.serve(async (req) => {
         avgRating: storeReviews.length > 0 
           ? (storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length).toFixed(1)
           : null,
+        review_count: storeReviews.length,
+        average_rating: storeReviews.length > 0 
+          ? (storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length)
+          : 0,
+        sentiment: sentiment ? sentiment.overall_sentiment : null,
         usingRouteDuration: store.usingRouteDuration !== false // Default to true if set
       };
     });
