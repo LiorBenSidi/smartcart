@@ -103,10 +103,10 @@ Deno.serve(async (req) => {
     // Calculate weighted recommendation score for each store
     const storesWithScores = nearbyStores.map(store => {
       // 1. Distance score (normalized 0-1, closer = higher)
-      // Use driving duration if available and distance is heavily weighted
+      // Prioritize driving duration if available, fall back to Haversine distance
       let distanceScore;
-      if (distanceWeight > 0.9 && store.rawDuration) {
-          const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || s.distance * 60), 1);
+      if (store.rawDuration) {
+          const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || Infinity), 1);
           distanceScore = 1 - (store.rawDuration / maxDuration);
       } else {
           const maxDistance = Math.max(...nearbyStores.map(s => s.distance), 1);
