@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag } from 'lucide-react';
+import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import StoreReviews from '@/components/StoreReviews';
@@ -226,9 +226,93 @@ export default function NearbyStores() {
   return (
     <div className="space-y-8 pb-20">
       <div className="flex items-center justify-between">
-        <div>
-           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Nearby Stores</h2>
-           <p className="text-sm text-gray-500 dark:text-gray-400">{stores.length} locations found</p>
+        <div className="flex items-center gap-2">
+           <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Nearby Stores</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{stores.length} locations found</p>
+           </div>
+           <Dialog>
+              <DialogTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-indigo-600" />
+                          Store Discovery - Technical Details
+                      </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 text-sm">
+                      <div>
+                          <h4 className="font-semibold mb-2">Process Overview:</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                              <li>Retrieve user's geolocation (or use default coordinates)</li>
+                              <li>Calculate distances to all stores in database</li>
+                              <li>Fetch routing information for nearest stores</li>
+                              <li>Rank and display results with navigation options</li>
+                          </ol>
+                      </div>
+                      
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                          <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Distance Calculation (Haversine):</h4>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Calculates "as the crow flies" distance using latitude/longitude:</p>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
+                              <code className="text-gray-700 dark:text-gray-300">
+                                  R = 6371 km (Earth radius)<br/>
+                                  Δφ = lat₂ - lat₁<br/>
+                                  Δλ = lon₂ - lon₁<br/>
+                                  a = sin²(Δφ/2) + cos(φ₁)⋅cos(φ₂)⋅sin²(Δλ/2)<br/>
+                                  c = 2⋅atan2(√a, √(1-a))<br/>
+                                  distance = R × c
+                              </code>
+                          </div>
+                      </div>
+                      
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                          <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Driving Time Estimation (OSRM):</h4>
+                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                              <p className="text-xs">Uses Open Source Routing Machine (OSRM) API:</p>
+                              <ul className="list-disc list-inside ml-4 text-xs">
+                                  <li>Fetches actual road routes between user and stores</li>
+                                  <li>Returns distance (meters) and duration (seconds)</li>
+                                  <li>Provides route geometry for map visualization</li>
+                                  <li>Cached in RouteCache entity to reduce API calls</li>
+                              </ul>
+                              <p className="text-xs mt-2"><strong>Modes:</strong> driving (default), walking, cycling</p>
+                          </div>
+                      </div>
+                      
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+                          <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Ranking Algorithm:</h4>
+                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                              <p className="text-xs">Top 3 Podium Selection:</p>
+                              <ol className="list-decimal list-inside ml-4 text-xs">
+                                  <li>Primary: Driving duration (if available)</li>
+                                  <li>Fallback: Haversine distance</li>
+                                  <li>Tie-breaker: Linear distance</li>
+                              </ol>
+                              <p className="text-xs mt-2">Stores grouped by chain and sorted alphabetically in accordion view.</p>
+                          </div>
+                      </div>
+                      
+                      <div>
+                          <h4 className="font-semibold mb-2">Geocoding & Reverse Geocoding:</h4>
+                          <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                              <li><strong>Geocoding:</strong> Converts address strings to coordinates using Nominatim API</li>
+                              <li><strong>Reverse Geocoding:</strong> Converts coordinates to formatted addresses</li>
+                              <li>Results cached in GeocodeCache entity for performance</li>
+                          </ul>
+                      </div>
+                      
+                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                          <h4 className="font-semibold mb-2">Map Visualization:</h4>
+                          <p className="text-xs text-gray-700 dark:text-gray-300">Uses Leaflet + OpenStreetMap. Custom markers show chain logos, with gold highlight for closest store. Click any marker to view details and get directions.</p>
+                      </div>
+                  </div>
+              </DialogContent>
+           </Dialog>
         </div>
         <Button variant="outline" size="sm" onClick={getUserLocation} className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
       </div>
