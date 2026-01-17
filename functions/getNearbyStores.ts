@@ -83,7 +83,8 @@ Deno.serve(async (req) => {
     // This balances accuracy with API rate limits and performance
     const storesToEnrichEarly = nearbyStores.slice(0, 25);
 
-    await Promise.all(storesToEnrichEarly.map(async (store) => {
+    // Fetch routes sequentially with 1000ms delay between requests
+    for (const store of storesToEnrichEarly) {
         try {
             const res = await base44.functions.invoke('getRoute', {
                 origin: { lat: latitude, lon: longitude },
@@ -99,7 +100,12 @@ Deno.serve(async (req) => {
             // Silently fail, will use Haversine distance as fallback
             console.error("Routing error for store", store.name, e.message);
         }
-    }));
+
+        // Delay 1000ms before next request (except after last request)
+        if (store !== storesToEnrichEarly[storesToEnrichEarly.length - 1]) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
 
     // Mark stores beyond top 25 as using Haversine distance
     nearbyStores.slice(25).forEach(store => {
