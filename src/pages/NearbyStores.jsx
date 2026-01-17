@@ -615,16 +615,21 @@ export default function NearbyStores() {
                   }
                                       </div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400">{store.address_line}, {store.city}</div>
-                                      <div className="flex items-center gap-2 mt-1">
+                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                                           {store.drivingInfo ?
-                  <span className="text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                      <span className="text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded flex items-center gap-1">
                                                   <Car className="w-3 h-3" /> {store.drivingInfo.duration}
                                               </span> :
 
-                  <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                                                  {store.distance.toFixed(1)} km
+                                      <span className="text-[10px] bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                  <MapPin className="w-3 h-3" /> {store.distance.toFixed(1)} km
                                               </span>
-                  }
+                                      }
+                                          {!store.usingRouteDuration &&
+                                      <span className="text-[9px] bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
+                                                  Haversine distance (beyond top 25)
+                                              </span>
+                                      }
                                       </div>
                                   </div>
                                   <div className="flex items-center gap-1">
