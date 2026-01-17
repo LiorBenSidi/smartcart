@@ -330,60 +330,60 @@ export default function SmartCart() {
                                       <HelpCircle className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                                   </Button>
                               </DialogTrigger>
-                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto dark:bg-gray-900">
                                   <DialogHeader>
                                       <DialogTitle className="flex items-center gap-2">
                                           <CalendarDays className="w-5 h-5 text-indigo-600" />
                                           Daily Suggestions - Technical Details
                                       </DialogTitle>
                                   </DialogHeader>
-                                  <div className="space-y-4 text-sm">
+                                  <div className="space-y-4 text-sm dark:text-gray-200">
                                       <div>
                                           <h4 className="font-semibold mb-2">Algorithm Overview:</h4>
                                           <p className="text-gray-700 dark:text-gray-300 mb-2">Runs daily to predict what you should buy today based on your purchase history.</p>
                                       </div>
-                                      
-                                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                          <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Weekly Pattern Detection:</h4>
-                                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
+
+                                      <div className="bg-slate-800 border border-slate-700 p-4 rounded">
+                                          <h4 className="font-semibold mb-2 text-white">Weekly Pattern Detection:</h4>
+                                          <div className="space-y-2 text-gray-300">
                                               <p className="text-xs">Analyzes purchases from all available historical weeks:</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs">
+                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
                                                   <li>Groups receipts by day of week (e.g., all your Fridays)</li>
                                                   <li>Counts how often each product appears on this weekday</li>
                                                   <li>Threshold: Product must appear ≥50% of weeks</li>
                                                   <li>Confidence = (occurrences / total_weeks)</li>
                                               </ul>
-                                              <p className="text-xs mt-2"><strong>Example:</strong> If you bought milk on 6 out of 8 Fridays → 75% confidence for Friday milk suggestion</p>
+                                              <p className="text-xs mt-3"><strong>Example:</strong> If you bought milk on 6 out of 8 Fridays → 75% confidence for Friday milk suggestion</p>
                                           </div>
                                       </div>
-                                      
-                                      <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
-                                          <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Restock Prediction (Cadence-Based):</h4>
-                                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
+
+                                      <div className="bg-slate-900 border border-yellow-700/30 p-4 rounded">
+                                          <h4 className="font-semibold mb-2 text-yellow-400">Restock Prediction (Cadence-Based):</h4>
+                                          <div className="space-y-2 text-gray-300">
                                               <p className="text-xs">Uses UserProductHabit records (pre-calculated):</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs">
+                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
                                                   <li>avg_cadence_days: Average days between purchases</li>
                                                   <li>last_purchase_date: When you last bought it</li>
                                                   <li>days_since = (today - last_purchase_date)</li>
                                                   <li>ratio = days_since / avg_cadence_days</li>
                                                   <li>Suggests if ratio ≥ 0.85 (85% through cycle)</li>
                                               </ul>
-                                              <p className="text-xs mt-2"><strong>Example:</strong> You buy eggs every 7 days. Last purchase was 6 days ago → ratio=0.86 → suggest restock!</p>
+                                              <p className="text-xs mt-3"><strong>Example:</strong> You buy eggs every 7 days. Last purchase was 6 days ago → ratio=0.86 → suggest restock!</p>
                                           </div>
                                       </div>
-                                      
+
                                       <div>
                                           <h4 className="font-semibold mb-2">Quantity Estimation:</h4>
-                                          <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                          <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300 space-y-1">
                                               <li>Weekly suggestions: Uses mode (most common quantity)</li>
                                               <li>Restock suggestions: Uses average quantity from habits</li>
                                               <li>Default to 1 if no history</li>
                                           </ul>
                                       </div>
-                                      
-                                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                                          <h4 className="font-semibold mb-2">Combination Logic:</h4>
-                                          <p className="text-xs text-gray-700 dark:text-gray-300">A product can be suggested for BOTH weekly pattern AND restock. Reason type shows "Weekly+Restock" in this case.</p>
+
+                                      <div className="bg-slate-800 border border-slate-700 p-4 rounded">
+                                          <h4 className="font-semibold mb-2 text-white">Combination Logic:</h4>
+                                          <p className="text-xs text-gray-300">A product can be suggested for BOTH weekly pattern AND restock. Reason type shows "Weekly+Restock" in this case.</p>
                                       </div>
                                   </div>
                               </DialogContent>
