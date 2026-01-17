@@ -41,8 +41,8 @@ export default function Layout({ children, currentPageName }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    if (true) { //(darkMode) {
+    localStorage.setItem('darkMode', JSON.stringify(true)); //darkMode));
+    if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
