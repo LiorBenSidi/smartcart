@@ -86,7 +86,13 @@ export default function NearbyStores() {
         }
       },
       (err) => {
-        base44.functions.invoke('getNearbyStores', { latitude: 32.0853, longitude: 34.7818 }).
+        base44.functions.invoke('getNearbyStores', { 
+          latitude: 32.0853, 
+          longitude: 34.7818,
+          distanceWeight,
+          ratingWeight,
+          sentimentWeight
+        }).
         then((res) => {setStores(res.data.nearbyStores || []);setLoading(false);}).
         catch(() => setLoading(false));
       },
@@ -192,14 +198,11 @@ export default function NearbyStores() {
   const { top3Stores, groupedChains } = useMemo(() => {
     if (!stores.length) return { top3Stores: [], groupedChains: [] };
 
-    // 1. Identify Top 3 by Driving (or Linear if missing)
-    const sortedByDrive = [...stores].sort((a, b) => {
-      const durA = a.drivingInfo?.rawDuration || Infinity;
-      const durB = b.drivingInfo?.rawDuration || Infinity;
-      if (durA !== durB) return durA - durB;
-      return a.distance - b.distance;
+    // 1. Identify Top 3 by weighted recommendation score
+    const sortedByScore = [...stores].sort((a, b) => {
+      return (b.recommendationScore || 0) - (a.recommendationScore || 0);
     });
-    const top3 = sortedByDrive.slice(0, 3);
+    const top3 = sortedByScore.slice(0, 3);
 
     // 2. Group by Chain
     const groups = stores.reduce((acc, store) => {
@@ -220,7 +223,7 @@ export default function NearbyStores() {
     const sortedGroups = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 
     return { top3Stores: top3, groupedChains: sortedGroups };
-  }, [stores]);
+  }, [stores, distanceWeight, ratingWeight, sentimentWeight]);
 
   const getBounds = () => {
     if (!userLocation && !stores.length) return null;
