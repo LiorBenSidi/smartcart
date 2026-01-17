@@ -79,9 +79,9 @@ Deno.serve(async (req) => {
     // Get user's receipt history
     const receipts = await base44.entities.Receipt.filter({ created_by: user.email });
 
-    // Enrich top 100 stores with driving duration (before ranking)
-    // This allows accurate distance scoring when distance is weighted heavily
-    const storesToEnrichEarly = nearbyStores.slice(0, 100);
+    // Enrich only top 25 closest stores (by Haversine distance) with driving duration
+    // This balances accuracy with API rate limits and performance
+    const storesToEnrichEarly = nearbyStores.slice(0, 25);
 
     await Promise.all(storesToEnrichEarly.map(async (store) => {
         try {
@@ -93,12 +93,18 @@ Deno.serve(async (req) => {
 
             if (res.data && res.data.duration) {
                 store.rawDuration = res.data.duration; // in seconds
+                store.usingRouteDuration = true;
             }
         } catch (e) {
             // Silently fail, will use Haversine distance as fallback
             console.error("Routing error for store", store.name, e.message);
         }
     }));
+
+    // Mark stores beyond top 25 as using Haversine distance
+    nearbyStores.slice(25).forEach(store => {
+        store.usingRouteDuration = false;
+    });
 
     // Calculate weighted recommendation score for each store
     const storesWithScores = nearbyStores.map(store => {
@@ -148,7 +154,8 @@ Deno.serve(async (req) => {
         sentimentScore,
         avgRating: storeReviews.length > 0 
           ? (storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length).toFixed(1)
-          : null
+          : null,
+        usingRouteDuration: store.usingRouteDuration !== false // Default to true if set
       };
     });
 

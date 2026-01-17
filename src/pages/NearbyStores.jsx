@@ -286,14 +286,14 @@ export default function NearbyStores() {
                       <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
                           <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Driving Time Estimation (OSRM):</h4>
                           <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                              <p className="text-xs">Uses Open Source Routing Machine (OSRM) API:</p>
+                              <p className="text-xs">Uses Open Source Routing Machine (OSRM) API for accurate distance ranking:</p>
                               <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                  <li>Fetches actual road routes for top 100 nearby stores (by Haversine distance)</li>
-                                  <li>Returns distance (meters) and duration (seconds)</li>
-                                  <li>When <strong>Distance weight > 90%</strong>, uses actual driving time instead of straight-line distance for more accurate ranking</li>
-                                  <li>Falls back to straight-line distance if routing fails</li>
+                                  <li><strong>Top 25 stores</strong> (by Haversine distance): Fetches actual road routes with real driving duration</li>
+                                  <li><strong>Stores beyond top 25</strong>: Ranked by straight-line (Haversine) distance due to API rate limits</li>
+                                  <li>Uses cached route data from RouteCache to reduce API calls</li>
+                                  <li>Returns distance (meters) and duration (seconds) for routing calculations</li>
                                   <li>Provides route geometry for map visualization</li>
-                                  <li>Cached in RouteCache entity to reduce API calls</li>
+                                  <li>Stores ranked by actual driving time when available, falls back to Haversine distance otherwise</li>
                               </ul>
                               <p className="text-xs mt-2"><strong>Modes:</strong> driving (default), walking, cycling</p>
                           </div>
