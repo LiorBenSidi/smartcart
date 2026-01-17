@@ -332,7 +332,14 @@ export default Deno.serve(async (req) => {
         let finalSuggestions = Array.from(suggestionMap.values());
 
         // E) ANTI-SPAM FILTERS + LIMITING + SORTING
-        // Exclude single purchase items
+        // Filter out disliked products
+        const userPreferences = await base44.entities.UserProductPreference.filter({ 
+            created_by: user.email,
+            preference: 'dislike'
+        }).catch(() => []);
+        const dislikedGTINs = new Set(userPreferences.map(p => p.product_gtin));
+        
+        finalSuggestions = finalSuggestions.filter(s => !dislikedGTINs.has(s.product_id));
 
         // Sorting: Content-based (Weekly/Restock) before Collaborative
         finalSuggestions.sort((a, b) => {
