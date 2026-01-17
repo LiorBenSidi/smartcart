@@ -137,9 +137,9 @@ export default function Upload() {
             <Button 
               size="icon" 
               variant="ghost" 
-              className="absolute top-0 right-0 h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="absolute top-0 right-0 h-20 w-20 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
             >
-              <HelpCircle className="h-10 w-10 text-gray-400 hover:text-indigo-600" />
+              <HelpCircle className="h-20 w-20 text-gray-400 hover:text-indigo-600" />
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
