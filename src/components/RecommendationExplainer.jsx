@@ -73,11 +73,6 @@ export default function RecommendationExplainer({ mode = 'general', className = 
 
     return (
         <>
-            <Button variant={triggerVariant} size="sm" className={`gap-2 ${className}`} onClick={() => setIsOpen(true)}>
-                <Info className="w-4 h-4" />
-                <span className="hidden sm:inline">How this works</span>
-            </Button>
-
             {isOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
