@@ -79,11 +79,39 @@ Deno.serve(async (req) => {
     // Get user's receipt history
     const receipts = await base44.entities.Receipt.filter({ created_by: user.email });
 
+    // Enrich top 100 stores with driving duration (before ranking)
+    // This allows accurate distance scoring when distance is weighted heavily
+    const storesToEnrichEarly = nearbyStores.slice(0, 100);
+
+    await Promise.all(storesToEnrichEarly.map(async (store) => {
+        try {
+            const res = await base44.functions.invoke('getRoute', {
+                origin: { lat: latitude, lon: longitude },
+                destination: { lat: store.latitude, lon: store.longitude },
+                mode: 'driving'
+            });
+
+            if (res.data && res.data.duration) {
+                store.rawDuration = res.data.duration; // in seconds
+            }
+        } catch (e) {
+            // Silently fail, will use Haversine distance as fallback
+            console.error("Routing error for store", store.name, e.message);
+        }
+    }));
+
     // Calculate weighted recommendation score for each store
     const storesWithScores = nearbyStores.map(store => {
       // 1. Distance score (normalized 0-1, closer = higher)
-      const maxDistance = Math.max(...nearbyStores.map(s => s.distance), 1);
-      const distanceScore = 1 - (store.distance / maxDistance);
+      // Use driving duration if available and distance is heavily weighted
+      let distanceScore;
+      if (distanceWeight > 0.9 && store.rawDuration) {
+          const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || s.distance * 60), 1);
+          distanceScore = 1 - (store.rawDuration / maxDuration);
+      } else {
+          const maxDistance = Math.max(...nearbyStores.map(s => s.distance), 1);
+          distanceScore = 1 - (store.distance / maxDistance);
+      }
       
       // 2. Rating score (normalized 0-1)
       const storeReviews = reviewsByStore.get(store.id) || [];
@@ -129,40 +157,21 @@ Deno.serve(async (req) => {
 
     const recommendedStore = storesWithScores[0];
 
-    // Enrich with OSRM real distance/duration
-    // Only fetch for top 10 stores to avoid overloading OSRM or timeout
-    const storesToEnrich = storesWithScores.slice(0, 10);
-    
-    // Process in parallel
-    await Promise.all(storesToEnrich.map(async (store) => {
-        try {
-            const res = await base44.functions.invoke('getRoute', {
-                origin: { lat: latitude, lon: longitude },
-                destination: { lat: store.latitude, lon: store.longitude },
-                mode: 'driving'
-            });
-            
-            if (res.data && res.data.distance) {
-                // Convert meters to km or text
-                const distKm = (res.data.distance / 1000).toFixed(1) + " km";
-                // Convert seconds to readable string
-                const minutes = Math.round(res.data.duration / 60);
-                const durationText = minutes > 60 
-                    ? `${Math.floor(minutes/60)} hr ${minutes%60} min` 
-                    : `${minutes} min`;
+    // Format driving info for top stores that were already enriched
+    storesWithScores.forEach(store => {
+        if (store.rawDuration) {
+            const minutes = Math.round(store.rawDuration / 60);
+            const durationText = minutes > 60 
+                ? `${Math.floor(minutes/60)} hr ${minutes%60} min` 
+                : `${minutes} min`;
 
-                store.drivingInfo = {
-                    distance: distKm,
-                    duration: durationText,
-                    rawDuration: res.data.duration, // seconds
-                    rawDistance: res.data.distance  // meters
-                };
-            }
-        } catch (e) {
-            // Ignore routing errors, fallback to linear distance
-            console.error("Routing error for store", store.name, e.message);
+            store.drivingInfo = {
+                duration: durationText,
+                rawDuration: store.rawDuration,
+                rawDistance: store.rawDistance || null
+            };
         }
-    }));
+    });
 
     return Response.json({
       nearbyStores: storesWithScores,

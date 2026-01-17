@@ -287,9 +287,11 @@ export default function NearbyStores() {
                           <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Driving Time Estimation (OSRM):</h4>
                           <div className="space-y-2 text-gray-700 dark:text-gray-300">
                               <p className="text-xs">Uses Open Source Routing Machine (OSRM) API:</p>
-                              <ul className="list-disc list-inside ml-4 text-xs">
-                                  <li>Fetches actual road routes between user and stores</li>
+                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
+                                  <li>Fetches actual road routes for top 100 nearby stores (by Haversine distance)</li>
                                   <li>Returns distance (meters) and duration (seconds)</li>
+                                  <li>When <strong>Distance weight > 90%</strong>, uses actual driving time instead of straight-line distance for more accurate ranking</li>
+                                  <li>Falls back to straight-line distance if routing fails</li>
                                   <li>Provides route geometry for map visualization</li>
                                   <li>Cached in RouteCache entity to reduce API calls</li>
                               </ul>
