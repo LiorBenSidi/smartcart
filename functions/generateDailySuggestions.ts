@@ -2,7 +2,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 
 const CONFIG = {
     // Weekly
-    N_WEEKS: 6,
+    // N_WEEKS: 6, // Commented out - now analyzing all available weeks
     MIN_WEEKDAY_OCCURRENCES_K: 3,
     MIN_WEEKLY_CONFIDENCE: 0.55,
     // Restock
@@ -108,25 +108,38 @@ export default Deno.serve(async (req) => {
         // A) WEEKLY PATTERN DETECTION
         const weeklySuggestions = [];
         
-        // Calculate cutoff date for N_WEEKS
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - (CONFIG.N_WEEKS * 7));
+        // Calculate total distinct weeks for the current weekday in the user's history
+        const distinctWeeksForWeekday = new Set();
+        validReceipts.forEach(r => {
+            const rDate = new Date(r.purchased_at || r.date);
+            if (isNaN(rDate.getTime())) return;
+            if (rDate.getDay() === currentWeekday) {
+                const year = rDate.getFullYear();
+                const date = new Date(rDate.getTime());
+                date.setHours(0, 0, 0, 0);
+                date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+                const week1 = new Date(date.getFullYear(), 0, 4);
+                const weekNumber = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+                distinctWeeksForWeekday.add(`${year}-${weekNumber}`);
+            }
+        });
+        const total_distinct_current_weekdays_in_history = distinctWeeksForWeekday.size;
 
         for (const [pid, purchases] of Object.entries(productPurchases)) {
             // Sort by date desc
             purchases.sort((a, b) => b.date - a.date);
             
-            // Filter purchases within N_WEEKS
-            const recentPurchases = purchases.filter(p => p.date >= cutoffDate);
+            // Use all purchases for weekly pattern detection
+            const allPurchases = purchases;
             
-            if (recentPurchases.length === 0) continue;
+            if (allPurchases.length === 0) continue;
 
             // Count weekday occurrences
             let weekdayMatches = 0;
             const quantitiesOnWeekday = [];
             const datesOnWeekday = [];
 
-            recentPurchases.forEach(p => {
+            allPurchases.forEach(p => {
                 if (p.date.getDay() === currentWeekday) {
                     weekdayMatches++;
                     quantitiesOnWeekday.push(p.quantity);
@@ -134,8 +147,10 @@ export default Deno.serve(async (req) => {
                 }
             });
 
+            if (total_distinct_current_weekdays_in_history === 0) continue;
+
             if (weekdayMatches >= CONFIG.MIN_WEEKDAY_OCCURRENCES_K) {
-                const confidence = weekdayMatches / CONFIG.N_WEEKS;
+                const confidence = weekdayMatches / total_distinct_current_weekdays_in_history;
                 if (confidence >= CONFIG.MIN_WEEKLY_CONFIDENCE) {
                     weeklySuggestions.push({
                         product_id: pid,
@@ -146,7 +161,7 @@ export default Deno.serve(async (req) => {
                         evidence: {
                             weekday: currentWeekday,
                             occurrences: weekdayMatches,
-                            n_weeks: CONFIG.N_WEEKS,
+                            total_weeks: total_distinct_current_weekdays_in_history,
                             last_dates: datesOnWeekday.slice(0, 3)
                         }
                     });
@@ -233,9 +248,15 @@ export default Deno.serve(async (req) => {
         // Okay, let's assume this function IS the job. It calculates habits on the fly. We'll persist just the *Draft*.
         // Persisting habits is good practice but might be slow here. Let's persist top 20 habits just to show we did it.
         const topHabits = habits.sort((a,b) => b.purchase_count - a.purchase_count).slice(0, 20);
-        // We can do a delete-then-create for this user's habits to refresh.
-        // await base44.entities.UserProductHabit.delete({ created_by: user.email }); // Not supported in one call
-        // Let's skip the delete/recreate loop to avoid timeouts and just focus on the Draft generation which is the goal.
+        
+        // Persist UserProductHabit records
+        const existingHabits = await base44.entities.UserProductHabit.filter({ created_by: user.email });
+        if (existingHabits.length > 0) {
+            await Promise.all(existingHabits.map(h => base44.entities.UserProductHabit.delete(h.id)));
+        }
+        if (topHabits.length > 0) {
+            await base44.entities.UserProductHabit.bulkCreate(topHabits);
+        }
 
         // C) COLLABORATIVE FILTERING - Identify similar users and their preferred items
         const collaborativeSuggestions = [];
