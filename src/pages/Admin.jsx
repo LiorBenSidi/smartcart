@@ -3,10 +3,11 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2, RefreshCw, Zap } from 'lucide-react';
+import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import SystemValidationPanel from '../components/SystemValidationPanel';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -213,18 +214,156 @@ export default function Admin() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link to={createPageUrl('CatalogAdmin')} className="w-full">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-                    <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
+            <div className="relative">
+                <Link to={createPageUrl('CatalogAdmin')} className="w-full">
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+                        <Database className="w-4 h-4 mr-2" /> Catalog Ingestion
+                    </Button>
+                </Link>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                            <HelpCircle className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Database className="w-5 h-5 text-emerald-600" />
+                                Catalog Ingestion - Technical Details
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 text-sm">
+                            <div>
+                                <h4 className="font-semibold mb-2">Process Overview:</h4>
+                                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                                    <li>Uploads compressed XML catalog file (.gz format)</li>
+                                    <li>Decompresses and parses XML to extract product data</li>
+                                    <li>Creates/updates Chain and Store records</li>
+                                    <li>Bulk creates/updates Product entities (batches of 1000)</li>
+                                    <li>Marks new products with enrichment_status='pending'</li>
+                                    <li>Background job processes pending products for AI enrichment</li>
+                                </ol>
+                            </div>
+
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">AI Enrichment (Background Job):</h4>
+                                <p className="mb-2 text-gray-700 dark:text-gray-300">Products with enrichment_status='pending' are processed in batches of 50:</p>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
+                                    <p className="font-semibold mb-1">LLM Prompt:</p>
+                                    <p className="text-gray-600 dark:text-gray-400">"Analyze these grocery products and provide:"</p>
+                                    <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
+                                        <li>Category (Dairy, Meat, Produce, etc.)</li>
+                                        <li>Kosher Level (none, basic_kosher, strict_kosher, glatt_kosher, mehadrin)</li>
+                                        <li>Allergen Tags (Gluten, Nuts, Soy, Fish, etc.)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-2">Chain Information Enhancement:</h4>
+                                <p className="text-gray-700 dark:text-gray-300">For new chains, uses LLM with internet search to find:</p>
+                                <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300">
+                                    <li>Website URL</li>
+                                    <li>Logo image URL</li>
+                                    <li>Chain description</li>
+                                    <li>Chain type classification</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-2">Store Location Discovery:</h4>
+                                <p className="text-gray-700 dark:text-gray-300">Fetches branch locations from OpenStreetMap API and creates Store records with geocoded addresses.</p>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="relative">
+                <Button 
+                    onClick={handleAnalyzeSentiment}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Analyze Store Sentiment
                 </Button>
-            </Link>
-            <Button 
-                onClick={handleAnalyzeSentiment}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-                <Zap className="w-4 h-4 mr-2" />
-                Analyze Store Sentiment
-            </Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                            <HelpCircle className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Zap className="w-5 h-5 text-blue-600" />
+                                Store Sentiment Analysis - Technical Details
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 text-sm">
+                            <div>
+                                <h4 className="font-semibold mb-2">Analysis Process:</h4>
+                                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                                    <li>Fetches all stores and their reviews</li>
+                                    <li>For each store with reviews, analyzes comments individually</li>
+                                    <li>Calculates aggregate sentiment and statistics</li>
+                                    <li>Creates/updates StoreSentiment records</li>
+                                    <li>Aggregates to chain-level ChainSentiment</li>
+                                </ol>
+                            </div>
+
+                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">LLM Sentiment Classification:</h4>
+                                <p className="mb-2 text-gray-700 dark:text-gray-300">For each review comment:</p>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
+                                    <p className="font-semibold mb-1">LLM Prompt:</p>
+                                    <p className="text-gray-600 dark:text-gray-400">"You are an expert sentiment analyst for grocery stores."</p>
+                                    <p className="text-gray-600 dark:text-gray-400 mt-2">"Classify sentiment as positive (1) or negative (-1)"</p>
+                                    <p className="text-gray-700 dark:text-gray-300 mt-2">Returns:</p>
+                                    <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
+                                        <li>Sentiment score (1 or -1)</li>
+                                        <li>Explanation (1-2 sentences)</li>
+                                        <li>Key themes (cleanliness, staff, prices, etc.)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-2">Aggregation Logic:</h4>
+                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                                    <p><strong>Store Level:</strong></p>
+                                    <ul className="list-disc list-inside ml-4">
+                                        <li>Majority vote: More likes = positive, more dislikes = negative</li>
+                                        <li>Sentiment score: Total likes minus dislikes</li>
+                                        <li>Top 5 most mentioned themes across all reviews</li>
+                                        <li>Average rating from star ratings (1-5)</li>
+                                    </ul>
+                                    <p className="mt-2"><strong>Chain Level:</strong></p>
+                                    <ul className="list-disc list-inside ml-4">
+                                        <li>Mean rating across all stores in chain</li>
+                                        <li>Majority sentiment based on store counts</li>
+                                        <li>Breakdown of positive/neutral/negative stores</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Rate Limiting:</h4>
+                                <p className="text-gray-700 dark:text-gray-300">1000ms delay between stores, 500ms between reviews to avoid API rate limits. Stops after 1 consecutive error.</p>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
 
 
