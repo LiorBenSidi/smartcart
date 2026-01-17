@@ -333,19 +333,16 @@ export default function NearbyStores() {
                               </div>
                               
                               <div>
-                                  <strong>Bonus Points:</strong>
+                                  <strong>Penalty for Stores Without Reviews:</strong>
                                   <ul className="list-disc ml-6 mt-1">
-                                      <li>Previously shopped at this store: +10</li>
-                                      <li>Kosher preference match: +15</li>
-                                      <li>Organic preference match: +10</li>
-                                      <li>Budget/discount preference match: +10</li>
+                                      <li>Stores with no reviews: -5 points (always applied)</li>
                                   </ul>
                               </div>
-                          </div>
-                          
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-3"><strong>User Controls:</strong> Adjust weight sliders to prioritize distance, rating, or sentiment according to your preferences.</p>
-                          
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Top 3 stores displayed in podium format. All stores grouped by chain and sorted alphabetically in accordion view.</p>
+                              </div>
+
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-3"><strong>User Controls:</strong> Adjust weight sliders to prioritize distance, rating, or sentiment according to your preferences.</p>
+
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Top 3 stores displayed in podium format. All stores grouped by chain and sorted alphabetically in accordion view.</p>
                       </div>
                       
                       <div>
