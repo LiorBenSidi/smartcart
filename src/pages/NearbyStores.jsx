@@ -261,7 +261,7 @@ export default function NearbyStores() {
                       <div>
                           <h4 className="font-semibold mb-2">Process Overview:</h4>
                           <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                              <li>Retrieve user's geolocation (or use default coordinates)</li>
+                              <li>Retrieve user's geolocation</li>
                               <li>Calculate distances to all stores in database</li>
                               <li>Fetch routing information for nearest stores</li>
                               <li>Rank and display results with navigation options</li>
