@@ -54,7 +54,9 @@ export default function SmartCart() {
           setSuggestions(drafts[0]);
         } else {
           // Trigger generation if none exists
-          const res = await base44.functions.invoke('generateDailySuggestions');
+          const res = await base44.functions.invoke('generateDailySuggestions', {
+            currentCartItems: cartItems.map(item => item.gtin)
+          });
           if (res.data.success) {
             setSuggestions(res.data.draft);
           }
@@ -71,7 +73,9 @@ export default function SmartCart() {
   const refreshSuggestions = async () => {
     try {
       setRefreshingSuggestions(true);
-      const res = await base44.functions.invoke('generateDailySuggestions');
+      const res = await base44.functions.invoke('generateDailySuggestions', {
+        currentCartItems: cartItems.map(item => item.gtin)
+      });
       if (res.data.success) {
         setSuggestions(res.data.draft);
         toast.success("Suggestions refreshed!");

@@ -32,6 +32,10 @@ export default Deno.serve(async (req) => {
             return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Parse request body for currentCartItems
+        const body = await req.json().catch(() => ({}));
+        const currentCartItems = body.currentCartItems || [];
+
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         const currentWeekday = today.getDay(); // 0 = Sunday
@@ -358,8 +362,27 @@ export default Deno.serve(async (req) => {
             return dueB - dueA;
         });
 
-        // Cap limit
-        finalSuggestions = finalSuggestions.slice(0, CONFIG.MAX_SUGGESTED_ITEMS_PER_DAY);
+        // Filter out items already in cart and backfill with next-best items
+        const cartItemSet = new Set(currentCartItems);
+        const filteredSuggestions = [];
+        const backfillPool = [];
+        
+        for (const suggestion of finalSuggestions) {
+            if (!cartItemSet.has(suggestion.product_id)) {
+                if (filteredSuggestions.length < CONFIG.MAX_SUGGESTED_ITEMS_PER_DAY) {
+                    filteredSuggestions.push(suggestion);
+                } else {
+                    backfillPool.push(suggestion);
+                }
+            }
+        }
+        
+        // If we filtered out cart items, backfill from the pool
+        while (filteredSuggestions.length < CONFIG.MAX_SUGGESTED_ITEMS_PER_DAY && backfillPool.length > 0) {
+            filteredSuggestions.push(backfillPool.shift());
+        }
+        
+        finalSuggestions = filteredSuggestions;
 
         // Save Draft
         const draft = await base44.entities.SuggestedCartDraft.create({
