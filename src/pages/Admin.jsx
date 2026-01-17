@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle } from 'lucide-react';
+import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle, Brain } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import SystemValidationPanel from '../components/SystemValidationPanel';
@@ -21,6 +21,8 @@ export default function Admin() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
   const [sentimentResults, setSentimentResults] = useState(null);
+  const [isRebuildingVectors, setIsRebuildingVectors] = useState(false);
+  const [vectorResults, setVectorResults] = useState(null);
 
   const checkAdmin = async () => {
       const user = await base44.auth.me();
@@ -153,6 +155,50 @@ export default function Admin() {
     });
   };
 
+  const handleRebuildUserVectors = async () => {
+    setIsRebuildingVectors(true);
+    setVectorResults(null);
+    try {
+      // Delete all existing user vectors
+      const allVectors = await base44.entities.UserVectorSnapshot.list();
+      for (const v of allVectors) {
+        await base44.entities.UserVectorSnapshot.delete(v.id);
+      }
+
+      // Get all users
+      const allUsers = await base44.entities.User.list();
+      
+      // Rebuild vectors for each user
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const user of allUsers) {
+        try {
+          await base44.functions.invoke('buildUserVectors', { userId: user.email });
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to build vectors for ${user.email}:`, err);
+          errorCount++;
+        }
+      }
+
+      setVectorResults({
+        success: true,
+        message: `Rebuilt vectors for ${successCount} users. ${errorCount} errors.`,
+        successCount,
+        errorCount
+      });
+    } catch (error) {
+      console.error('Failed to rebuild user vectors:', error);
+      setVectorResults({
+        success: false,
+        message: 'Failed to rebuild user vectors: ' + error.message
+      });
+    } finally {
+      setIsRebuildingVectors(false);
+    }
+  };
+
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
@@ -213,7 +259,7 @@ export default function Admin() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
                 <Link to={createPageUrl('CatalogAdmin')} className="w-full">
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
@@ -364,7 +410,29 @@ export default function Admin() {
                     </DialogContent>
                 </Dialog>
             </div>
+
+            <Button 
+                onClick={handleRebuildUserVectors}
+                disabled={isRebuildingVectors}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+                <Brain className="w-4 h-4 mr-2" />
+                {isRebuildingVectors ? 'Rebuilding...' : 'Rebuild User Vectors'}
+            </Button>
         </div>
+
+        {vectorResults && (
+            <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
+                <CardContent className="p-6">
+                    <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                        User Vectors Rebuild
+                    </h3>
+                    <p className={`text-sm ${vectorResults.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {vectorResults.message}
+                    </p>
+                </CardContent>
+            </Card>
+        )}
 
 
 
