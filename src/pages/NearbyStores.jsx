@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -240,7 +241,7 @@ export default function NearbyStores() {
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                       <DialogTitle className="flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-indigo-600" />
+                          <MapPin className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                           Store Discovery - Technical Details
                       </DialogTitle>
                   </DialogHeader>

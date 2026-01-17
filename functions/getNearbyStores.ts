@@ -22,19 +22,32 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { latitude, longitude, radius } = await req.json();
+    const { latitude, longitude, radius, distanceWeight = 0.5, ratingWeight = 0.25, sentimentWeight = 0.25 } = await req.json();
 
     if (!latitude || !longitude) {
       return Response.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
-    // Fetch all stores and chains (limit 1000 for both to cover everything)
-    const [stores, chains] = await Promise.all([
+    // Fetch all stores, chains, reviews, and sentiment data
+    const [stores, chains, allReviews, allSentiments] = await Promise.all([
         base44.entities.Store.list('-created_date', 1000),
-        base44.entities.Chain.list('-created_date', 1000)
+        base44.entities.Chain.list('-created_date', 1000),
+        base44.entities.StoreReview.list('-created_date', 5000),
+        base44.entities.StoreSentiment.list('-created_date', 1000)
     ]);
 
     const chainMap = new Map(chains.map(c => [c.id, c]));
+    
+    // Create review and sentiment maps for quick lookup
+    const reviewsByStore = new Map();
+    allReviews.forEach(review => {
+        if (!reviewsByStore.has(review.store_id)) {
+            reviewsByStore.set(review.store_id, []);
+        }
+        reviewsByStore.get(review.store_id).push(review);
+    });
+    
+    const sentimentMap = new Map(allSentiments.map(s => [s.store_id, s]));
 
     // Filter stores within radius (if provided) and calculate distance
     const nearbyStores = stores
@@ -66,35 +79,63 @@ Deno.serve(async (req) => {
     // Get user's receipt history
     const receipts = await base44.entities.Receipt.filter({ created_by: user.email });
 
-    // Calculate recommendation score for each store
+    // Calculate weighted recommendation score for each store
     const storesWithScores = nearbyStores.map(store => {
-      let score = 0;
+      // 1. Distance score (normalized 0-1, closer = higher)
+      const maxDistance = Math.max(...nearbyStores.map(s => s.distance), 1);
+      const distanceScore = 1 - (store.distance / maxDistance);
       
-      // Proximity score (closer is better)
-      // Assuming 5km radius logic for scoring, but valid for larger if radius not set
-      const scoreRadius = radius || 10;
-      score += Math.max(0, (scoreRadius - store.distance) / scoreRadius * 30);
-
-      // User preference score (if they've shopped there before)
-      const storeReceipts = receipts.filter(r => r.store_id === store.id);
-      if (storeReceipts.length > 0) {
-        score += 20;
+      // 2. Rating score (normalized 0-1)
+      const storeReviews = reviewsByStore.get(store.id) || [];
+      let ratingScore = 0;
+      if (storeReviews.length > 0) {
+        const avgRating = storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length;
+        ratingScore = avgRating / 5; // Normalize to 0-1 (assuming 5-star max)
       }
-
-      // Store tags matching user preferences
+      
+      // 3. Sentiment score (normalized 0-1)
+      const sentiment = sentimentMap.get(store.id);
+      let sentimentScore = 0.5; // Default neutral
+      if (sentiment) {
+        // Sentiment can be positive (1), neutral (0.5), or negative (0)
+        if (sentiment.overall_sentiment === 'positive') sentimentScore = 1;
+        else if (sentiment.overall_sentiment === 'negative') sentimentScore = 0;
+      }
+      
+      // Calculate weighted combined score (0-100 scale)
+      const combinedScore = (
+        distanceScore * distanceWeight +
+        ratingScore * ratingWeight +
+        sentimentScore * sentimentWeight
+      ) * 100;
+      
+      // Additional preference bonuses (legacy logic)
+      let bonusScore = 0;
+      const storeReceipts = receipts.filter(r => r.store_id === store.id);
+      if (storeReceipts.length > 0) bonusScore += 10;
+      
       if (userProfile) {
         if (userProfile.kashrut_level !== 'none' && store.store_tags?.includes('kosher_certified')) {
-          score += 25;
+          bonusScore += 15;
         }
         if (userProfile.health_preferences?.includes('organic') && store.store_tags?.includes('organic_focused')) {
-          score += 15;
+          bonusScore += 10;
         }
         if (userProfile.budget_focus === 'save_money' && store.store_tags?.includes('discount_store')) {
-          score += 20;
+          bonusScore += 10;
         }
       }
 
-      return { ...store, recommendationScore: score };
+      return { 
+        ...store, 
+        recommendationScore: combinedScore + bonusScore,
+        distanceScore,
+        ratingScore,
+        sentimentScore,
+        avgRating: storeReviews.length > 0 
+          ? (storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length).toFixed(1)
+          : null
+      };
     });
 
     // Sort by recommendation score
