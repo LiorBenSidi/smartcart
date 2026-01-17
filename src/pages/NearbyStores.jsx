@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle } from 'lucide-react';
+import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle, Settings } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import StoreReviews from '@/components/StoreReviews';
@@ -53,6 +53,9 @@ export default function NearbyStores() {
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [expandedChain, setExpandedChain] = useState(null);
+  const [distanceWeight, setDistanceWeight] = useState(0.5);
+  const [ratingWeight, setRatingWeight] = useState(0.25);
+  const [sentimentWeight, setSentimentWeight] = useState(0.25);
 
   const getUserLocation = () => {
     setLoading(true);
@@ -68,7 +71,13 @@ export default function NearbyStores() {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
         try {
-          const response = await base44.functions.invoke('getNearbyStores', { latitude, longitude });
+          const response = await base44.functions.invoke('getNearbyStores', { 
+            latitude, 
+            longitude,
+            distanceWeight,
+            ratingWeight,
+            sentimentWeight
+          });
           setStores(response.data.nearbyStores || []);
         } catch (err) {
           setError('Failed to fetch stores: ' + err.message);
@@ -287,15 +296,53 @@ export default function NearbyStores() {
                       
                       <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
                           <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Ranking Algorithm:</h4>
-                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                              <p className="text-xs">Top 3 Podium Selection:</p>
-                              <ol className="list-decimal list-inside ml-4 text-xs">
-                                  <li>Primary: Driving duration (if available)</li>
-                                  <li>Fallback: Haversine distance</li>
-                                  <li>Tie-breaker: Linear distance</li>
-                              </ol>
-                              <p className="text-xs mt-2">Stores grouped by chain and sorted alphabetically in accordion view.</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Weighted Scoring System (Default: 50% Distance, 25% Rating, 25% Sentiment):</p>
+                          
+                          <div className="space-y-2 text-xs text-gray-700 dark:text-gray-300 ml-4">
+                              <div>
+                                  <strong>1. Distance Score (0-1):</strong>
+                                  <p className="ml-4">Normalized based on maximum distance in search radius. Closer stores score higher.</p>
+                              </div>
+                              
+                              <div>
+                                  <strong>2. Rating Score (0-1):</strong>
+                                  <p className="ml-4">Average user rating from StoreReview entities, normalized to 0-1 scale (5-star max).</p>
+                              </div>
+                              
+                              <div>
+                                  <strong>3. Sentiment Score (0-1):</strong>
+                                  <p className="ml-4">AI-analyzed sentiment from StoreSentiment entities:
+                                      <ul className="list-disc ml-6 mt-1">
+                                          <li>Positive sentiment = 1.0</li>
+                                          <li>Neutral sentiment = 0.5</li>
+                                          <li>Negative sentiment = 0.0</li>
+                                      </ul>
+                                  </p>
+                              </div>
+                              
+                              <div className="mt-2 bg-white dark:bg-gray-800 p-2 rounded">
+                                  <strong>Final Score Calculation:</strong>
+                                  <code className="block mt-1 text-xs">
+                                      score = (distanceScore × distanceWeight + <br/>
+                                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ratingScore × ratingWeight + <br/>
+                                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sentimentScore × sentimentWeight) × 100
+                                  </code>
+                              </div>
+                              
+                              <div>
+                                  <strong>Bonus Points:</strong>
+                                  <ul className="list-disc ml-6 mt-1">
+                                      <li>Previously shopped at this store: +10</li>
+                                      <li>Kosher preference match: +15</li>
+                                      <li>Organic preference match: +10</li>
+                                      <li>Budget/discount preference match: +10</li>
+                                  </ul>
+                              </div>
                           </div>
+                          
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-3"><strong>User Controls:</strong> Adjust weight sliders to prioritize distance, rating, or sentiment according to your preferences.</p>
+                          
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Top 3 stores displayed in podium format. All stores grouped by chain and sorted alphabetically in accordion view.</p>
                       </div>
                       
                       <div>
@@ -316,7 +363,101 @@ export default function NearbyStores() {
            </Dialog>
         </div>
         <Button variant="outline" size="sm" onClick={getUserLocation} className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
-      </div>
+        </div>
+
+        {/* Filter Weights */}
+        <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-200 dark:border-indigo-800">
+        <CardContent className="p-4 space-y-4">
+         <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+           <Settings className="w-4 h-4" />
+           Ranking Preferences
+         </h3>
+
+         <div className="space-y-3">
+           <div>
+             <div className="flex justify-between items-center mb-2">
+               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Distance</label>
+               <span className="text-sm text-gray-500 dark:text-gray-400">{(distanceWeight * 100).toFixed(0)}%</span>
+             </div>
+             <Slider
+               value={[distanceWeight]}
+               onValueChange={([val]) => {
+                 setDistanceWeight(val);
+                 const remaining = 1 - val;
+                 const currentSum = ratingWeight + sentimentWeight;
+                 if (currentSum > 0) {
+                   setRatingWeight((ratingWeight / currentSum) * remaining);
+                   setSentimentWeight((sentimentWeight / currentSum) * remaining);
+                 }
+               }}
+               min={0}
+               max={1}
+               step={0.05}
+               className="w-full"
+             />
+           </div>
+
+           <div>
+             <div className="flex justify-between items-center mb-2">
+               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Rating</label>
+               <span className="text-sm text-gray-500 dark:text-gray-400">{(ratingWeight * 100).toFixed(0)}%</span>
+             </div>
+             <Slider
+               value={[ratingWeight]}
+               onValueChange={([val]) => {
+                 setRatingWeight(val);
+                 const remaining = 1 - val;
+                 const currentSum = distanceWeight + sentimentWeight;
+                 if (currentSum > 0) {
+                   setDistanceWeight((distanceWeight / currentSum) * remaining);
+                   setSentimentWeight((sentimentWeight / currentSum) * remaining);
+                 }
+               }}
+               min={0}
+               max={1}
+               step={0.05}
+               className="w-full"
+             />
+           </div>
+
+           <div>
+             <div className="flex justify-between items-center mb-2">
+               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sentiment</label>
+               <span className="text-sm text-gray-500 dark:text-gray-400">{(sentimentWeight * 100).toFixed(0)}%</span>
+             </div>
+             <Slider
+               value={[sentimentWeight]}
+               onValueChange={([val]) => {
+                 setSentimentWeight(val);
+                 const remaining = 1 - val;
+                 const currentSum = distanceWeight + ratingWeight;
+                 if (currentSum > 0) {
+                   setDistanceWeight((distanceWeight / currentSum) * remaining);
+                   setRatingWeight((ratingWeight / currentSum) * remaining);
+                 }
+               }}
+               min={0}
+               max={1}
+               step={0.05}
+               className="w-full"
+             />
+           </div>
+
+           <Button
+             variant="outline"
+             size="sm"
+             onClick={() => {
+               setDistanceWeight(0.5);
+               setRatingWeight(0.25);
+               setSentimentWeight(0.25);
+             }}
+             className="w-full"
+           >
+             Reset to Defaults
+           </Button>
+         </div>
+        </CardContent>
+        </Card>
 
       {/* Top 3 Podium */}
       {top3Stores.length > 0 &&
