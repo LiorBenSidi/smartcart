@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle } from 'lucide-react';
 import { cn } from "@/components/lib/utils";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Upload() {
   const [file, setFile] = useState(null);
@@ -128,9 +129,96 @@ export default function Upload() {
 
   return (
     <div className="space-y-6 pb-20 max-w-2xl mx-auto">
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-2 relative">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Scan Receipt</h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm">Upload a photo to analyze your groceries</p>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="absolute top-0 right-0 h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ScanLine className="w-5 h-5 text-indigo-600" />
+                Receipt Scanning - Technical Details
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-sm">
+              <div>
+                <h4 className="font-semibold mb-2">Process Overview:</h4>
+                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                  <li>Upload receipt image/PDF to cloud storage</li>
+                  <li>Create pending Receipt entity record</li>
+                  <li>Redirect to Receipt page for processing</li>
+                  <li>AI extraction runs in background</li>
+                  <li>Post-processing analysis generates insights</li>
+                </ol>
+              </div>
+              
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded">
+                <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200">AI Data Extraction (processReceipt):</h4>
+                <p className="mb-2 text-gray-700 dark:text-gray-300">LLM analyzes receipt image with vision capabilities:</p>
+                <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono space-y-2">
+                  <p className="font-semibold">Prompt Instructions:</p>
+                  <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
+                    <li>Extract store metadata (name, date, time, address, total)</li>
+                    <li>Parse each line item (name, code, quantity, price)</li>
+                    <li>Infer product category for each item</li>
+                    <li>Assign confidence scores (0-1) to every field</li>
+                    <li>Default currency to ILS if not visible</li>
+                    <li>Return null for missing data (no hallucination)</li>
+                  </ul>
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <p className="font-semibold mb-1">Returns JSON with:</p>
+                    <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
+                      <li>storeName, date, time, address, totalAmount</li>
+                      <li>Confidence scores for each metadata field</li>
+                      <li>items[] with raw_text, code, name, category, quantity, price</li>
+                      <li>Per-item confidence_score</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
+                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Validation & Review Flags:</h4>
+                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                  <p><strong>Metadata Validation:</strong></p>
+                  <ul className="list-disc list-inside ml-4 text-xs">
+                    <li>Threshold: 0.9 confidence required</li>
+                    <li>Checks storeName, totalAmount, date confidence</li>
+                    <li>Sets needs_metadata_review flag if below threshold</li>
+                  </ul>
+                  <p className="mt-2"><strong>Item Validation:</strong></p>
+                  <ul className="list-disc list-inside ml-4 text-xs">
+                    <li>Threshold: 0.85 confidence per item</li>
+                    <li>Marks individual items with needs_review flag</li>
+                    <li>Sets global needs_review if any item flagged</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Post-Processing (analyzeReceiptEconomics):</h4>
+                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                  <p className="text-xs">After extraction, generates insights:</p>
+                  <ul className="list-disc list-inside ml-4 text-xs">
+                    <li><strong>Price Benchmarking:</strong> Compares each item price to market minimum/average</li>
+                    <li><strong>Chain Comparison:</strong> Finds cheaper chains for entire cart</li>
+                    <li><strong>AI Summary:</strong> LLM generates concise receipt summary</li>
+                    <li><strong>Overpayment Detection:</strong> Creates ReceiptInsight records for items/receipts exceeding benchmarks</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Chain & Store Selection */}
