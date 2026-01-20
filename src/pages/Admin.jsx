@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import SystemValidationPanel from '../components/SystemValidationPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { processManager } from "@/components/processManager";
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -19,7 +20,6 @@ export default function Admin() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-import { processManager } from "@/components/processManager";
   const [processState, setProcessState] = useState(processManager.getState());
 
   useEffect(() => {
