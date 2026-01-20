@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -22,6 +23,8 @@ export default function Recommendations() {
   const [runId, setRunId] = useState(null);
   const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
   const [insights, setInsights] = useState([]);
+  const [smartTips, setSmartTips] = useState([]); // New Smart Tips
+  const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
 
@@ -61,11 +64,23 @@ export default function Recommendations() {
         if (res.data && res.data.run) {
             setRunId(res.data.run.id);
             // New API returns pre-grouped candidates
-            setCandidates({
+            const newCandidates = {
                 chains: res.data.candidates.stores || [],
                 categories: res.data.candidates.categories || [],
                 products: res.data.candidates.items || []
-            });
+            };
+            setCandidates(newCandidates);
+
+            // Generate Smart Tips
+            setTipsLoading(true);
+            base44.functions.invoke('generateSmartTips', { recommendations: newCandidates })
+                .then(tipRes => {
+                    if (tipRes.data && tipRes.data.tips) {
+                        setSmartTips(tipRes.data.tips);
+                    }
+                })
+                .catch(e => console.error("Smart tips failed", e))
+                .finally(() => setTipsLoading(false));
         }
 
         // 2. Fetch Insights
@@ -246,11 +261,67 @@ export default function Recommendations() {
         <p className="text-gray-500 dark:text-gray-400">Personalized picks based on people with similar taste.</p>
       </div>
 
-      {/* Smart Insights */}
+      {/* Smart Tips (AI Generated) */}
+      {(smartTips.length > 0 || tipsLoading) && (
+          <section className="mb-8">
+              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
+                  <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
+              </h2>
+              
+              {tipsLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-500 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating personalized tips based on your budget and diet...
+                  </div>
+              ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                      {smartTips.map((tip, i) => {
+                          const isSaving = tip.type === 'money_saving';
+                          const isHealth = tip.type === 'health_dietary';
+                          
+                          return (
+                            <Card key={i} className={`border-l-4 ${
+                                isSaving ? 'border-l-green-500 border-green-100 bg-green-50/20' : 
+                                isHealth ? 'border-l-emerald-500 border-emerald-100 bg-emerald-50/20' : 
+                                'border-l-indigo-500 border-indigo-100 bg-indigo-50/20'
+                            }`}>
+                                <CardContent className="p-4 flex gap-4 items-start">
+                                    <div className={`p-2 rounded-full shrink-0 ${
+                                        isSaving ? 'bg-green-100 text-green-600' :
+                                        isHealth ? 'bg-emerald-100 text-emerald-600' :
+                                        'bg-indigo-100 text-indigo-600'
+                                    }`}>
+                                        {isSaving ? <Tag className="w-5 h-5" /> : 
+                                         isHealth ? <Leaf className="w-5 h-5" /> : 
+                                         <Lightbulb className="w-5 h-5" />}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide opacity-70 mb-1">
+                                            {tip.type.replace('_', ' ')}
+                                        </h3>
+                                        <p className="text-gray-800 dark:text-gray-200 font-medium leading-snug">
+                                            {tip.message}
+                                        </p>
+                                        {tip.related_entity_name && (
+                                            <span className="inline-block mt-2 text-xs bg-white/80 px-2 py-1 rounded border shadow-sm">
+                                                Related: {tip.related_entity_name}
+                                            </span>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                          );
+                      })}
+                  </div>
+              )}
+          </section>
+      )}
+
+      {/* Legacy Insights (Keep if needed, or remove if redundant) */}
       {insights.length > 0 && (
           <section>
               <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  <Lightbulb className="w-5 h-5 text-yellow-500" /> Smart Insights
+                  <Lightbulb className="w-5 h-5 text-yellow-500" /> Additional Insights
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {insights.map((insight, i) => (
