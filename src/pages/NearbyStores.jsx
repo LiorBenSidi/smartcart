@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useStores } from '@/components/StoresProvider';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -287,7 +288,7 @@ export default function NearbyStores() {
   };
 
 
-  if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
+  if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={() => getUserLocation(true)} className="mt-4 block mx-auto">Retry</Button></div>;
 
   return (
     <div className="space-y-8 pb-20">
