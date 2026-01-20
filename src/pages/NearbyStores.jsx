@@ -172,6 +172,9 @@ export default function NearbyStores() {
               };
           });
 
+          // Sort by recommendation score descending to restore correct ranking order
+          scoredStores.sort((a, b) => b.recommendationScore - a.recommendationScore);
+
           setStores(scoredStores);
           setLoadingProgress(100);
       } catch (err) {
