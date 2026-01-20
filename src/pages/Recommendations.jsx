@@ -1,7 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
+import RecommendationFilters from '@/components/RecommendationFilters';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf } from 'lucide-react';
@@ -27,6 +27,7 @@ export default function Recommendations() {
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
+  const [filters, setFilters] = useState({});
 
   useEffect(() => {
     const init = async () => {
@@ -139,6 +140,62 @@ export default function Recommendations() {
     if (score >= 0.4) return { label: 'Good Match', color: 'bg-blue-500' };
     return { label: 'Potential Match', color: 'bg-gray-500' };
   };
+
+  // Filter Logic
+  const allProducts = candidates.products || [];
+  
+  // Extract Metadata for Filters
+  const availableBrands = [...new Set(allProducts.map(p => p.brand_name).filter(Boolean))].sort();
+  const availableStores = [...new Set(allProducts.map(p => p.store_name || p.chain_name).filter(Boolean))].sort(); // Assuming store_name or chain_name exists
+  const prices = allProducts.map(p => p.current_price).filter(p => typeof p === 'number');
+  const minPrice = prices.length ? Math.floor(Math.min(...prices)) : 0;
+  const maxPrice = prices.length ? Math.ceil(Math.max(...prices)) : 100;
+
+  const filteredProducts = allProducts.filter(p => {
+    // Price Range
+    if (filters.priceRange) {
+        if (p.current_price < filters.priceRange[0] || p.current_price > filters.priceRange[1]) return false;
+    }
+    
+    // Brands
+    if (filters.brands?.length > 0) {
+        if (!filters.brands.includes(p.brand_name)) return false;
+    }
+    
+    // Stores
+    if (filters.stores?.length > 0) {
+        const storeName = p.store_name || p.chain_name;
+        if (!filters.stores.includes(storeName)) return false;
+    }
+    
+    // Dietary
+    if (filters.dietary?.length > 0) {
+        const productTags = [
+            ...(p.dietary_tags || []),
+            p.is_vegan ? 'Vegan' : null,
+            p.is_gluten_free ? 'Gluten Free' : null,
+            p.is_organic ? 'Organic' : null,
+            p.is_kosher ? 'Kosher' : null,
+        ].filter(Boolean);
+        
+        // Must match AT LEAST ONE selected dietary filter (OR logic) or ALL?
+        // Usually filters are AND between types, but within type...
+        // Let's assume user wants products that match ANY of selected dietary tags (e.g. Vegan OR Gluten Free)
+        // OR user wants products that are BOTH Vegan AND Gluten Free?
+        // Let's go with AND for dietary to be safe (Restrictive)
+        const hasAllTags = filters.dietary.every(tag => {
+             // specific mapping for computed booleans
+             if (tag === 'Vegan' && p.is_vegan) return true;
+             if (tag === 'Gluten Free' && p.is_gluten_free) return true;
+             if (tag === 'Organic' && p.is_organic) return true;
+             if (tag === 'Kosher' && p.is_kosher) return true;
+             return productTags.includes(tag);
+        });
+        if (!hasAllTags) return false;
+    }
+
+    return true;
+  });
 
   if (loading) {
     return (
@@ -422,11 +479,27 @@ export default function Recommendations() {
       {/* 3. Items */}
       {candidates.products.length > 0 &&
       <section>
-              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  <Package className="w-5 h-5 text-emerald-500" /> Recommended Items
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                  <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200">
+                      <Package className="w-5 h-5 text-emerald-500" /> Recommended Items
+                  </h2>
+                  <RecommendationFilters 
+                      filters={filters} 
+                      setFilters={setFilters}
+                      availableBrands={availableBrands}
+                      availableStores={availableStores}
+                      priceRange={{ min: minPrice, max: maxPrice }}
+                  />
+              </div>
+              
+              {filteredProducts.length === 0 ? 
+                  <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed">
+                      <p className="text-gray-500">No products match your filters.</p>
+                      <Button variant="link" onClick={() => setFilters({})}>Clear Filters</Button>
+                  </div>
+              :
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {candidates.products.map((c, i) =>
+                  {filteredProducts.map((c, i) =>
           <Card key={i} className="group relative overflow-hidden border-gray-100 dark:border-gray-700">
                           <CardContent className="p-4 flex items-start justify-between gap-3">
                               <div className="flex items-start gap-3 flex-1">
