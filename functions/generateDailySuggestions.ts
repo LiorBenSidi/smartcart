@@ -262,58 +262,26 @@ export default Deno.serve(async (req) => {
             await base44.entities.UserProductHabit.bulkCreate(topHabits);
         }
 
-        // C) COLLABORATIVE FILTERING - Identify similar users and their preferred items
-        const collaborativeSuggestions = [];
-        const userVectors = await base44.entities.UserVectorSnapshot.filter({ created_by: user.email }, '-computed_at', 1).catch(() => []);
-
-        if (userVectors.length > 0) {
-            // Get similar users
-            const similarUsers = await base44.entities.SimilarUserEdge.filter(
-                { user_id: user.email },
-                '-similarity',
-                5
-            ).catch(() => []);
-
-            if (similarUsers.length > 0) {
-                const neighborIds = similarUsers.map(su => su.neighbor_user_id);
-
-                // Get top products purchased by similar users (that this user hasn't strongly interacted with)
-                for (const neighborId of neighborIds) {
-                    const neighborHabits = await base44.entities.UserProductHabit.filter(
-                        { created_by: neighborId },
-                        '-purchase_count',
-                        10
-                    ).catch(() => []);
-
-                    neighborHabits.forEach(habit => {
-                        // Only include if user doesn't already have this product in their habits
-                        if (!productPurchases[habit.product_id]) {
-                            collaborativeSuggestions.push({
-                                product_id: habit.product_id,
-                                product_name: habit.product_name,
-                                suggested_qty: Math.round(habit.avg_quantity) || 1,
-                                reason_type: "Collaborative",
-                                confidence: 0.5 * habit.confidence_score, // Dampen collaborative confidence
-                                evidence: {
-                                    similar_users_count: similarUsers.length,
-                                    based_on_avg_cadence: habit.avg_cadence_days
-                                }
-                            });
-                        }
-                    });
-                }
+        // C) COLLABORATIVE FILTERING
+        let collaborativeSuggestions = [];
+        try {
+            const collabRes = await base44.functions.invoke('getCollaborativeRecommendations', {});
+            if (collabRes.data && collabRes.data.suggestions) {
+                collaborativeSuggestions = collabRes.data.suggestions;
             }
+        } catch (e) {
+            console.warn("Failed to fetch collaborative recommendations", e);
         }
 
         // D) MERGE + DEDUP
         const suggestionMap = new Map();
 
-        // Add Weekly
+        // 1. Add Weekly
         weeklySuggestions.forEach(s => {
             suggestionMap.set(s.product_id, { ...s });
         });
 
-        // Merge Restock
+        // 2. Merge Restock
         restockSuggestions.forEach(s => {
             if (suggestionMap.has(s.product_id)) {
                 const existing = suggestionMap.get(s.product_id);
@@ -326,9 +294,23 @@ export default Deno.serve(async (req) => {
             }
         });
 
-        // Add Collaborative (only if not already present from content-based)
+        // 3. Merge Collaborative
         collaborativeSuggestions.forEach(s => {
-            if (!suggestionMap.has(s.product_id)) {
+            if (suggestionMap.has(s.product_id)) {
+                const existing = suggestionMap.get(s.product_id);
+
+                // Blending logic for overlapping products
+                existing.reason_type = "Hybrid"; // New hybrid type
+                existing.confidence = (existing.confidence + s.confidence) / 2; // 50-50 blending
+                existing.evidence = { 
+                    ...existing.evidence, 
+                    ...s.evidence,
+                    collaborative_boost: true
+                };
+            } else {
+                // Only add collaborative if we don't have personal purchase history (optional check, 
+                // but user might want to discover things they bought long ago or never)
+                // For now, we add it.
                 suggestionMap.set(s.product_id, { ...s });
             }
         });
@@ -345,12 +327,22 @@ export default Deno.serve(async (req) => {
         
         finalSuggestions = finalSuggestions.filter(s => !dislikedGTINs.has(s.product_id));
 
-        // Sorting: Content-based (Weekly/Restock) before Collaborative
+        // Sorting
         finalSuggestions.sort((a, b) => {
-            // Priority: Weekly+Restock > Restock > Weekly > Collaborative
-            const priority = { "Weekly+Restock": 4, "Restock": 3, "Weekly": 2, "Collaborative": 1 };
-            if (priority[a.reason_type] !== priority[b.reason_type]) {
-                return priority[b.reason_type] - priority[a.reason_type];
+            // Priority: Weekly+Restock > Hybrid > Restock > Weekly > Collaborative
+            const priority = { 
+                "Weekly+Restock": 5, 
+                "Hybrid": 4,
+                "Restock": 3, 
+                "Weekly": 2, 
+                "Collaborative": 1 
+            };
+
+            const scoreA = priority[a.reason_type] || 0;
+            const scoreB = priority[b.reason_type] || 0;
+
+            if (scoreA !== scoreB) {
+                return scoreB - scoreA;
             }
             // Confidence desc
             if (Math.abs(a.confidence - b.confidence) > 0.05) {
