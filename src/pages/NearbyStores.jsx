@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle, Settings } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import StoreReviews from '@/components/StoreReviews';
@@ -56,10 +57,14 @@ export default function NearbyStores() {
   const [distanceWeight, setDistanceWeight] = useState(0.5);
   const [ratingWeight, setRatingWeight] = useState(0.25);
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
+  const [progress, setProgress] = useState(0);
 
   const getUserLocation = () => {
     setLoading(true);
     setError(null);
+    setStores([]);
+    setProgress(0);
+
     if (!navigator.geolocation) {
       setError('Geolocation is not supported');
       setLoading(false);
@@ -70,31 +75,82 @@ export default function NearbyStores() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
+        
         try {
-          const response = await base44.functions.invoke('getNearbyStores', { 
-            latitude, 
-            longitude,
-            distanceWeight,
-            ratingWeight,
-            sentimentWeight
-          });
-          setStores(response.data.nearbyStores || []);
+          let batch = 0;
+          let hasMore = true;
+          let allStores = [];
+          
+          while (hasMore) {
+             const response = await base44.functions.invoke('getNearbyStores', { 
+              latitude, 
+              longitude,
+              distanceWeight,
+              ratingWeight,
+              sentimentWeight,
+              batch
+            });
+            
+            const newStores = response.data.nearbyStores || [];
+            allStores = [...allStores, ...newStores];
+            setStores(allStores); // Update UI incrementally? Or wait? Updating incrementally is better for "progress" feeling but might jump.
+            // Let's update stores at the end to avoid flickering, but user wants progress bar.
+            // "Use progress bar in the UI to get indication for how many stores as been culcoate."
+            
+            hasMore = response.data.hasMore;
+            batch++;
+            
+            // Heuristic progress: Assuming maybe 10 batches max? Or just show spinner?
+            // Since we don't know total, we can't do exact percentage.
+            // But if we use batch * batchSize, we know how many processed.
+            // Let's just increment progress bar by some amount or rely on store count if we knew total.
+            // Since we don't know total, let's just use a fake asymptotic progress or loop count.
+            // Actually, if we assume roughly 200 stores max, we can estimate.
+            // Or just make it jump.
+            // Let's do a simple calculation based on batch number.
+            setProgress(Math.min((batch / 5) * 100, 95)); // Assume 5 batches for 100%? No, let's just update.
+          }
+          
+          setProgress(100);
+          setStores(allStores);
+
         } catch (err) {
           setError('Failed to fetch stores: ' + err.message);
         } finally {
           setLoading(false);
         }
       },
-      (err) => {
-        base44.functions.invoke('getNearbyStores', { 
-          latitude: 32.0853, 
-          longitude: 34.7818,
-          distanceWeight,
-          ratingWeight,
-          sentimentWeight
-        }).
-        then((res) => {setStores(res.data.nearbyStores || []);setLoading(false);}).
-        catch(() => setLoading(false));
+      async (err) => {
+          // Fallback location
+          const latitude = 32.0853;
+          const longitude = 34.7818;
+          try {
+             let batch = 0;
+             let hasMore = true;
+             let allStores = [];
+             
+             while (hasMore) {
+                const response = await base44.functions.invoke('getNearbyStores', { 
+                 latitude, 
+                 longitude,
+                 distanceWeight,
+                 ratingWeight,
+                 sentimentWeight,
+                 batch
+               });
+               
+               const newStores = response.data.nearbyStores || [];
+               allStores = [...allStores, ...newStores];
+               hasMore = response.data.hasMore;
+               batch++;
+               setProgress(Math.min((batch / 5) * 100, 95));
+             }
+             setProgress(100);
+             setStores(allStores);
+             setLoading(false);
+          } catch(e) {
+              setLoading(false);
+          }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -233,7 +289,13 @@ export default function NearbyStores() {
     return bounds;
   };
 
-  if (loading) return <div className="h-64 flex flex-col items-center justify-center"><Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" /><p className="text-gray-600">Finding stores...</p></div>;
+  if (loading) return (
+    <div className="h-64 flex flex-col items-center justify-center space-y-4 px-10">
+      <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      <p className="text-gray-600">Finding stores... ({stores.length} found)</p>
+      <Progress value={progress} className="w-full max-w-md" />
+    </div>
+  );
   if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
 
   return (

@@ -22,15 +22,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { latitude, longitude, radius, distanceWeight = 0.5, ratingWeight = 0.25, sentimentWeight = 0.25 } = await req.json();
-
+    const { latitude, longitude, radius, distanceWeight = 0.5, ratingWeight = 0.25, sentimentWeight = 0.25, batch = 0 } = await req.json();
+    
     if (!latitude || !longitude) {
       return Response.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
-    // Fetch all stores, chains, reviews, and sentiment data
+    const batchSize = 50;
+    const skip = batch * batchSize;
+
+    // Fetch batch of stores, and all chains, reviews, sentiment data
     const [stores, chains, allReviews, allSentiments] = await Promise.all([
-        base44.entities.Store.list('-created_date', 1000),
+        base44.entities.Store.list('-created_date', batchSize, skip),
         base44.entities.Chain.list('-created_date', 1000),
         base44.entities.StoreReview.list('-created_date', 5000),
         base44.entities.StoreSentiment.list('-created_date', 1000)
@@ -194,7 +197,9 @@ Deno.serve(async (req) => {
     return Response.json({
       nearbyStores: storesWithScores,
       recommendedStore: storesWithScores[0],
-      totalFound: storesWithScores.length
+      totalFound: storesWithScores.length,
+      batch,
+      hasMore: stores.length === batchSize
     });
 
   } catch (error) {
