@@ -306,7 +306,7 @@ export default function Admin() {
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 >
                     <Zap className="w-4 h-4 mr-2" />
-                    {processState.loading ? 'Processing...' : 'Analyze Store Sentiment'}
+                    {processState.loading && processState.activeProcess === 'analyzeStoreSentiment' ? 'Processing...' : 'Analyze Store Sentiment'}
                 </Button>
                 <Dialog>
                     <DialogTrigger asChild>
@@ -388,7 +388,7 @@ export default function Admin() {
                     className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
                 >
                     <Brain className="w-4 h-4 mr-2" />
-                    {processState.loading ? 'Processing...' : 'Rebuild User Vectors'}
+                    {processState.loading && processState.activeProcess === 'buildUserVectors' ? 'Processing...' : 'Rebuild User Vectors'}
                 </Button>
                 <Dialog>
                     <DialogTrigger asChild>

@@ -4,6 +4,7 @@ class ProcessManager {
   constructor() {
     this.state = {
       loading: false,
+      activeProcess: null,
       progress: 0,
       status: '',
       error: null,
@@ -33,6 +34,7 @@ class ProcessManager {
 
     this.state = {
       loading: true,
+      activeProcess: functionName,
       progress: 0,
       status: 'Starting...',
       error: null,
@@ -91,6 +93,7 @@ class ProcessManager {
       this.state = {
         ...this.state,
         loading: false,
+        activeProcess: null,
         progress: 100,
         status: 'Completed',
         error: null,
@@ -105,6 +108,7 @@ class ProcessManager {
       this.state = {
         ...this.state,
         loading: false,
+        activeProcess: null,
         error: error.message,
         status: 'Failed'
       };
