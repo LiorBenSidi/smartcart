@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -26,6 +26,32 @@ export default function Recommendations() {
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
+
+  const refreshTips = async (currentCandidates = candidates) => {
+      setTipsLoading(true);
+      try {
+          const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
+          if (tipRes.data && tipRes.data.tips) {
+              setSmartTips(tipRes.data.tips);
+              toast.success("Tips refreshed!");
+          }
+      } catch (e) {
+          console.error("Smart tips failed", e);
+          toast.error("Failed to refresh tips");
+      } finally {
+          setTipsLoading(false);
+      }
+  };
+
+  const handleTipFeedback = async (tip, action) => {
+      try {
+          await base44.functions.invoke('logSmartTipFeedback', { tip, action });
+          toast.success(action === 'like' ? "Thanks! We'll show more like this." : "Got it, fewer tips like this.");
+      } catch (e) {
+          console.error(e);
+          toast.error("Failed to log feedback");
+      }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -71,15 +97,7 @@ export default function Recommendations() {
             setCandidates(newCandidates);
 
             // Generate Smart Tips
-            setTipsLoading(true);
-            base44.functions.invoke('generateSmartTips', { recommendations: newCandidates })
-                .then(tipRes => {
-                    if (tipRes.data && tipRes.data.tips) {
-                        setSmartTips(tipRes.data.tips);
-                    }
-                })
-                .catch(e => console.error("Smart tips failed", e))
-                .finally(() => setTipsLoading(false));
+            refreshTips(newCandidates);
         }
 
         // 2. Fetch Insights
@@ -231,9 +249,21 @@ export default function Recommendations() {
       {/* Smart Tips (AI Generated) */}
       {(smartTips.length > 0 || tipsLoading) && (
           <section className="mb-8">
-              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                  <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200">
+                      <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
+                  </h2>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => refreshTips()}
+                    disabled={tipsLoading}
+                    className="text-gray-500 hover:text-indigo-600"
+                  >
+                      <RotateCcw className={`w-4 h-4 mr-2 ${tipsLoading ? 'animate-spin' : ''}`} />
+                      Refresh
+                  </Button>
+              </div>
               
               {tipsLoading ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
@@ -274,6 +304,22 @@ export default function Recommendations() {
                                                 Related: {tip.related_entity_name}
                                             </span>
                                         )}
+                                    </div>
+                                    <div className="flex flex-col gap-1 ml-auto shrink-0">
+                                        <button 
+                                            onClick={() => handleTipFeedback(tip, 'like')}
+                                            className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                                            title="Helpful"
+                                        >
+                                            <ThumbsUp className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleTipFeedback(tip, 'dislike')}
+                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                            title="Not helpful"
+                                        >
+                                            <ThumbsDown className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </CardContent>
                             </Card>

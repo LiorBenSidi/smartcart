@@ -18,6 +18,11 @@ export default Deno.serve(async (req) => {
         // 2. Fetch User Habits (for "Discovery" context)
         const habits = await base44.entities.UserProductHabit.filter({ created_by: user.email }, '-confidence_score', 5);
 
+        // 2.5 Fetch Feedback
+        const feedback = await base44.entities.SmartTipFeedback.filter({ created_by: user.email }, '-created_at', 50);
+        const likedTips = feedback.filter(f => f.action === 'like').map(f => f.full_message);
+        const dislikedTips = feedback.filter(f => f.action === 'dislike').map(f => f.full_message);
+
         // 3. Prepare Prompt Context
         const profileContext = {
             budget_focus: userProfile.budget_focus,
@@ -51,6 +56,10 @@ Generate 3-5 unique, concise, and personalized shopping tips based on the user's
 User Profile: ${JSON.stringify(profileContext)}
 Top Habits: ${JSON.stringify(habitsContext)}
 Current Recommendations: ${JSON.stringify(simplifiedRecs)}
+
+User Feedback History (Learn from this):
+- Liked Tips (Do more of this): ${JSON.stringify(likedTips)}
+- Disliked Tips (Avoid this style/content): ${JSON.stringify(dislikedTips)}
 
 Desired Tip Categories:
 1. Money-saving: Suggest cheaper alternatives or brands based on budget focus.
