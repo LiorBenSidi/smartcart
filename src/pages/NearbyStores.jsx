@@ -3,8 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Progress } from "@/components/ui/progress";
-import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle, Settings, RefreshCw } from 'lucide-react';
+import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle, Settings } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import StoreReviews from '@/components/StoreReviews';
@@ -49,7 +48,6 @@ export default function NearbyStores() {
   const [stores, setStores] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
@@ -59,46 +57,9 @@ export default function NearbyStores() {
   const [ratingWeight, setRatingWeight] = useState(0.25);
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
 
-  const fetchStoresBatch = async (latitude, longitude, batch = 0, accumulatedStores = []) => {
-    try {
-      const response = await base44.functions.invoke('getNearbyStores', { 
-        latitude, 
-        longitude,
-        distanceWeight,
-        ratingWeight,
-        sentimentWeight,
-        batch
-      });
-      
-      const newStores = [...accumulatedStores, ...(response.data.nearbyStores || [])];
-      setStores(newStores); // Update UI incrementally
-
-      if (response.data.hasMore) {
-        const total = response.data.totalFound || 1;
-        const currentCount = newStores.length;
-        setProgress(Math.min(95, Math.round((currentCount / total) * 100))); // Cap at 95 until done
-        
-        // Recursive call for next batch
-        await fetchStoresBatch(latitude, longitude, batch + 1, newStores);
-      } else {
-        setProgress(100);
-        setLoading(false);
-      }
-    } catch (err) {
-      console.error("Batch fetch failed", err);
-      // Even if one batch fails, keep what we have? Or fail?
-      // Let's stop but keep existing stores
-      setError('Failed to fetch some stores: ' + err.message);
-      setLoading(false);
-    }
-  };
-
   const getUserLocation = () => {
     setLoading(true);
     setError(null);
-    setProgress(0);
-    setStores([]);
-
     if (!navigator.geolocation) {
       setError('Geolocation is not supported');
       setLoading(false);
@@ -109,14 +70,31 @@ export default function NearbyStores() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
-        await fetchStoresBatch(latitude, longitude, 0, []);
+        try {
+          const response = await base44.functions.invoke('getNearbyStores', { 
+            latitude, 
+            longitude,
+            distanceWeight,
+            ratingWeight,
+            sentimentWeight
+          });
+          setStores(response.data.nearbyStores || []);
+        } catch (err) {
+          setError('Failed to fetch stores: ' + err.message);
+        } finally {
+          setLoading(false);
+        }
       },
       (err) => {
-         // Fallback to Tel Aviv
-         const fallbackLat = 32.0853;
-         const fallbackLon = 34.7818;
-         setUserLocation([fallbackLat, fallbackLon]);
-         fetchStoresBatch(fallbackLat, fallbackLon, 0, []);
+        base44.functions.invoke('getNearbyStores', { 
+          latitude: 32.0853, 
+          longitude: 34.7818,
+          distanceWeight,
+          ratingWeight,
+          sentimentWeight
+        }).
+        then((res) => {setStores(res.data.nearbyStores || []);setLoading(false);}).
+        catch(() => setLoading(false));
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -267,127 +245,118 @@ export default function NearbyStores() {
               <p className="text-sm text-gray-500 dark:text-gray-400">{stores.length} locations found</p>
            </div>
            <Dialog>
-               <DialogTrigger asChild>
-                   <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-                       <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
-                   </Button>
-               </DialogTrigger>
-               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                   <DialogHeader>
-                       <DialogTitle className="flex items-center gap-2">
-                           <MapPin className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                           Store Discovery - Technical Details
-                       </DialogTitle>
-                   </DialogHeader>
-                   <div className="space-y-4 text-sm">
-                       <div>
-                           <h4 className="font-semibold mb-2">Process Overview:</h4>
-                           <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                               <li>Retrieve user's geolocation</li>
-                               <li>Calculate distances to all stores in database</li>
-                               <li>Fetch routing information for nearest stores</li>
-                               <li>Rank and display results with navigation options</li>
-                           </ol>
-                       </div>
+              <DialogTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                          Store Discovery - Technical Details
+                      </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 text-sm">
+                      <div>
+                          <h4 className="font-semibold mb-2">Process Overview:</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                              <li>Retrieve user's geolocation</li>
+                              <li>Calculate distances to all stores in database</li>
+                              <li>Fetch routing information for nearest stores</li>
+                              <li>Rank and display results with navigation options</li>
+                          </ol>
+                      </div>
+                      
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                          <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Distance Calculation (Haversine):</h4>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Calculates "as the crow flies" distance using latitude/longitude:</p>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
+                              <code className="text-gray-700 dark:text-gray-300">
+                                  R = 6371 km (Earth radius)<br />
+                                  Δφ = lat₂ - lat₁<br />
+                                  Δλ = lon₂ - lon₁<br />
+                                  a = sin²(Δφ/2) + cos(φ₁)⋅cos(φ₂)⋅sin²(Δλ/2)<br />
+                                  c = 2⋅atan2(√a, √(1-a))<br />
+                                  distance = R × c
+                              </code>
+                          </div>
+                      </div>
+                      
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                          <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Driving Time Estimation (OSRM):</h4>
+                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                              <p className="text-xs">Uses Open Source Routing Machine (OSRM) API for accurate distance ranking:</p>
+                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
+                                  <li><strong>Top 25 stores</strong> (by Haversine distance): Fetches actual road routes with real driving duration</li>
+                                  <li><strong>Stores beyond top 25</strong>: Ranked by straight-line (Haversine) distance due to API rate limits</li>
+                                  <li>Uses cached route data from RouteCache to reduce API calls</li>
+                                  <li>Returns distance (meters) and duration (seconds) for routing calculations</li>
+                                  <li>Provides route geometry for map visualization</li>
+                                  <li>Stores ranked by actual driving time when available, falls back to Haversine distance otherwise</li>
+                              </ul>
+                              <p className="text-xs mt-2"><strong>Modes:</strong> driving (default), walking, cycling</p>
+                          </div>
+                      </div>
+                      
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+                          <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Ranking Algorithm:</h4>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Weighted Scoring System (Default: 50% Distance, 25% Rating, 25% Sentiment):</p>
+                          
+                          <div className="space-y-2 text-xs text-gray-700 dark:text-gray-300 ml-4">
+                              <div>
+                                  <strong>1. Distance Score (0-1):</strong>
+                                  <p className="ml-4">Normalized based on maximum distance in search radius. Closer stores score higher.</p>
+                              </div>
+                              
+                              <div>
+                                  <strong>2. Rating Score (0-1):</strong>
+                                  <p className="ml-4">Average user rating from StoreReview entities, normalized to 0-1 scale (5-star max).</p>
+                              </div>
+                              
+                              <div>
+                                  <strong>3. Sentiment Score (0-1):</strong>
+                                  <p className="ml-4">AI-analyzed sentiment from StoreSentiment entities:
+                                      <ul className="list-disc ml-6 mt-1">
+                                          <li>Positive sentiment = 1.0</li>
+                                          <li>Neutral sentiment = 0.5</li>
+                                          <li>Negative sentiment = 0.0</li>
+                                      </ul>
+                                  </p>
+                              </div>
+                              
+                              <div className="mt-2 bg-white dark:bg-gray-800 p-2 rounded">
+                                  <strong>Final Score Calculation:</strong>
+                                  <code className="block mt-1 text-xs">
+                                      score = (distanceScore × distanceWeight + <br/>
+                                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ratingScore × ratingWeight + <br/>
+                                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sentimentScore × sentimentWeight) × 100
+                                  </code>
+                              </div>
+                              
+                              <div>
+                                  <strong>Penalty for Stores Without Reviews:</strong>
+                                  <ul className="list-disc ml-6 mt-1">
+                                      <li>Stores with no reviews: -5 points (always applied)</li>
+                                  </ul>
+                              </div>
+                              </div>
 
-                       <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                           <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Distance Calculation (Haversine):</h4>
-                           <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Calculates "as the crow flies" distance using latitude/longitude:</p>
-                           <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
-                               <code className="text-gray-700 dark:text-gray-300">
-                                   R = 6371 km (Earth radius)<br />
-                                   Δφ = lat₂ - lat₁<br />
-                                   Δλ = lon₂ - lon₁<br />
-                                   a = sin²(Δφ/2) + cos(φ₁)⋅cos(φ₂)⋅sin²(Δλ/2)<br />
-                                   c = 2⋅atan2(√a, √(1-a))<br />
-                                   distance = R × c
-                               </code>
-                           </div>
-                       </div>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-3"><strong>User Controls:</strong> Adjust weight sliders to prioritize distance, rating, or sentiment according to your preferences.</p>
 
-                       <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                           <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Driving Time Estimation (OSRM):</h4>
-                           <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                               <p className="text-xs">Uses Open Source Routing Machine (OSRM) API for accurate distance ranking:</p>
-                               <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                   <li><strong>Top 15 stores</strong> (by Haversine distance): Fetches actual road routes with real driving duration</li>
-                                   <li><strong>Stores beyond top 15</strong>: Ranked by straight-line (Haversine) distance due to API rate limits</li>
-                                   <li>Uses cached route data from RouteCache to reduce API calls</li>
-                                   <li>Returns distance (meters) and duration (seconds) for routing calculations</li>
-                                   <li>Provides route geometry for map visualization</li>
-                                   <li>Stores ranked by actual driving time when available, falls back to Haversine distance otherwise</li>
-                               </ul>
-                               <p className="text-xs mt-2"><strong>Modes:</strong> driving (default), walking, cycling</p>
-                           </div>
-                       </div>
-
-                       <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                           <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Ranking Algorithm:</h4>
-                           <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Weighted Scoring System (Default: 50% Distance, 25% Rating, 25% Sentiment):</p>
-
-                           <div className="space-y-2 text-xs text-gray-700 dark:text-gray-300 ml-4">
-                               <div>
-                                   <strong>1. Distance Score (0-1):</strong>
-                                   <p className="ml-4">Normalized based on maximum distance in search radius. Closer stores score higher.</p>
-                               </div>
-
-                               <div>
-                                   <strong>2. Rating Score (0-1):</strong>
-                                   <p className="ml-4">Average user rating from StoreReview entities, normalized to 0-1 scale (5-star max).</p>
-                               </div>
-
-                               <div>
-                                   <strong>3. Sentiment Score (0-1):</strong>
-                                   <p className="ml-4">AI-analyzed sentiment from StoreSentiment entities:
-                                       <ul className="list-disc ml-6 mt-1">
-                                           <li>Positive sentiment = 1.0</li>
-                                           <li>Neutral sentiment = 0.5</li>
-                                           <li>Negative sentiment = 0.0</li>
-                                       </ul>
-                                   </p>
-                               </div>
-
-                               <div className="mt-2 bg-white dark:bg-gray-800 p-2 rounded">
-                                   <strong>Final Score Calculation:</strong>
-                                   <code className="block mt-1 text-xs">
-                                       score = (distanceScore × distanceWeight + <br/>
-                                       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ratingScore × ratingWeight + <br/>
-                                       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sentimentScore × sentimentWeight) × 100
-                                   </code>
-                               </div>
-
-                               <div>
-                                   <strong>Penalty for Stores Without Reviews:</strong>
-                                   <ul className="list-disc ml-6 mt-1">
-                                       <li>Stores with no reviews: -5 points (always applied)</li>
-                                   </ul>
-                               </div>
-                           </div>
-
-                               <p className="text-sm text-gray-700 dark:text-gray-300 mt-3"><strong>User Controls:</strong> Adjust weight sliders to prioritize distance, rating, or sentiment according to your preferences.</p>
-
-                               <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Top 3 stores displayed in podium format. All stores grouped by chain and sorted alphabetically in accordion view.</p>
-                       </div>
-
-                       <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                           <h4 className="font-semibold mb-2">Map Visualization:</h4>
-                           <p className="text-xs text-gray-700 dark:text-gray-300">Uses Leaflet + OpenStreetMap. Custom markers show chain logos, with gold highlight for closest store. Click any marker to view details and get directions.</p>
-                       </div>
-                   </div>
-               </DialogContent>
-            </Dialog>
-           </div>
-           </div>
-
-           {loading && (
-             <div className="w-full space-y-2">
-                 <div className="flex justify-between text-xs text-gray-500">
-                     <span>Calculating routes...</span>
-                     <span>{progress}%</span>
-                 </div>
-                 <Progress value={progress} className="h-2" />
-             </div>
-           )}
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Top 3 stores displayed in podium format. All stores grouped by chain and sorted alphabetically in accordion view.</p>
+                      </div>
+                      
+                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                          <h4 className="font-semibold mb-2">Map Visualization:</h4>
+                          <p className="text-xs text-gray-700 dark:text-gray-300">Uses Leaflet + OpenStreetMap. Custom markers show chain logos, with gold highlight for closest store. Click any marker to view details and get directions.</p>
+                      </div>
+                  </div>
+              </DialogContent>
+           </Dialog>
+        </div>
+        <Button variant="outline" size="sm" onClick={getUserLocation} className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
+        </div>
 
         {/* Filter Weights */}
         <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-200 dark:border-indigo-800">
@@ -468,25 +437,16 @@ export default function NearbyStores() {
            </div>
 
            <Button
-             className="w-full bg-green-600 hover:bg-green-700 text-white"
-             size="sm"
-             onClick={getUserLocation}
-             disabled={loading}
-           >
-             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-             Refresh
-           </Button>
-
-           <Button
-             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+             variant="outline"
              size="sm"
              onClick={() => {
                setDistanceWeight(0.5);
                setRatingWeight(0.25);
                setSentimentWeight(0.25);
              }}
+             className="w-full"
            >
-             Reset Weights
+             Reset to Defaults
            </Button>
          </div>
         </CardContent>

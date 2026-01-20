@@ -22,14 +22,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { latitude, longitude, radius, distanceWeight = 0.5, ratingWeight = 0.25, sentimentWeight = 0.25, batch = 0 } = await req.json();
+    const { latitude, longitude, radius, distanceWeight = 0.5, ratingWeight = 0.25, sentimentWeight = 0.25 } = await req.json();
 
     if (!latitude || !longitude) {
       return Response.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
-
-    const BATCH_SIZE = 5; // Process 5 stores at a time
-    const ROUTING_LIMIT = 15; // Only route the top 15 closest stores
 
     // Fetch all stores, chains, reviews, and sentiment data
     const [stores, chains, allReviews, allSentiments] = await Promise.all([
@@ -53,7 +50,7 @@ Deno.serve(async (req) => {
     const sentimentMap = new Map(allSentiments.map(s => [s.store_id, s]));
 
     // Filter stores within radius (if provided) and calculate distance
-    const allNearbyStores = stores
+    const nearbyStores = stores
       .filter(store => store.latitude && store.longitude)
       .map(store => {
         // Handle case where chain_id might be an object (expanded relation) or string
@@ -75,56 +72,56 @@ Deno.serve(async (req) => {
       .filter(store => !radius || store.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
 
-    const totalFound = allNearbyStores.length;
-    
-    // Pagination Logic
-    const startIdx = batch * BATCH_SIZE;
-    const endIdx = startIdx + BATCH_SIZE;
-    const currentBatchStores = allNearbyStores.slice(startIdx, endIdx);
+    // Get user profile for recommendations
+    const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+    const userProfile = profiles.length > 0 ? profiles[0] : null;
 
-    // Enrich with routing info ONLY if within limit
-    // We process stores in the current batch that are within the top ROUTING_LIMIT
-    
+    // Get user's receipt history
+    const receipts = await base44.entities.Receipt.filter({ created_by: user.email });
+
+    // Enrich only top 25 closest stores (by Haversine distance) with driving duration
+    // This balances accuracy with API rate limits and performance
+    const storesToEnrichEarly = nearbyStores.slice(0, 25);
+
     // Fetch routes sequentially with 1000ms delay between requests
-    for (let i = 0; i < currentBatchStores.length; i++) {
-        const store = currentBatchStores[i];
-        const globalIndex = startIdx + i;
+    for (const store of storesToEnrichEarly) {
+        try {
+            const res = await base44.functions.invoke('getRoute', {
+                origin: { lat: latitude, lon: longitude },
+                destination: { lat: store.latitude, lon: store.longitude },
+                mode: 'driving'
+            });
 
-        if (globalIndex < ROUTING_LIMIT) {
-             try {
-                const res = await base44.functions.invoke('getRoute', {
-                    origin: { lat: latitude, lon: longitude },
-                    destination: { lat: store.latitude, lon: store.longitude },
-                    mode: 'driving'
-                });
-
-                if (res.data && res.data.duration) {
-                    store.rawDuration = res.data.duration; // in seconds
-                    store.usingRouteDuration = true;
-                }
-            } catch (e) {
-                console.error("Routing error for store", store.name, e.message);
+            if (res.data && res.data.duration) {
+                store.rawDuration = res.data.duration; // in seconds
+                store.usingRouteDuration = true;
             }
+        } catch (e) {
+            // Silently fail, will use Haversine distance as fallback
+            console.error("Routing error for store", store.name, e.message);
+        }
 
-            // Delay 1000ms before next request (if we actually did a request)
-            if (i < currentBatchStores.length - 1 && (globalIndex + 1) < ROUTING_LIMIT) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        } else {
-             store.usingRouteDuration = false;
+        // Delay 1000ms before next request (except after last request)
+        if (store !== storesToEnrichEarly[storesToEnrichEarly.length - 1]) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
 
-    // Calculate weighted recommendation score for each store in the batch
-    const storesWithScores = currentBatchStores.map(store => {
+    // Mark stores beyond top 25 as using Haversine distance
+    nearbyStores.slice(25).forEach(store => {
+        store.usingRouteDuration = false;
+    });
+
+    // Calculate weighted recommendation score for each store
+    const storesWithScores = nearbyStores.map(store => {
       // 1. Distance score (normalized 0-1, closer = higher)
       // Prioritize driving duration if available, fall back to Haversine distance
       let distanceScore;
       if (store.rawDuration) {
-          const maxDuration = Math.max(...allNearbyStores.map(s => s.rawDuration || Infinity), 1);
+          const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || Infinity), 1);
           distanceScore = 1 - (store.rawDuration / maxDuration);
       } else {
-          const maxDistance = Math.max(...allNearbyStores.map(s => s.distance), 1);
+          const maxDistance = Math.max(...nearbyStores.map(s => s.distance), 1);
           distanceScore = 1 - (store.distance / maxDistance);
       }
       
@@ -173,7 +170,12 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Format driving info
+    // Sort by recommendation score
+    storesWithScores.sort((a, b) => b.recommendationScore - a.recommendationScore);
+
+    const recommendedStore = storesWithScores[0];
+
+    // Format driving info for top stores that were already enriched
     storesWithScores.forEach(store => {
         if (store.rawDuration) {
             const minutes = Math.round(store.rawDuration / 60);
@@ -191,9 +193,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       nearbyStores: storesWithScores,
-      totalFound: totalFound,
-      hasMore: endIdx < totalFound,
-      batch: batch
+      recommendedStore: storesWithScores[0],
+      totalFound: storesWithScores.length
     });
 
   } catch (error) {
