@@ -262,47 +262,15 @@ export default Deno.serve(async (req) => {
             await base44.entities.UserProductHabit.bulkCreate(topHabits);
         }
 
-        // C) COLLABORATIVE FILTERING - Identify similar users and their preferred items
-        const collaborativeSuggestions = [];
-        const userVectors = await base44.entities.UserVectorSnapshot.filter({ created_by: user.email }, '-computed_at', 1).catch(() => []);
-
-        if (userVectors.length > 0) {
-            // Get similar users
-            const similarUsers = await base44.entities.SimilarUserEdge.filter(
-                { user_id: user.email },
-                '-similarity',
-                5
-            ).catch(() => []);
-
-            if (similarUsers.length > 0) {
-                const neighborIds = similarUsers.map(su => su.neighbor_user_id);
-
-                // Get top products purchased by similar users (that this user hasn't strongly interacted with)
-                for (const neighborId of neighborIds) {
-                    const neighborHabits = await base44.entities.UserProductHabit.filter(
-                        { created_by: neighborId },
-                        '-purchase_count',
-                        10
-                    ).catch(() => []);
-
-                    neighborHabits.forEach(habit => {
-                        // Only include if user doesn't already have this product in their habits
-                        if (!productPurchases[habit.product_id]) {
-                            collaborativeSuggestions.push({
-                                product_id: habit.product_id,
-                                product_name: habit.product_name,
-                                suggested_qty: Math.round(habit.avg_quantity) || 1,
-                                reason_type: "Collaborative",
-                                confidence: 0.5 * habit.confidence_score, // Dampen collaborative confidence
-                                evidence: {
-                                    similar_users_count: similarUsers.length,
-                                    based_on_avg_cadence: habit.avg_cadence_days
-                                }
-                            });
-                        }
-                    });
-                }
+        // C) COLLABORATIVE FILTERING
+        let collaborativeSuggestions = [];
+        try {
+            const collabRes = await base44.functions.invoke('getCollaborativeRecommendations', {});
+            if (collabRes.data.success) {
+                collaborativeSuggestions = collabRes.data.recommendations;
             }
+        } catch (e) {
+            console.error("Failed to fetch collaborative recommendations", e);
         }
 
         // D) MERGE + DEDUP
@@ -326,10 +294,36 @@ export default Deno.serve(async (req) => {
             }
         });
 
-        // Add Collaborative (only if not already present from content-based)
+        // Merge Collaborative
         collaborativeSuggestions.forEach(s => {
-            if (!suggestionMap.has(s.product_id)) {
-                suggestionMap.set(s.product_id, { ...s });
+            if (suggestionMap.has(s.product_id)) {
+                // Overlap: Blending Logic
+                const existing = suggestionMap.get(s.product_id);
+                
+                // Set reason to Hybrid if merging
+                existing.reason_type = "Hybrid";
+                
+                // 50-50 Confidence Blending
+                existing.confidence = (existing.confidence + s.confidence) / 2;
+                
+                existing.evidence = { 
+                    ...existing.evidence, 
+                    collaborative_evidence: s.evidence 
+                };
+            } else {
+                // Only add if user doesn't have it in their current shopping list (which is checked later) or purchases?
+                // Actually, if it's not in suggestionMap, it means it's not a Weekly or Restock suggestion.
+                // But we should also check if user already buys this regularly (maybe ignored by Weekly/Restock but still bought)?
+                // The collaborative logic in getCollaborativeRecommendations usually filters habits, but here we just take the output.
+                // We'll trust the function output.
+                
+                // IMPORTANT: Filter out items the user ALREADY buys regularly (is in productPurchases) 
+                // but wasn't suggested by Weekly/Restock (maybe not due/not frequent enough).
+                // Collaborative is usually for DISCOVERY (items user DOESN'T buy).
+                // If user buys it, productPurchases has it.
+                if (!productPurchases[s.product_id]) {
+                    suggestionMap.set(s.product_id, { ...s });
+                }
             }
         });
 
@@ -345,17 +339,29 @@ export default Deno.serve(async (req) => {
         
         finalSuggestions = finalSuggestions.filter(s => !dislikedGTINs.has(s.product_id));
 
-        // Sorting: Content-based (Weekly/Restock) before Collaborative
+        // Sorting
         finalSuggestions.sort((a, b) => {
-            // Priority: Weekly+Restock > Restock > Weekly > Collaborative
-            const priority = { "Weekly+Restock": 4, "Restock": 3, "Weekly": 2, "Collaborative": 1 };
-            if (priority[a.reason_type] !== priority[b.reason_type]) {
-                return priority[b.reason_type] - priority[a.reason_type];
+            // Priority: Weekly+Restock > Hybrid > Restock > Weekly > Collaborative
+            const priority = { 
+                "Weekly+Restock": 5, 
+                "Hybrid": 4, 
+                "Restock": 3, 
+                "Weekly": 2, 
+                "Collaborative": 1 
+            };
+            
+            const pA = priority[a.reason_type] || 0;
+            const pB = priority[b.reason_type] || 0;
+            
+            if (pA !== pB) {
+                return pB - pA;
             }
+            
             // Confidence desc
             if (Math.abs(a.confidence - b.confidence) > 0.05) {
                 return b.confidence - a.confidence;
             }
+            
             // Due score desc (only for restock)
             const dueA = a.evidence?.due_score || 0;
             const dueB = b.evidence?.due_score || 0;

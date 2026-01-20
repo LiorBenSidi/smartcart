@@ -383,9 +383,30 @@ export default function SmartCart() {
                                           </ul>
                                       </div>
 
+                                      <div className="bg-orange-900/20 border border-orange-700/30 p-4 rounded">
+                                          <h4 className="font-semibold mb-2 text-orange-400">Collaborative Filtering:</h4>
+                                          <div className="space-y-2 text-gray-300">
+                                              <p className="text-xs">Identifies products bought by users similar to you:</p>
+                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
+                                                  <li>Compares your purchase patterns with other users to find "neighbors".</li>
+                                                  <li>Recommends products frequently purchased by your neighbors that you haven't bought.</li>
+                                                  <li>Confidence is based on neighbor similarity and purchase frequency.</li>
+                                              </ul>
+                                              <p className="text-xs mt-3"><strong>Example:</strong> Similar users often buy fresh herbs with their produce. If you don't, it's suggested!</p>
+                                          </div>
+                                      </div>
+
                                       <div className="bg-slate-800 border border-slate-700 p-4 rounded">
                                           <h4 className="font-semibold mb-2 text-white">Combination Logic:</h4>
-                                          <p className="text-xs text-gray-300">A product can be suggested for BOTH weekly pattern AND restock. Reason type shows "Weekly+Restock" in this case.</p>
+                                          <div className="space-y-2 text-gray-300">
+                                              <p className="text-xs">Suggestions from different sources are merged and prioritized:</p>
+                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
+                                                  <li><strong>Deduplication:</strong> Unique products are identified across all suggestion types.</li>
+                                                  <li><strong>Confidence Blending:</strong> If a product appears in multiple suggestion types (e.g., Weekly and Collaborative), their confidence scores are blended with a 50/50 weighting.</li>
+                                                  <li><strong>Reason Types:</strong> Products can have 'Weekly', 'Restock', 'Weekly+Restock', 'Collaborative', or 'Hybrid' (for blended suggestions) reasons.</li>
+                                              </ul>
+                                              <p className="text-xs mt-3"><strong>Prioritization Order:</strong> Weekly+Restock > Hybrid > Restock > Weekly > Collaborative (highest confidence wins within same priority)</p>
+                                          </div>
                                       </div>
                                   </div>
                               </DialogContent>
