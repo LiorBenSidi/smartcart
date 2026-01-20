@@ -274,68 +274,7 @@ export default function Recommendations() {
 
       <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />
 
-      {/* 1. Stores */}
-      {candidates.chains.length > 0 && (
-          <section>
-              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  <Store className="w-5 h-5 text-indigo-500" /> Recommended Stores
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {candidates.chains.map((c, i) => {
-                      const matchQuality = getMatchQuality(c.score);
-                      return (
-                          <Card key={i} className="hover:shadow-md transition-all border-indigo-100 dark:border-gray-700 relative overflow-hidden group">
-                              <div className={`absolute top-0 left-0 w-1 h-full ${matchQuality.color}`} />
-                              {i === 0 && (
-                                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold z-10">
-                                      Top Pick
-                                  </div>
-                              )}
-                              <CardContent className="p-4 flex flex-col items-center text-center">
-                                  <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full shadow-sm flex items-center justify-center mb-3 overflow-hidden border border-gray-100 p-2">
-                                      {c.image_url ? 
-                                          <img src={c.image_url} alt={c.name} className="w-full h-full object-contain" /> :
-                                          <Store className="w-8 h-8 text-indigo-600" />
-                                      }
-                                  </div>
-                                  <h3 className="font-bold text-lg mb-1">{c.name || `Chain #${c.store_chain_id}`}</h3>
-                                  
-                                  <div className="flex items-center gap-1.5 mb-2" title={c.reason_short || "Recommended for you"}>
-                                      <div className={`w-2 h-2 rounded-full ${matchQuality.color}`} />
-                                      {c.estimated_savings ? (
-                                          <span className="text-xs font-bold text-green-600 dark:text-green-400">
-                                              Save ₪{c.estimated_savings}
-                                          </span>
-                                      ) : (
-                                          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                              {Math.round(c.score * 100)}% Match
-                                          </span>
-                                      )}
-                                      <Info className="w-3 h-3 text-gray-400 cursor-help ml-1" />
-                                  </div>
 
-                                  <p className="text-xs text-gray-500 mb-4 line-clamp-2 min-h-[2.5em]">
-                                      {c.description || "Recommended based on your shopping preferences and location."}
-                                  </p>
-
-                                  <div className="flex gap-2 w-full mt-auto">
-                                      <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleFeedback(c, 'thumbs_down')}>
-                                          <ThumbsDown className="w-4 h-4" />
-                                      </Button>
-                                      <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleFeedback(c, 'thumbs_up')}>
-                                          <ThumbsUp className="w-4 h-4" />
-                                      </Button>
-                                      <Button size="sm" className="flex-1 bg-indigo-600 hover:bg-indigo-700 h-8" onClick={() => handleFeedback(c, 'click')}>
-                                          View Details
-                                      </Button>
-                                  </div>
-                              </CardContent>
-                          </Card>
-                      );
-                  })}
-              </div>
-          </section>
-      )}
 
       {/* Store Details Dialog */}
       <Dialog open={!!selectedStore} onOpenChange={(open) => !open && setSelectedStore(null)}>
