@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle, Plus } from 'lucide-react';
 import { cn } from "@/components/lib/utils";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import ReceiptFolderView from '../components/ReceiptFolderView';
 
 export default function Upload() {
   const [file, setFile] = useState(null);
@@ -25,12 +26,31 @@ export default function Upload() {
   const [loadingStores, setLoadingStores] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [receipts, setReceipts] = useState([]);
   const fileInputRef = useRef(null);
+
+  const handleDeleteReceipt = async (receiptId) => {
+    if (confirm("Are you sure you want to delete this receipt?")) {
+        try {
+            await base44.entities.Receipt.delete(receiptId);
+            setReceipts(receipts.filter(r => r.id !== receiptId));
+        } catch (error) {
+            console.error("Failed to delete receipt", error);
+            alert("Failed to delete receipt");
+        }
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const user = await base44.auth.me();
+        
+        // Fetch receipts
+        try {
+            const userReceipts = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 20);
+            setReceipts(userReceipts);
+        } catch (e) { console.error("Failed to fetch receipts", e); }
         const adminStatus = user.role === 'admin';
         if (!adminStatus) {
           const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
@@ -447,6 +467,18 @@ export default function Upload() {
           </p>
         )}
       </div>
+
+      {/* Receipt History (Folder View) */}
+      <section className="space-y-4 pt-8 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Recent Receipts</h3>
+            <Link to={createPageUrl('upload')} className="text-xs text-indigo-600 font-semibold hover:underline flex items-center" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+              <Plus className="w-3 h-3 mr-1" /> Scan New
+            </Link>
+          </div>
+
+          <ReceiptFolderView receipts={receipts} onDelete={handleDeleteReceipt} />
+      </section>
     </div>
   );
 }

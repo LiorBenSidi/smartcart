@@ -402,17 +402,7 @@ export default function Home() {
         </section>
         )}
 
-        {/* Receipt History (Folder View) */}
-        <section className="lg:col-span-1 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Receipts</h3>
-            <Link to={createPageUrl('upload')} className="text-xs text-indigo-600 font-semibold hover:underline flex items-center">
-              <Plus className="w-3 h-3 mr-1" /> Scan New
-            </Link>
-          </div>
 
-          <ReceiptFolderView receipts={recentReceipts} onDelete={handleDeleteReceipt} />
-        </section>
       </div>
     </div>
   );
