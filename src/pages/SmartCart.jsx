@@ -55,7 +55,7 @@ export default function SmartCart() {
         } else {
           // Trigger generation if none exists
           const res = await base44.functions.invoke('generateDailySuggestions', {
-            currentCartItems: cartItems.map(item => item.gtin)
+            currentCartItems: cartItems.map((item) => item.gtin)
           });
           if (res.data.success) {
             setSuggestions(res.data.draft);
@@ -74,7 +74,7 @@ export default function SmartCart() {
     try {
       setRefreshingSuggestions(true);
       const res = await base44.functions.invoke('generateDailySuggestions', {
-        currentCartItems: cartItems.map(item => item.gtin)
+        currentCartItems: cartItems.map((item) => item.gtin)
       });
       if (res.data.success) {
         setSuggestions(res.data.draft);
@@ -391,11 +391,11 @@ export default function SmartCart() {
                       </div>
                       <div className="flex items-center gap-2">
                           <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={refreshSuggestions}
-                              disabled={refreshingSuggestions}
-                              className="h-8 text-xs">
+                      size="sm"
+                      variant="outline"
+                      onClick={refreshSuggestions}
+                      disabled={refreshingSuggestions}
+                      className="h-8 text-xs">
                               <RefreshCw className={`w-3 h-3 mr-1 ${refreshingSuggestions ? 'animate-spin' : ''}`} />
                               Refresh
                           </Button>
@@ -436,7 +436,7 @@ export default function SmartCart() {
                                       {expandedSuggestion === idx &&
                         <div className="mt-2 text-xs text-gray-600 bg-gray-50 dark:bg-gray-700 p-3 rounded space-y-2">
                                               {item.reason_type.includes('Weekly') &&
-                          <p>You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
+                          <p className="text-slate-50">You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
                           }
                                               {item.reason_type.includes('Restock') &&
                           <>
