@@ -1,26 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
-import EnhancedProductSearch from '@/components/EnhancedProductSearch';
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck, Search, Loader2, ThumbsUp, ThumbsDown, HelpCircle, Settings } from 'lucide-react';
-import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import CartAlternatives from '@/components/CartAlternatives';
-import DataCorrectionDialog from '@/components/DataCorrectionDialog';
-import { processManager } from "@/components/processManager";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export default function SmartCart() {
   const [cartItems, setCartItems] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [products, setProducts] = useState([]);
   const [storeComparisons, setStoreComparisons] = useState([]);
   const [optimizedCart, setOptimizedCart] = useState(null);
   const [loadingComparisons, setLoadingComparisons] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [savedCarts, setSavedCarts] = useState([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [cartName, setCartName] = useState('');
@@ -31,93 +25,44 @@ export default function SmartCart() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [expandedSuggestion, setExpandedSuggestion] = useState(null);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
-  const [likedItems, setLikedItems] = useState(new Set());
-  const [refreshingSuggestions, setRefreshingSuggestions] = useState(false);
-  const [weeklyWeight, setWeeklyWeight] = useState(0.5);
-  const [collaborativeWeight, setCollaborativeWeight] = useState(0.5);
-  const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
 
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      try {
-        setLoadingSuggestions(true);
-        const user = await base44.auth.me();
-        const today = new Date().toISOString().split('T')[0];
+      const fetchSuggestions = async () => {
+          try {
+              setLoadingSuggestions(true);
+              const user = await base44.auth.me();
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Try to find existing draft for today
+              const drafts = await base44.entities.SuggestedCartDraft.filter({ 
+                  created_by: user.email, 
+                  generated_date: today 
+              });
 
-        // Fetch preferences first to initialize state
-        const prefs = await base44.entities.UserProductPreference.list();
-        const likedSet = new Set(prefs.filter((p) => p.preference === 'like').map((p) => p.product_gtin));
-        setLikedItems(likedSet);
-
-        // Try to find existing draft for today
-        const drafts = await base44.entities.SuggestedCartDraft.filter({
-          created_by: user.email,
-          generated_date: today
-        });
-
-        if (drafts.length > 0) {
-          setSuggestions(drafts[0]);
-        } else {
-          // Trigger generation via processManager if none exists
-          await processManager.startProcess('generateDailySuggestions', {
-            currentCartItems: cartItems.map((item) => item.gtin),
-            weeklyWeight,
-            collaborativeWeight
-          });
-          
-          // Fetch the newly created draft
-          const newDrafts = await base44.entities.SuggestedCartDraft.filter({
-            created_by: user.email,
-            generated_date: today
-          });
-          if (newDrafts.length > 0) {
-            setSuggestions(newDrafts[0]);
+              if (drafts.length > 0) {
+                  setSuggestions(drafts[0]);
+              } else {
+                  // Trigger generation if none exists
+                  const res = await base44.functions.invoke('generateDailySuggestions');
+                  if (res.data.success) {
+                      setSuggestions(res.data.draft);
+                  }
+              }
+          } catch (error) {
+              console.error("Failed to fetch suggestions", error);
+          } finally {
+              setLoadingSuggestions(false);
           }
-        }
-      } catch (error) {
-        console.error("Failed to fetch suggestions", error);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    };
-    fetchSuggestions();
+      };
+      fetchSuggestions();
   }, []);
-
-  const refreshSuggestions = async () => {
-    try {
-      setRefreshingSuggestions(true);
-      await processManager.startProcess('generateDailySuggestions', {
-        currentCartItems: cartItems.map((item) => item.gtin),
-        weeklyWeight,
-        collaborativeWeight
-      });
-
-      // Fetch the updated draft
-      const user = await base44.auth.me();
-      const today = new Date().toISOString().split('T')[0];
-      const drafts = await base44.entities.SuggestedCartDraft.filter({
-        created_by: user.email,
-        generated_date: today
-      });
-      
-      if (drafts.length > 0) {
-        setSuggestions(drafts[0]);
-        toast.success("Suggestions refreshed!");
-      }
-    } catch (error) {
-      console.error("Failed to refresh suggestions", error);
-      toast.error("Failed to refresh suggestions: " + error.message);
-    } finally {
-      setRefreshingSuggestions(false);
-    }
-  };
 
   const applyOptimizedCart = () => {
     if (!optimizedCart) return;
-    const newItems = optimizedCart.items.map((item) => ({
-      gtin: item.gtin,
-      name: item.name || products.find((p) => p.gtin === item.gtin)?.canonical_name || "Optimized Item",
-      quantity: item.quantity
+    const newItems = optimizedCart.items.map(item => ({
+        gtin: item.gtin,
+        name: item.name || products.find(p => p.gtin === item.gtin)?.canonical_name || "Optimized Item",
+        quantity: item.quantity
     }));
     setCartItems(newItems);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -125,7 +70,13 @@ export default function SmartCart() {
 
   useEffect(() => {
     const loadData = async () => {
-      const savedCartsList = await base44.entities.SavedCart.list('-created_date');
+      const [storesList, productsList, savedCartsList] = await Promise.all([
+        base44.entities.Store.list(),
+        base44.entities.Product.list('-updated_date', 100),
+        base44.entities.SavedCart.list('-created_date')
+      ]);
+      setStores(storesList);
+      setProducts(productsList);
       setSavedCarts(savedCartsList);
     };
     loadData();
@@ -161,12 +112,12 @@ export default function SmartCart() {
         cartItems: cartItems.map((item) => ({ gtin: item.gtin, quantity: item.quantity })),
         userLat: userLocation?.lat,
         userLon: userLocation?.lon
-      });
-      setStoreComparisons(response.data.topStores || []);
-      setOptimizedCart(response.data.optimizedCart || null);
-    } catch (error) {
-      console.error('Failed to load comparisons', error);
-    } finally {
+        });
+        setStoreComparisons(response.data.topStores || []);
+        setOptimizedCart(response.data.optimizedCart || null);
+        } catch (error) {
+        console.error('Failed to load comparisons', error);
+        } finally {
       setLoadingComparisons(false);
     }
   };
@@ -206,66 +157,13 @@ export default function SmartCart() {
     }).filter(Boolean));
   };
 
-  const handlePreference = async (item, preference) => {
-    try {
-      const user = await base44.auth.me();
-
-      // First, remove any existing preferences for this product
-      const allExisting = await base44.entities.UserProductPreference.filter({
-        user_id: user.email,
-        product_gtin: item.product_id
-      });
-      await Promise.all(allExisting.map((p) => base44.entities.UserProductPreference.delete(p.id)));
-
-      if (preference === 'like') {
-        if (likedItems.has(item.product_id)) {
-          // Toggle OFF (Unlike)
-          setLikedItems((prev) => {
-            const next = new Set(prev);
-            next.delete(item.product_id);
-            return next;
-          });
-          toast.success("Removed from Liked Items");
-        } else {
-          // Toggle ON (Like)
-          setLikedItems((prev) => new Set([...prev, item.product_id]));
-          await base44.entities.UserProductPreference.create({
-            user_id: user.email,
-            product_gtin: item.product_id,
-            product_name: item.product_name,
-            preference: 'like'
-          });
-          toast.success("Added to Liked Items");
-        }
-      } else if (preference === 'dislike') {
-        // Remove from liked state if it was liked
-        setLikedItems((prev) => {
-          const next = new Set(prev);
-          next.delete(item.product_id);
-          return next;
-        });
-
-        // Remove from suggestions locally
-        if (suggestions && suggestions.items) {
-          const newItems = suggestions.items.filter((i) => i.product_id !== item.product_id);
-          setSuggestions({ ...suggestions, items: newItems });
-        }
-
-        await base44.entities.UserProductPreference.create({
-          user_id: user.email,
-          product_gtin: item.product_id,
-          product_name: item.product_name,
-          preference: 'dislike'
-        });
-        toast.success("Removed from suggestions");
-      }
-    } catch (error) {
-      console.error("Failed to update preference", error);
-      toast.error("Failed to update preference");
-    }
-  };
-
-
+  const filteredProducts = searchTerm ?
+  products.filter((p) =>
+  p.canonical_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  p.gtin?.includes(searchTerm) ||
+  p.brand_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  ).slice(0, 5) :
+  [];
 
   const getReasonIcon = (reason) => {
     if (reason.includes('cheaper')) return <TrendingDown className="w-3 h-3" />;
@@ -282,12 +180,12 @@ export default function SmartCart() {
     setSaving(true);
     try {
       const bestStore = storeComparisons.length > 0 ? storeComparisons[0] : null;
-
+      
       await base44.entities.SavedCart.create({
         name: cartName,
         store_id: bestStore?.store?.id,
         store_name: bestStore?.store?.name,
-        items: cartItems.map((item) => ({ ...item, price: 0 })),
+        items: cartItems.map(item => ({ ...item, price: 0 })),
         total_amount: bestStore?.totalCost || 0,
         total_items: totalItems
       });
@@ -304,7 +202,7 @@ export default function SmartCart() {
   };
 
   const loadSavedCart = (savedCart) => {
-    setCartItems(savedCart.items.map((item) => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
+    setCartItems(savedCart.items.map(item => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
     setShowHistory(false);
   };
 
@@ -322,206 +220,39 @@ export default function SmartCart() {
         </div>
         <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
           <ShoppingCart className="w-7 h-7" />
-          Smart Cart
+          Smart Cart Comparison
         </h1>
-        <p className="text-purple-100 text-sm">Compare prices or find better alternatives</p>
+        <p className="text-purple-100 text-sm">Build your cart and find the cheapest supermarkets near you</p>
       </div>
 
-      <Tabs defaultValue="build" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="build">Build Cart</TabsTrigger>
-            <TabsTrigger value="ai">AI Recommendations</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="build" className="space-y-6">
-
       {/* Suggested for Today */}
-      {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 &&
-          <TooltipProvider>
+      {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 && (
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1">
-                          <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
-                              <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                              Suggested for Today
-                          </CardTitle>
-                          <Dialog>
-                              <DialogTrigger asChild>
-                                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900">
-                                      <HelpCircle className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                  </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto dark:bg-gray-900">
-                                  <DialogHeader>
-                                      <DialogTitle className="flex items-center gap-2">
-                                          <CalendarDays className="w-5 h-5 text-indigo-600" />
-                                          Daily Suggestions - Technical Details
-                                      </DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4 text-sm dark:text-gray-200">
-                                      <div>
-                                          <h4 className="font-semibold mb-2">Algorithm Overview:</h4>
-                                          <p className="text-gray-700 dark:text-gray-300 mb-2">Runs daily to predict what you should buy today based on your purchase history.</p>
-                                      </div>
-
-                                      <div className="bg-slate-800 border border-slate-700 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-white">Weekly Pattern Detection:</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Analyzes purchases from all available historical weeks:</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li>Groups receipts by day of week (e.g., all your Fridays)</li>
-                                                  <li>Counts how often each product appears on this weekday</li>
-                                                  <li>Threshold: Product must appear ≥50% of weeks</li>
-                                                  <li>occurrences: This represents the number of times the user has purchased that specific item on the same day of the week (e.g., every Monday) within the observation period</li>
-                                                  <li>total_weeks: This is the total number of weeks being considered in that observation period</li>
-                                                  <li>Confidence = (occurrences / total_weeks)</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Example:</strong> If you bought milk on 6 out of 8 Fridays → 75% confidence for Friday milk suggestion</p>
-                                          </div>
-                                      </div>
-
-                                      <div className="bg-slate-900 border border-yellow-700/30 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-yellow-400">Restock Prediction (Cadence-Based):</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Uses UserProductHabit records (pre-calculated):</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li>avg_cadence_days: Average days between purchases</li>
-                                                  <li>last_purchase_date: When you last bought it</li>
-                                                  <li>days_since = (today - last_purchase_date)</li>
-                                                  <li>ratio = days_since / avg_cadence_days</li>
-                                                  <li>Suggests if ratio ≥ 0.85 (85% through cycle)</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Example:</strong> You buy eggs every 7 days. Last purchase was 6 days ago → ratio=0.86 → suggest restock!</p>
-                                          </div>
-                                      </div>
-
-                                      <div>
-                                          <h4 className="font-semibold mb-2">Quantity Estimation:</h4>
-                                          <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300 space-y-1">
-                                              <li>Weekly suggestions: Uses mode (most common quantity)</li>
-                                              <li>Restock suggestions: Uses average quantity from habits</li>
-                                              <li>Default to 1 if no history</li>
-                                          </ul>
-                                      </div>
-
-                                      <div className="bg-orange-900/20 border border-orange-700/30 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-orange-400">Collaborative Filtering:</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Identifies products bought by users similar to you:</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li>Compares your purchase patterns with other users to find "neighbors".</li>
-                                                  <li>Recommends products frequently purchased by your neighbors that you haven't bought.</li>
-                                                  <li>Confidence is based on neighbor similarity and purchase frequency.</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Example:</strong> Similar users often buy fresh herbs with their produce. If you don't, it's suggested!</p>
-                                          </div>
-                                      </div>
-
-                                      <div className="bg-slate-800 border border-slate-700 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-white">Combination Logic:</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Suggestions from different sources are merged and prioritized:</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li><strong>Deduplication:</strong> Unique products are identified across all suggestion types.</li>
-                                                  <li><strong>Confidence Blending:</strong> If a product appears in multiple suggestion types (e.g., Weekly and Collaborative), their confidence scores are blended with a 50/50 weighting.</li>
-                                                  <li><strong>Reason Types:</strong> Products can have 'Weekly', 'Restock', 'Weekly+Restock', 'Collaborative', or 'Hybrid' (for blended suggestions) reasons.</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Prioritization Order:</strong> Weekly+Restock > Hybrid > Restock > Weekly > Collaborative (highest confidence wins within same priority)</p>
-                                          </div>
-                                      </div>
-                                  </div>
-                              </DialogContent>
-                          </Dialog>
-                      </div>
-                      <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1">
-                              <Dialog open={showPreferencesDialog} onOpenChange={setShowPreferencesDialog}>
-                                  <DialogTrigger asChild>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
-                                          <Settings className="w-4 h-4 text-gray-500" />
-                                      </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-sm">
-                                      <DialogHeader>
-                                          <DialogTitle>Suggestion Preferences</DialogTitle>
-                                      </DialogHeader>
-                                      <div className="space-y-6 py-4">
-                                          <div>
-                                              <div className="flex justify-between items-center mb-2">
-                                                  <label className="text-sm font-medium">Weekly/Restock Weight</label>
-                                                  <span className="text-sm text-gray-500">{(weeklyWeight * 100).toFixed(0)}%</span>
-                                              </div>
-                                              <Slider
-                                                  value={[weeklyWeight]}
-                                                  onValueChange={([val]) => {
-                                                      setWeeklyWeight(val);
-                                                      setCollaborativeWeight(parseFloat((1 - val).toFixed(1)));
-                                                  }}
-                                                  min={0}
-                                                  max={1}
-                                                  step={0.1}
-                                              />
-                                          </div>
-                                          <div>
-                                              <div className="flex justify-between items-center mb-2">
-                                                  <label className="text-sm font-medium">Collaborative Weight</label>
-                                                  <span className="text-sm text-gray-500">{(collaborativeWeight * 100).toFixed(0)}%</span>
-                                              </div>
-                                              <Slider
-                                                  value={[collaborativeWeight]}
-                                                  onValueChange={([val]) => {
-                                                      setCollaborativeWeight(val);
-                                                      setWeeklyWeight(parseFloat((1 - val).toFixed(1)));
-                                                  }}
-                                                  min={0}
-                                                  max={1}
-                                                  step={0.1}
-                                              />
-                                          </div>
-                                          <Button onClick={() => { 
-                                              refreshSuggestions(); 
-                                              setShowPreferencesDialog(false);
-                                          }} className="w-full">
-                                              Apply & Refresh
-                                          </Button>
-                                      </div>
-                                  </DialogContent>
-                              </Dialog>
-                              <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={refreshSuggestions}
-                                  disabled={refreshingSuggestions}
-                                  className="h-8 text-xs">
-                                  <RefreshCw className={`w-3 h-3 mr-1 ${refreshingSuggestions ? 'animate-spin' : ''}`} />
-                                  Refresh
-                              </Button>
-                          </div>
-                          <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
-                              {suggestions.items.length} items
-                          </Badge>
-                      </div>
+                      <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                          <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                          Suggested for Today
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+                          {suggestions.items.length} items
+                      </Badge>
                   </div>
               </CardHeader>
               <CardContent>
                   <div className="space-y-3">
-                      {suggestions.items.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) =>
-                  <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
+                      {suggestions.items.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) => (
+                          <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
                               <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                           <span className="font-semibold text-gray-900 dark:text-gray-100">{item.product_name}</span>
-                                           <Badge className={`text-[10px] px-1.5 py-0 h-5 flex items-center gap-1 border ${
-                          item.reason_type === 'Weekly+Restock' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800' :
-                          item.reason_type === 'Collaborative' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
-                          item.reason_type === 'Hybrid' ? 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
-                          item.reason_type === 'Restock' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' :
-                          'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
-                        }`}>
-                                               {item.reason_type}
-                                           </Badge>
-                                       </div>
+                                          <span className="font-semibold text-gray-900 dark:text-gray-100">{item.product_name}</span>
+                                          <Badge className={`text-[10px] px-1.5 py-0 h-5 ${
+                                              item.reason_type.includes('Weekly') ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                          }`}>
+                                              {item.reason_type}
+                                          </Badge>
+                                      </div>
                                       <div className="text-xs text-gray-500 flex items-center gap-3">
                                           <span>Qty: {item.suggested_qty}</span>
                                           <span className={`${item.confidence > 0.8 ? 'text-green-600' : 'text-gray-400'}`}>
@@ -530,145 +261,107 @@ export default function SmartCart() {
                                       </div>
                                       
                                       {/* Why Expander */}
-                                      <button
-                          onClick={() => setExpandedSuggestion(expandedSuggestion === idx ? null : idx)}
-                          className="text-[10px] text-indigo-500 flex items-center gap-1 mt-2 hover:underline">
-
+                                      <button 
+                                          onClick={() => setExpandedSuggestion(expandedSuggestion === idx ? null : idx)}
+                                          className="text-[10px] text-indigo-500 flex items-center gap-1 mt-2 hover:underline"
+                                      >
                                           Why? {expandedSuggestion === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                       </button>
-                                      {expandedSuggestion === idx &&
-                        <div className="mt-2 text-xs text-gray-600 bg-gray-50 dark:bg-gray-700 p-3 rounded space-y-2">
-                                              {item.reason_type.includes('Weekly') &&
-                          <p className="text-gray-700 dark:text-gray-300">You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
-                          }
-                                              {item.reason_type.includes('Restock') &&
-                          <>
-                                                      <p className="font-semibold text-gray-800 dark:text-gray-200">Restock Recommendation</p>
-                                                      <p className="text-gray-700 dark:text-gray-300">Based on your buying patterns:</p>
-                                                      <p className="text-gray-600 dark:text-gray-300">• Average purchase every <span className="font-semibold">{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)} days</span></p>
-                                                      <p className="text-gray-600 dark:text-gray-300">• Last purchased <span className="font-semibold">{Number(item.evidence?.days_since_last_purchase || 0)} days ago</span></p>
-                                                      <p className="text-amber-600 dark:text-amber-400 font-semibold mt-1">You're {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x through your cycle - time to restock!</p>
-                                                  </>
-                          }
-                                              {item.reason_type.includes('Collaborative') &&
-                          <>
-                                                      <p className="font-semibold text-gray-800 dark:text-gray-200">Community Favorite</p>
-                                                      <p className="text-gray-700 dark:text-gray-300">
-                                                          Popular among <span className="font-semibold">{item.evidence?.similar_users_count || 1} users</span> with similar shopping habits to yours.
-                                                      </p>
-                                                  </>
-                          }
-                                              {item.reason_type.includes('Hybrid') &&
-                          <>
-                                                      <p className="font-semibold text-gray-800 dark:text-gray-200">Hybrid Recommendation</p>
-                                                      <p className="text-gray-700 dark:text-gray-300">
-                                                          Combined insights from your weekly habits and community trends.
-                                                      </p>
-                                                      {item.evidence?.collaborative_evidence &&
-                                                          <p className="text-xs text-gray-500 mt-1">
-                                                              Also popular with {item.evidence.collaborative_evidence.similar_users_count} similar shoppers.
-                                                          </p>
-                                                      }
-                                                  </>
-                          }
+                                      {expandedSuggestion === idx && (
+                                          <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
+                                              {item.reason_type.includes('Weekly') && (
+                                                  <p> bought {item.evidence.occurrences} times on this weekday in last {item.evidence.n_weeks} weeks.</p>
+                                              )}
+                                              {item.reason_type.includes('Restock') && (
+                                                  <p> Usually bought every {item.evidence.avg_cadence_days} days. Last bought {item.evidence.days_since_last_purchase} days ago.</p>
+                                              )}
                                           </div>
-                        }
+                                      )}
                                   </div>
-                                  <div className="flex flex-col gap-2 items-center">
-                                      <Button
-                          size="sm"
-                          className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 mb-1"
-                          onClick={() => {
-                            addToCart({ gtin: item.product_id, canonical_name: item.product_name });
-                          }}>
-
+                                  <div className="flex flex-col gap-2">
+                                      <Button 
+                                          size="sm" 
+                                          className="h-8 bg-indigo-600 hover:bg-indigo-700"
+                                          onClick={() => {
+                                              addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                                              // Ideally mark as added in local state or remove from view?
+                                          }}
+                                      >
                                           <Plus className="w-4 h-4" />
                                       </Button>
-                                      <div className="flex gap-1">
-                                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className={`h-6 w-6 p-0 ${likedItems.has(item.product_id) ? 'bg-green-100 hover:bg-green-200' : 'hover:bg-green-50'}`}
-                            onClick={() => handlePreference(item, 'like')}>
-
-                                              <ThumbsUp className={`w-3 h-3 ${likedItems.has(item.product_id) ? 'text-green-700 fill-current' : 'text-green-600'}`} />
-                                          </Button>
-                                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 hover:bg-red-50"
-                            onClick={() => handlePreference(item, 'dislike')}
-                            disabled={likedItems.has(item.product_id)}>
-
-                                              <ThumbsDown className={`w-3 h-3 ${likedItems.has(item.product_id) ? 'text-gray-300' : 'text-red-600'}`} />
-                                          </Button>
-                                      </div>
                                   </div>
                               </div>
                           </div>
-                  )}
+                      ))}
                   </div>
                   
                   <div className="mt-4 flex gap-3">
-                      <Button
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                    onClick={() => {
-                      suggestions.items.forEach((item) => {
-                        const existing = cartItems.find((i) => i.gtin === item.product_id);
-                        if (existing) {
-                          setCartItems(cartItems.map((i) =>
-                          i.gtin === item.product_id ?
-                          { ...i, quantity: i.quantity + item.suggested_qty } :
-                          i
-                          ));
-                        } else {
-                          setCartItems((prev) => [...prev, {
-                            gtin: item.product_id,
-                            name: item.product_name,
-                            quantity: item.suggested_qty || 1
-                          }]);
-                        }
-                      });
-                      toast.success(`Added ${suggestions.items.length} items to cart`);
-                    }}>
-
+                      <Button 
+                          className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                          onClick={() => {
+                              suggestions.items.forEach(item => {
+                                  addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                              });
+                              // Mark draft as accepted?
+                          }}
+                      >
                           Add All to Cart
                       </Button>
-                      <Button
-                    variant="outline"
-                    className="text-gray-500"
-                    onClick={async () => {
-                      try {
-                        await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
-                        setSuggestions(null);
-                      } catch (e) {console.error(e);}
-                    }}>
-
+                      <Button 
+                          variant="outline"
+                          className="text-gray-500"
+                          onClick={async () => {
+                              try {
+                                  await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
+                                  setSuggestions(null);
+                              } catch(e) { console.error(e); }
+                          }}
+                      >
                           Dismiss
                       </Button>
                   </div>
-                  {suggestions.items.length > 6 &&
-                <div className="text-center mt-2">
-                          <button
-                    className="text-xs text-gray-500 hover:text-indigo-600"
-                    onClick={() => setShowAllSuggestions(!showAllSuggestions)}>
-
+                  {suggestions.items.length > 6 && (
+                      <div className="text-center mt-2">
+                          <button 
+                              className="text-xs text-gray-500 hover:text-indigo-600"
+                              onClick={() => setShowAllSuggestions(!showAllSuggestions)}
+                          >
                               {showAllSuggestions ? 'Show Less' : `Show ${suggestions.items.length - 6} More`}
                           </button>
                       </div>
-                }
+                  )}
               </CardContent>
-              </Card>
-              </TooltipProvider>
-          }
+          </Card>
+      )}
 
-              {/* Enhanced Product Search */}
-              <Card>
+      {/* Add Products */}
+      <Card>
         <CardHeader>
           <CardTitle className="text-lg">Add Products to Cart</CardTitle>
         </CardHeader>
-        <CardContent>
-          <EnhancedProductSearch onAddToCart={addToCart} />
+        <CardContent className="space-y-3">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500" />
+
+          {filteredProducts.length > 0 &&
+          <div className="space-y-2">
+              {filteredProducts.map((product) =>
+            <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{product.canonical_name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{product.brand_name} • {product.gtin}</div>
+                  </div>
+                  <Button size="sm" onClick={() => {addToCart(product);setSearchTerm('');}}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+            )}
+            </div>
+          }
         </CardContent>
       </Card>
 
@@ -686,18 +379,18 @@ export default function SmartCart() {
               </div>
             </div>
             {cartItems.length > 0 &&
-                <Button variant="outline" size="sm" onClick={fetchComparisons} disabled={loadingComparisons}>
+            <Button variant="outline" size="sm" onClick={fetchComparisons} disabled={loadingComparisons}>
                 <RefreshCw className={`w-4 h-4 mr-2 ${loadingComparisons ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-                }
+            }
           </div>
           <div className="flex gap-2">
-            {cartItems.length > 0 &&
-                <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => setShowSaveDialog(true)}>
+            {cartItems.length > 0 && (
+              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => setShowSaveDialog(true)}>
                 Save Cart
               </Button>
-                }
+            )}
             <Button variant="outline" className="flex-1" onClick={() => setShowHistory(!showHistory)}>
               {showHistory ? 'Hide' : 'Show'} History
             </Button>
@@ -706,19 +399,19 @@ export default function SmartCart() {
       </Card>
 
       {/* Save Dialog */}
-      {showSaveDialog &&
-          <Card className="border-green-200 bg-green-50">
+      {showSaveDialog && (
+        <Card className="border-green-200 bg-green-50">
           <CardHeader>
             <CardTitle className="text-lg">Save Cart List</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <input
-                type="text"
-                placeholder="Enter cart name (e.g., Weekly Groceries)"
-                value={cartName}
-                onChange={(e) => setCartName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
-
+              type="text"
+              placeholder="Enter cart name (e.g., Weekly Groceries)"
+              value={cartName}
+              onChange={(e) => setCartName(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowSaveDialog(false)}>
                 Cancel
@@ -729,21 +422,21 @@ export default function SmartCart() {
             </div>
           </CardContent>
         </Card>
-          }
+      )}
 
       {/* Saved Carts History */}
-      {showHistory &&
-          <Card>
+      {showHistory && (
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">Saved Cart Lists</CardTitle>
             <p className="text-xs text-amber-600 mt-1">⚠️ Prices and availability shown are from the time each list was created</p>
           </CardHeader>
           <CardContent className="space-y-3">
-            {savedCarts.length === 0 ?
-              <p className="text-center text-gray-400 py-6">No saved carts yet</p> :
-
-              savedCarts.map((cart) =>
-              <div key={cart.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            {savedCarts.length === 0 ? (
+              <p className="text-center text-gray-400 py-6">No saved carts yet</p>
+            ) : (
+              savedCarts.map((cart) => (
+                <div key={cart.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 dark:text-gray-100">{cart.name}</div>
@@ -767,29 +460,29 @@ export default function SmartCart() {
                     📅 Historical pricing from {new Date(cart.created_date).toLocaleDateString()}
                   </div>
                 </div>
-              )
-              }
+              ))
+            )}
           </CardContent>
         </Card>
-          }
+      )}
 
       {/* Cart Items List */}
-      {cartItems.length === 0 ?
-          <Card>
+      {cartItems.length === 0 ? (
+        <Card>
           <CardContent className="p-10 text-center text-gray-400">
             <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p>Your cart is empty. Add products to compare prices!</p>
           </CardContent>
-        </Card> :
-
-          <>
+        </Card>
+      ) : (
+        <>
           {/* Cart Items */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Your Cart Items</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {cartItems.map((item) =>
+              {cartItems.map((item) => (
                 <div key={item.gtin} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="flex items-center gap-3 flex-1">
                     <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
@@ -801,105 +494,33 @@ export default function SmartCart() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.gtin)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                  <DataCorrectionDialog
-                      entityType="product"
-                      entityId={item.gtin}
-                      entityName={item.name}
-                      defaultIssueType="price" />
-
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.gtin)}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
                   </div>
-                  </div>
-                )}
+                </div>
+              ))}
             </CardContent>
           </Card>
 
           {/* Store Comparisons */}
-          {loadingComparisons ?
+          {loadingComparisons ? (
             <Card>
               <CardContent className="p-10 text-center text-gray-500">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-3"></div>
                 <p className="text-sm">Comparing prices across supermarkets...</p>
               </CardContent>
-            </Card> :
-            storeComparisons.length > 0 ?
+            </Card>
+          ) : storeComparisons.length > 0 ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <TrendingDown className="w-6 h-6 text-green-600" />
-                    Top 3 Cheapest Supermarkets
-                  </h3>
-                  <Dialog>
-                      <DialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="h-8 px-2 text-xs">
-                              <HelpCircle className="h-4 w-4 mr-1" />
-                              How it works
-                          </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                              <DialogTitle className="flex items-center gap-2">
-                                  <TrendingDown className="w-5 h-5 text-green-600" />
-                                  Price Comparison - Technical Details
-                              </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4 text-sm">
-                              <div>
-                                  <h4 className="font-semibold mb-2">Process (getCartRecommendations):</h4>
-                                  <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                                      <li>Receives cart items (GTIN + quantity)</li>
-                                      <li>Finds all Products matching GTINs across all chains</li>
-                                      <li>Groups products by chain_id</li>
-                                      <li>Calculates total cost per chain</li>
-                                      <li>Ranks chains by total cost (ascending)</li>
-                                      <li>Returns top 3 cheapest options</li>
-                                  </ol>
-                              </div>
-                              
-                              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                                  <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Cost Calculation:</h4>
-                                  <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
-                                      <p className="mb-2">For each chain:</p>
-                                      <code className="text-gray-700 dark:text-gray-300">
-                                          totalCost = Σ (item.current_price × item.quantity)<br />
-                                          availableItems = count(matched products)<br />
-                                          missingItems = cart.length - availableItems
-                                      </code>
-                                  </div>
-                              </div>
-                              
-                              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                  <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Location Integration:</h4>
-                                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">If user location provided (lat/lon):</p>
-                                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                      <li>Finds nearest Store for each chain using Haversine distance</li>
-                                      <li>Fetches driving route from OSRM (Open Source Routing Machine)</li>
-                                      <li>Optionally fetches transit route if available</li>
-                                      <li>Displays distance, duration, and branch address</li>
-                                  </ul>
-                              </div>
-                              
-                              <div className="bg-violet-50 dark:bg-violet-900/20 p-3 rounded">
-                                  <h4 className="font-semibold mb-2 text-violet-900 dark:text-violet-200">Smart Cart Optimization:</h4>
-                                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Multi-store split algorithm:</p>
-                                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                      <li>For each cart item, finds the chain with lowest price</li>
-                                      <li>Creates optimized cart splitting items across stores</li>
-                                      <li>Calculates total savings vs. single-store shopping</li>
-                                      <li>Shows breakdown of which items to buy where</li>
-                                  </ul>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">Note: Doesn't account for travel costs between stores</p>
-                              </div>
-                          </div>
-                      </DialogContent>
-                  </Dialog>
-              </div>
-              {storeComparisons.map((comparison, idx) =>
-              <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : idx === 1 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'}`}>
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <TrendingDown className="w-6 h-6 text-green-600" />
+                Top 3 Cheapest Supermarkets
+              </h3>
+              {storeComparisons.map((comparison, idx) => (
+                <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : idx === 1 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'}`}>
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
@@ -909,54 +530,54 @@ export default function SmartCart() {
                           {idx === 2 && <Badge className="bg-orange-600 text-white">3rd Best</Badge>}
                         </div>
                         <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">{comparison.chain?.name || comparison.store?.name}</h4>
-                        {comparison.nearestBranch &&
-                      <div className="mt-2 space-y-1">
+                        {comparison.nearestBranch && (
+                          <div className="mt-2 space-y-1">
                             <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                               <StoreIcon className="w-4 h-4" />
                               {comparison.nearestBranch.city || comparison.nearestBranch.address_line}
-                              {!comparison.drivingInfo && comparison.distance &&
-                          <span className="text-gray-500 ml-2">• {comparison.distance.toFixed(1)} km (linear)</span>
-                          }
+                              {!comparison.drivingInfo && comparison.distance && (
+                                <span className="text-gray-500 ml-2">• {comparison.distance.toFixed(1)} km (linear)</span>
+                              )}
                             </div>
                             
-                            {comparison.drivingInfo &&
-                        <div className="text-xs text-gray-600 flex items-center gap-3">
+                            {comparison.drivingInfo && (
+                                <div className="text-xs text-gray-600 flex items-center gap-3">
                                     <div className="flex items-center gap-1" title="Driving">
                                         <Car className="w-3 h-3 text-indigo-600" />
                                         <span>{comparison.drivingInfo.duration} ({comparison.drivingInfo.distance})</span>
                                     </div>
-                                    {comparison.transitInfo &&
-                          <div className="flex items-center gap-1" title="Public Transport">
+                                    {comparison.transitInfo && (
+                                         <div className="flex items-center gap-1" title="Public Transport">
                                             <Bus className="w-3 h-3 text-indigo-600" />
                                             <span>{comparison.transitInfo.duration}</span>
                                         </div>
-                          }
+                                    )}
                                 </div>
-                        }
+                            )}
                           </div>
-                      }
-                        {comparison.availableItems !== cartItems.length &&
-                      <div className="text-xs text-amber-600 mt-2">
+                        )}
+                        {comparison.availableItems !== cartItems.length && (
+                          <div className="text-xs text-amber-600 mt-2">
                             ⚠️ Only {comparison.availableItems} of {cartItems.length} items available
                           </div>
-                      }
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">₪{comparison.totalCost.toFixed(2)}</div>
-                        {idx > 0 && storeComparisons[0] &&
-                      <div className="text-sm text-red-600 dark:text-red-400 mt-1">
+                        {idx > 0 && storeComparisons[0] && (
+                          <div className="text-sm text-red-600 dark:text-red-400 mt-1">
                             +₪{(comparison.totalCost - storeComparisons[0].totalCost).toFixed(2)} more
                           </div>
-                      }
+                        )}
                       </div>
                     </div>
                   </CardContent>
                   </Card>
-              )}
+                  ))}
 
                   {/* Optimization Suggestion */}
-                  {optimizedCart &&
-              <div className="mt-8">
+                  {optimizedCart && (
+                  <div className="mt-8">
                   <div className="bg-gradient-to-br from-violet-600 to-indigo-700 text-white p-1 rounded-2xl shadow-xl">
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
                         <div className="flex items-center gap-3 mb-6">
@@ -990,132 +611,42 @@ export default function SmartCart() {
                         <div className="space-y-4">
                            <h4 className="font-semibold text-gray-900 text-sm">Split Strategy:</h4>
                            <div className="grid gap-2">
-                             {Array.from(new Set(optimizedCart.items.map((i) => i.store?.name))).map((storeName) =>
-                        <div key={storeName} className="flex items-center justify-between text-sm p-3 rounded-lg border border-gray-100 bg-gray-50">
+                             {Array.from(new Set(optimizedCart.items.map(i => i.store?.name))).map(storeName => (
+                                <div key={storeName} className="flex items-center justify-between text-sm p-3 rounded-lg border border-gray-100 bg-gray-50">
                                     <div className="flex items-center gap-2">
                                         <StoreIcon className="w-4 h-4 text-gray-400" />
                                         <span className="font-medium text-gray-700">{storeName}</span>
                                     </div>
                                     <Badge variant="secondary" className="bg-white shadow-sm text-gray-600">
-                                        {optimizedCart.items.filter((i) => i.store?.name === storeName).length} items
+                                        {optimizedCart.items.filter(i => i.store?.name === storeName).length} items
                                     </Badge>
                                 </div>
-                        )}
+                             ))}
                            </div>
                         </div>
 
-                        <Button
-                      className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-200 h-12 text-base"
-                      onClick={applyOptimizedCart}>
-
+                        <Button 
+                            className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-200 h-12 text-base"
+                            onClick={applyOptimizedCart}
+                        >
                             <Sparkles className="w-5 h-5 mr-2" /> Apply Optimized Cart
                         </Button>
                       </div>
                   </div>
                   </div>
-              }
+                  )}
 
-                  </div> :
-
+                  </div>
+                  ) : (
             <Card>
               <CardContent className="p-10 text-center text-gray-400">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>No price data available for comparison</p>
               </CardContent>
             </Card>
-            }
+          )}
         </>
-          }
-      </TabsContent>
-
-      <TabsContent value="ai">
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI-Curated Alternatives</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Personalized product recommendations</p>
-                </div>
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button size="sm" variant="outline">
-                            <HelpCircle className="h-4 w-4 mr-1" />
-                            How it works
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-purple-600" />
-                                AI Recommendations - Technical Details
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 text-sm">
-                            <div>
-                                <h4 className="font-semibold mb-2">Hybrid Recommendation System:</h4>
-                                <p className="text-gray-700 dark:text-gray-300">Combines collaborative filtering + content-based filtering</p>
-                            </div>
-                            
-                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. User Vector Generation:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Analyzes last 90 days of receipts to build preference vector:</p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li><strong>Category preferences:</strong> Normalized purchase frequency per category</li>
-                                        <li><strong>Price sensitivity:</strong> avg_item_price, price_variance</li>
-                                        <li><strong>Brand loyalty:</strong> top_brands[] list</li>
-                                        <li><strong>Dietary flags:</strong> organic_ratio, health_conscious_ratio</li>
-                                        <li><strong>Shopping patterns:</strong> avg_basket_size, purchase_frequency</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Collaborative Filtering:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Finds similar users using cosine similarity:</p>
-                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1">
-                                        <code className="text-gray-700 dark:text-gray-300">
-                                            similarity = (A · B) / (||A|| × ||B||)<br />
-                                            where A, B = user preference vectors
-                                        </code>
-                                    </div>
-                                    <ul className="list-disc list-inside ml-4 text-xs mt-2">
-                                        <li>Finds top 10 most similar users</li>
-                                        <li>Extracts products they bought that you haven't</li>
-                                        <li>Scores by similarity weight × frequency</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">3. Candidate Ranking:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Each recommendation scored by:</p>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li>Collaborative score (from similar users)</li>
-                                    <li>Category match (your preference × product category)</li>
-                                    <li>Price appropriateness (how it fits your budget)</li>
-                                    <li>Recency boost (newer products ranked higher)</li>
-                                </ul>
-                            </div>
-                            
-                            <div>
-                                <h4 className="font-semibold mb-2">4. Chain Filtering:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">Results can be filtered by chain to show alternatives available at specific supermarkets.</p>
-                            </div>
-                            
-                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                                <h4 className="font-semibold mb-2">Feedback Loop:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">User interactions (views, clicks, adds to cart) are logged to RecommendationFeedback and used to improve future recommendations.</p>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </div>
-            <CartAlternatives />
-        </div>
-      </TabsContent>
-
-      </Tabs>
+      )}
     </div>);
 
 }

@@ -48,32 +48,22 @@ export default function RecommendationExplainer({ mode = 'general', className = 
             ]
         },
         smart_cart: {
-            title: "Daily Suggestions - Technical Details",
+            title: "Smart Cart Optimization",
             steps: [
                 {
-                    icon: Clock,
-                    title: "Weekly Patterns (Predictive)",
-                    desc: "Suggests items you frequently purchase on specific days of the week, ensuring you never run out of your routine groceries."
-                },
-                {
-                    icon: TrendingUp,
-                    title: "Restock Reminders (Habit-based)",
-                    desc: "Identifies products based on your past purchase cadence, suggesting a restock when you're likely running low."
-                },
-                {
-                    icon: Users,
-                    title: "Collaborative Filtering (Community Favorites)",
-                    desc: "Recommends products popular among users with similar dietary preferences, health goals, and shopping habits."
-                },
-                {
                     icon: Split,
-                    title: "Hybrid Recommendations (Blended Insights)",
-                    desc: "Combines your personal purchase history with community trends to offer a balanced and relevant set of suggestions."
+                    title: "Basket Optimization",
+                    desc: "We calculate the total cost of your cart at different store chains nearby to find the cheapest option."
                 },
                 {
-                    icon: ShoppingCart,
-                    title: "Weekly + Restock (Optimized Habits)",
-                    desc: "The most confident suggestions, combining both your consistent weekly purchases and predicting when an item is due for a restock."
+                    icon: Clock,
+                    title: "Predictive Restock",
+                    desc: "We analyze your purchase history to predict when you're running low on essentials and suggest them at the right time."
+                },
+                {
+                    icon: MapPin,
+                    title: "Route Awareness",
+                    desc: "We factor in travel time and potential savings when suggesting a 'Split Cart' strategy across two stores."
                 }
             ]
         }
@@ -83,6 +73,11 @@ export default function RecommendationExplainer({ mode = 'general', className = 
 
     return (
         <>
+            <Button variant={triggerVariant} size="sm" className={`gap-2 ${className}`} onClick={() => setIsOpen(true)}>
+                <Info className="w-4 h-4" />
+                <span className="hidden sm:inline">How this works</span>
+            </Button>
+
             {isOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">

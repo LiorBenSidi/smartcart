@@ -3,10 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { NAV_ITEMS } from '@/components/mockData';
-import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun, Loader2 } from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
-import { storeManager } from "@/components/storeManager";
-import { processManager } from "@/components/processManager";
+import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun } from 'lucide-react';
 
 export const ThemeContext = React.createContext();
 
@@ -19,18 +16,6 @@ export default function Layout({ children, currentPageName }) {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
-
-  const [storeState, setStoreState] = useState(storeManager.getState());
-  const [processState, setProcessState] = useState(processManager.getState());
-
-  useEffect(() => {
-    const unsubscribeStore = storeManager.subscribe(setStoreState);
-    const unsubscribeProcess = processManager.subscribe(setProcessState);
-    return () => {
-      unsubscribeStore();
-      unsubscribeProcess();
-    };
-  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -56,7 +41,7 @@ export default function Layout({ children, currentPageName }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(true)); //darkMode));
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -77,31 +62,10 @@ export default function Layout({ children, currentPageName }) {
         
         {/* Header - only show on authenticated pages */}
         {!isLanding && user &&
-          <>
           <header className="px-6 py-4 flex justify-between items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                {currentPageName === 'Home' ? 'Dashboard' : currentPageName}
-              </h1>
-              {storeState.loading && (
-                <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Updating stores... {Math.round(storeState.progress)}%</span>
-                </div>
-              )}
-              {processState.loading && (
-                <div className="flex flex-col gap-1 w-full max-w-xs mt-1">
-                   <div className="flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400">
-                      <span className="flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        {processState.status}
-                      </span>
-                      <span>{Math.round(processState.progress)}%</span>
-                   </div>
-                   <Progress value={processState.progress} className="h-1" />
-                </div>
-              )}
-            </div>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+              {currentPageName === 'Home' ? 'Dashboard' : currentPageName}
+            </h1>
 
             <div className="flex items-center gap-3">
               {user.display_name && (
@@ -120,7 +84,6 @@ export default function Layout({ children, currentPageName }) {
               </Link>
             </div>
           </header>
-          </>
           }
 
         <main className="pt-6 pr-6 pb-32 pl-6">
