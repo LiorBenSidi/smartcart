@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
         // Delay 1000ms before next request (except after last request)
         if (store !== storesToEnrichEarly[storesToEnrichEarly.length - 1]) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 250));
         }
     }
 
