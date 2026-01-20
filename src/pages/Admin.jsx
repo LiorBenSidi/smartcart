@@ -168,6 +168,15 @@ export default function Admin() {
     }
   };
 
+  const handleBackfillUserIds = async () => {
+    try {
+        await processManager.startProcess('backfillUserIds');
+        // toast.success is handled by processManager state usually, or we can add it here
+    } catch (err) {
+        console.error('Backfill failed:', err);
+    }
+  };
+
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
@@ -228,7 +237,7 @@ export default function Admin() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
                 <Link to={createPageUrl('CatalogAdmin')} className="w-full">
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
@@ -494,6 +503,17 @@ export default function Admin() {
                         </div>
                     </DialogContent>
                 </Dialog>
+            </div>
+
+            <div className="relative">
+                <Button 
+                    onClick={handleBackfillUserIds}
+                    disabled={processState.loading}
+                    className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
+                >
+                    <Database className="w-4 h-4 mr-2" />
+                    {processState.loading && processState.activeProcess === 'backfillUserIds' ? 'Processing...' : 'Backfill User IDs'}
+                </Button>
             </div>
         </div>
 
