@@ -53,6 +53,7 @@ export default function Layout({ children, currentPageName }) {
   const isLanding = currentPageName === 'Landing';
 
   return (
+    <StoresProvider>
     <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
     <div className="bg-gray-50 text-gray-900 font-sans min-h-screen dark:bg-gray-900 dark:text-gray-100 antialiased relative transition-colors duration-200">
 
@@ -137,6 +138,7 @@ export default function Layout({ children, currentPageName }) {
           }
       </div>
     </div>
-    </ThemeContext.Provider>);
+    </ThemeContext.Provider>
+    </StoresProvider>);
 
-}
+    }
