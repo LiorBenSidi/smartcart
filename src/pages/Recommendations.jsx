@@ -536,6 +536,7 @@ export default function Recommendations() {
                       </Card>
           )}
               </div>
+            }
           </section>
       }
     </div>);
