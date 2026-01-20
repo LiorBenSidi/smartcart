@@ -44,10 +44,14 @@ function MapController({ center, bounds, selectedStore }) {
   return null;
 }
 
+import { Progress } from "@/components/ui/progress";
+
 export default function NearbyStores() {
   const [stores, setStores] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState(''); // 'scanning' | 'routing'
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
@@ -57,44 +61,112 @@ export default function NearbyStores() {
   const [ratingWeight, setRatingWeight] = useState(0.25);
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
 
+  const fetchStoresWithProgress = async (lat, lon) => {
+      setLoading(true);
+      setStores([]);
+      setProgress(0);
+      setLoadingStage('scanning');
+
+      try {
+          // 1. Scan Stores (Batch Fetch)
+          let allStores = [];
+          let batch = 0;
+          let hasMore = true;
+
+          while (hasMore) {
+              const res = await base44.functions.invoke('getNearbyStores', {
+                  latitude: lat,
+                  longitude: lon,
+                  batch
+              });
+              
+              if (res.data.error) throw new Error(res.data.error);
+
+              const newStores = res.data.stores || [];
+              allStores = [...allStores, ...newStores];
+              setStores(prev => [...prev, ...newStores]); // Incremental update
+              
+              hasMore = res.data.hasMore;
+              batch++;
+              
+              // Estimate progress (just a visual indicator since we don't know total)
+              // Assuming ~20 batches max for typical area
+              setProgress(Math.min((batch / 10) * 100, 90));
+          }
+
+          // 2. Sort by Haversine Distance (Top 15 for routing)
+          allStores.sort((a, b) => a.distance - b.distance);
+          const top15 = allStores.slice(0, 15);
+          const others = allStores.slice(15);
+
+          // 3. Enrich Top 15 with Routes
+          setLoadingStage('routing');
+          setProgress(0);
+          
+          const enrichedTop15 = [];
+          let completed = 0;
+
+          // Process in parallel with concurrency limit or just sequential for progress bar effect
+          for (const store of top15) {
+              try {
+                  const routeRes = await base44.functions.invoke('getRoute', {
+                      origin: { lat, lon },
+                      destination: { lat: store.latitude, lon: store.longitude },
+                      mode: 'driving'
+                  });
+
+                  if (routeRes.data?.duration) {
+                      store.rawDuration = routeRes.data.duration;
+                      store.usingRouteDuration = true;
+                      
+                      const minutes = Math.round(store.rawDuration / 60);
+                      const durationText = minutes > 60 
+                          ? `${Math.floor(minutes/60)} hr ${minutes%60} min` 
+                          : `${minutes} min`;
+                      
+                      store.drivingInfo = {
+                          duration: durationText,
+                          rawDuration: store.rawDuration
+                      };
+                  }
+              } catch (e) {
+                  console.warn("Routing failed for", store.name);
+              }
+              
+              enrichedTop15.push(store);
+              completed++;
+              setProgress((completed / 15) * 100);
+          }
+
+          setStores([...enrichedTop15, ...others]);
+
+      } catch (err) {
+          setError('Failed to fetch stores: ' + err.message);
+      } finally {
+          setLoading(false);
+          setLoadingStage('');
+      }
+  };
+
   const getUserLocation = () => {
-    setLoading(true);
     setError(null);
     if (!navigator.geolocation) {
       setError('Geolocation is not supported');
-      setLoading(false);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
-        try {
-          const response = await base44.functions.invoke('getNearbyStores', { 
-            latitude, 
-            longitude,
-            distanceWeight,
-            ratingWeight,
-            sentimentWeight
-          });
-          setStores(response.data.nearbyStores || []);
-        } catch (err) {
-          setError('Failed to fetch stores: ' + err.message);
-        } finally {
-          setLoading(false);
-        }
+        fetchStoresWithProgress(latitude, longitude);
       },
       (err) => {
-        base44.functions.invoke('getNearbyStores', { 
-          latitude: 32.0853, 
-          longitude: 34.7818,
-          distanceWeight,
-          ratingWeight,
-          sentimentWeight
-        }).
-        then((res) => {setStores(res.data.nearbyStores || []);setLoading(false);}).
-        catch(() => setLoading(false));
+        // Default to Tel Aviv
+        const defLat = 32.0853;
+        const defLon = 34.7818;
+        setUserLocation([defLat, defLon]);
+        fetchStoresWithProgress(defLat, defLon);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -194,15 +266,63 @@ export default function NearbyStores() {
     window.open(url, '_blank');
   };
 
-  // Grouping and Sorting Logic
-  const { top3Stores, groupedChains } = useMemo(() => {
-    if (!stores.length) return { top3Stores: [], groupedChains: [] };
+  // Client-side Scoring Logic
+  const scoredStores = useMemo(() => {
+    if (!stores.length) return [];
+    
+    // Determine max values for normalization
+    const maxDuration = Math.max(...stores.map(s => s.rawDuration || 0), 1);
+    const maxDistance = Math.max(...stores.map(s => s.distance || 0), 1);
 
-    // 1. Identify Top 3 by weighted recommendation score
-    const sortedByScore = [...stores].sort((a, b) => {
-      return (b.recommendationScore || 0) - (a.recommendationScore || 0);
-    });
-    const top3 = sortedByScore.slice(0, 3);
+    return stores.map(store => {
+      // 1. Distance Score
+      let distanceScore;
+      if (store.rawDuration) {
+          distanceScore = 1 - (store.rawDuration / maxDuration);
+      } else {
+          distanceScore = 1 - (store.distance / maxDistance);
+      }
+      // Clamp 0-1
+      distanceScore = Math.max(0, Math.min(1, distanceScore));
+
+      // 2. Rating Score
+      // Normalizing 0-5 stars to 0-1
+      const ratingScore = (store.average_rating || 0) / 5;
+
+      // 3. Sentiment Score
+      let sentimentScore = 0.5; // Default neutral
+      if (store.sentiment === 'positive') sentimentScore = 1;
+      else if (store.sentiment === 'negative') sentimentScore = 0;
+
+      // Weighted Sum
+      const combinedScore = (
+          distanceScore * distanceWeight +
+          ratingScore * ratingWeight +
+          sentimentScore * sentimentWeight
+      ) * 100;
+
+      // Penalty for no reviews
+      const noReviewPenalty = (store.review_count === 0) ? -5 : 0;
+
+      return {
+          ...store,
+          recommendationScore: combinedScore + noReviewPenalty,
+          distanceScore,
+          ratingScore,
+          sentimentScore
+      };
+    }).sort((a, b) => b.recommendationScore - a.recommendationScore);
+
+  }, [stores, distanceWeight, ratingWeight, sentimentWeight]);
+
+  // Grouping
+  const { top3Stores, groupedChains } = useMemo(() => {
+    if (!scoredStores.length) return { top3Stores: [], groupedChains: [] };
+
+    const top3 = scoredStores.slice(0, 3);
+    
+    // Group by Chain
+    const groups = scoredStores.reduce((acc, store) => {
 
     // 2. Group by Chain
     const groups = stores.reduce((acc, store) => {
@@ -233,7 +353,7 @@ export default function NearbyStores() {
     return bounds;
   };
 
-  if (loading) return <div className="h-64 flex flex-col items-center justify-center"><Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" /><p className="text-gray-600">Finding stores...</p></div>;
+  // if (loading) ... removed, handled inline
   if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
 
   return (
@@ -355,7 +475,6 @@ export default function NearbyStores() {
               </DialogContent>
            </Dialog>
         </div>
-        <Button variant="outline" size="sm" onClick={getUserLocation} className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
         </div>
 
         {/* Filter Weights */}
@@ -436,6 +555,15 @@ export default function NearbyStores() {
              />
            </div>
 
+           <Button 
+               onClick={getUserLocation} 
+               className="w-full bg-green-600 hover:bg-green-700 text-white"
+               disabled={loading}
+           >
+               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Navigation className="w-4 h-4 mr-2" />} 
+               Refresh
+           </Button>
+
            <Button
              variant="outline"
              size="sm"
@@ -444,16 +572,29 @@ export default function NearbyStores() {
                setRatingWeight(0.25);
                setSentimentWeight(0.25);
              }}
-             className="w-full"
+             className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/50"
            >
              Reset to Defaults
            </Button>
-         </div>
-        </CardContent>
-        </Card>
+           </div>
+           </CardContent>
+           </Card>
 
       {/* Top 3 Podium */}
-      {top3Stores.length > 0 &&
+      {loading ? 
+        <Card className="p-8 text-center bg-slate-50 dark:bg-slate-900 border-dashed">
+            <Loader2 className="w-8 h-8 mx-auto text-indigo-500 animate-spin mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                {loadingStage === 'scanning' ? 'Finding Stores...' : 'Calculating Routes...'}
+            </h3>
+            <div className="w-full max-w-xs mx-auto space-y-2">
+                <Progress value={progress} className="h-2" />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {loadingStage === 'scanning' ? `${stores.length} found` : `${Math.round(progress)}% calculated`}
+                </p>
+            </div>
+        </Card>
+      : top3Stores.length > 0 &&
       <div className="grid grid-cols-3 gap-3">
               {top3Stores.map((store, idx) => {
           const medalColor = idx === 0 ? 'bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/40 dark:border-yellow-700 dark:text-yellow-200' :
