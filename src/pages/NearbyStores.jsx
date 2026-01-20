@@ -56,10 +56,15 @@ export default function NearbyStores() {
   const [distanceWeight, setDistanceWeight] = useState(0.5);
   const [ratingWeight, setRatingWeight] = useState(0.25);
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('');
 
   const getUserLocation = () => {
     setLoading(true);
     setError(null);
+    setLoadingProgress(0);
+    setLoadingStatus('Locating you...');
+    
     if (!navigator.geolocation) {
       setError('Geolocation is not supported');
       setLoading(false);
@@ -70,34 +75,106 @@ export default function NearbyStores() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
-        try {
-          const response = await base44.functions.invoke('getNearbyStores', { 
-            latitude, 
-            longitude,
-            distanceWeight,
-            ratingWeight,
-            sentimentWeight
-          });
-          setStores(response.data.nearbyStores || []);
-        } catch (err) {
-          setError('Failed to fetch stores: ' + err.message);
-        } finally {
-          setLoading(false);
-        }
+        await fetchStoresInBatches(latitude, longitude);
       },
-      (err) => {
-        base44.functions.invoke('getNearbyStores', { 
-          latitude: 32.0853, 
-          longitude: 34.7818,
-          distanceWeight,
-          ratingWeight,
-          sentimentWeight
-        }).
-        then((res) => {setStores(res.data.nearbyStores || []);setLoading(false);}).
-        catch(() => setLoading(false));
+      async (err) => {
+        // Default location fallback
+        setUserLocation([32.0853, 34.7818]);
+        await fetchStoresInBatches(32.0853, 34.7818);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  const fetchStoresInBatches = async (latitude, longitude) => {
+      try {
+          let allStores = [];
+          let batch = 0;
+          let hasMore = true;
+          const batchSize = 20;
+
+          setLoadingStatus('Scanning nearby stores...');
+
+          while (hasMore) {
+              const res = await base44.functions.invoke('getNearbyStores', { 
+                  latitude, 
+                  longitude,
+                  batch,
+                  batchSize,
+                  distanceWeight,
+                  ratingWeight,
+                  sentimentWeight
+              });
+              
+              if (!res.data) throw new Error("Invalid response");
+              
+              const newStores = res.data.nearbyStores || [];
+              allStores = [...allStores, ...newStores];
+              hasMore = res.data.hasMore;
+              batch++;
+
+              // Update progress based on accumulated count (heuristic: assume ~100 stores max for demo, or just loop updates)
+              // Since we don't know total, we just step up progress until 90%
+              setLoadingProgress(prev => Math.min(prev + 10, 80));
+          }
+
+          setLoadingProgress(85);
+          setLoadingStatus('Calculating routes for closest stores...');
+
+          // Pre-sort by Haversine distance to find top 15 candidates for routing
+          allStores.sort((a, b) => a.distance - b.distance);
+          
+          const top15 = allStores.slice(0, 15);
+          const others = allStores.slice(15);
+
+          // Enrich top 15 with routes
+          const enrichedRes = await base44.functions.invoke('batchEnrichRoutes', {
+              stores: top15,
+              origin: { latitude, longitude }
+          });
+
+          const enrichedTop15 = enrichedRes.data?.stores || top15;
+          const finalStores = [...enrichedTop15, ...others];
+
+          // Final Scoring & Sorting locally
+          // (Recalculate scores because getNearbyStores only did raw components)
+          const maxDistance = Math.max(...finalStores.map(s => s.distance), 1);
+          const maxDuration = Math.max(...finalStores.map(s => s.rawDuration || 0), 1);
+
+          const scoredStores = finalStores.map(store => {
+              let distanceScore;
+              if (store.rawDuration) {
+                  // If we have duration, use it (inverse normalized)
+                  // Use maxDuration from the enriched set for normalization context
+                  distanceScore = 1 - (store.rawDuration / (maxDuration || 1));
+              } else {
+                  distanceScore = 1 - (store.distance / maxDistance);
+              }
+              // Clamp to 0-1
+              distanceScore = Math.max(0, Math.min(1, distanceScore));
+
+              const combinedScore = (
+                  distanceScore * distanceWeight +
+                  (store.ratingScore || 0) * ratingWeight +
+                  (store.sentimentScore || 0) * sentimentWeight
+              ) * 100;
+
+              const noReviewPenalty = (store.review_count === 0) ? -5 : 0;
+
+              return {
+                  ...store,
+                  recommendationScore: combinedScore + noReviewPenalty,
+                  distanceScore
+              };
+          });
+
+          setStores(scoredStores);
+          setLoadingProgress(100);
+      } catch (err) {
+          setError('Failed to fetch stores: ' + err.message);
+      } finally {
+          setLoading(false);
+      }
   };
 
   useEffect(() => {getUserLocation();}, []);
@@ -233,7 +310,14 @@ export default function NearbyStores() {
     return bounds;
   };
 
-  if (loading) return <div className="h-64 flex flex-col items-center justify-center"><Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" /><p className="text-gray-600">Finding stores...</p></div>;
+  if (loading) return (
+      <div className="h-64 flex flex-col items-center justify-center px-8">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
+          <p className="text-gray-700 font-medium mb-4">{loadingStatus}</p>
+          <Progress value={loadingProgress} className="w-full max-w-md h-2" />
+          <p className="text-xs text-gray-400 mt-2">{stores.length} stores found so far...</p>
+      </div>
+  );
   if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
 
   return (
