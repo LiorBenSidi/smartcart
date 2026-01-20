@@ -35,6 +35,7 @@ export default function SmartCart() {
   const [refreshingSuggestions, setRefreshingSuggestions] = useState(false);
   const [weeklyWeight, setWeeklyWeight] = useState(0.5);
   const [collaborativeWeight, setCollaborativeWeight] = useState(0.5);
+  const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -435,7 +436,7 @@ export default function SmartCart() {
                       </div>
                       <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1">
-                              <Dialog>
+                              <Dialog open={showPreferencesDialog} onOpenChange={setShowPreferencesDialog}>
                                   <DialogTrigger asChild>
                                       <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
                                           <Settings className="w-4 h-4 text-gray-500" />
@@ -478,7 +479,10 @@ export default function SmartCart() {
                                                   step={0.1}
                                               />
                                           </div>
-                                          <Button onClick={() => { refreshSuggestions(); }} className="w-full">
+                                          <Button onClick={() => { 
+                                              refreshSuggestions(); 
+                                              setShowPreferencesDialog(false);
+                                          }} className="w-full">
                                               Apply & Refresh
                                           </Button>
                                       </div>
