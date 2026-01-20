@@ -59,11 +59,59 @@ export default function NearbyStores() {
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
   const [progress, setProgress] = useState(0);
 
-  const getUserLocation = () => {
+  const fetchStores = async (latitude, longitude) => {
+    try {
+      let batch = 0;
+      let hasMore = true;
+      let allStores = [];
+      
+      while (hasMore) {
+         const response = await base44.functions.invoke('getNearbyStores', { 
+          latitude, 
+          longitude,
+          distanceWeight,
+          ratingWeight,
+          sentimentWeight,
+          batch
+        });
+        
+        const newStores = response.data.nearbyStores || [];
+        allStores = [...allStores, ...newStores];
+        setStores(allStores);
+        
+        hasMore = response.data.hasMore;
+        batch++;
+        setProgress(Math.min((batch / 5) * 100, 95));
+      }
+      
+      setProgress(100);
+      setStores(allStores);
+
+    } catch (err) {
+      setError('Failed to fetch stores: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUserLocation = (forceRefresh = false) => {
     setLoading(true);
     setError(null);
     setStores([]);
     setProgress(0);
+
+    // Check cache
+    const cachedLocation = localStorage.getItem('user_location');
+    if (!forceRefresh && cachedLocation) {
+        try {
+            const { lat, lon } = JSON.parse(cachedLocation);
+            setUserLocation([lat, lon]);
+            fetchStores(lat, lon);
+            return;
+        } catch (e) {
+            console.error("Error parsing cached location", e);
+        }
+    }
 
     if (!navigator.geolocation) {
       setError('Geolocation is not supported');
@@ -75,82 +123,14 @@ export default function NearbyStores() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
-        
-        try {
-          let batch = 0;
-          let hasMore = true;
-          let allStores = [];
-          
-          while (hasMore) {
-             const response = await base44.functions.invoke('getNearbyStores', { 
-              latitude, 
-              longitude,
-              distanceWeight,
-              ratingWeight,
-              sentimentWeight,
-              batch
-            });
-            
-            const newStores = response.data.nearbyStores || [];
-            allStores = [...allStores, ...newStores];
-            setStores(allStores); // Update UI incrementally? Or wait? Updating incrementally is better for "progress" feeling but might jump.
-            // Let's update stores at the end to avoid flickering, but user wants progress bar.
-            // "Use progress bar in the UI to get indication for how many stores as been culcoate."
-            
-            hasMore = response.data.hasMore;
-            batch++;
-            
-            // Heuristic progress: Assuming maybe 10 batches max? Or just show spinner?
-            // Since we don't know total, we can't do exact percentage.
-            // But if we use batch * batchSize, we know how many processed.
-            // Let's just increment progress bar by some amount or rely on store count if we knew total.
-            // Since we don't know total, let's just use a fake asymptotic progress or loop count.
-            // Actually, if we assume roughly 200 stores max, we can estimate.
-            // Or just make it jump.
-            // Let's do a simple calculation based on batch number.
-            setProgress(Math.min((batch / 5) * 100, 95)); // Assume 5 batches for 100%? No, let's just update.
-          }
-          
-          setProgress(100);
-          setStores(allStores);
-
-        } catch (err) {
-          setError('Failed to fetch stores: ' + err.message);
-        } finally {
-          setLoading(false);
-        }
+        localStorage.setItem('user_location', JSON.stringify({ lat: latitude, lon: longitude }));
+        fetchStores(latitude, longitude);
       },
       async (err) => {
           // Fallback location
           const latitude = 32.0853;
           const longitude = 34.7818;
-          try {
-             let batch = 0;
-             let hasMore = true;
-             let allStores = [];
-             
-             while (hasMore) {
-                const response = await base44.functions.invoke('getNearbyStores', { 
-                 latitude, 
-                 longitude,
-                 distanceWeight,
-                 ratingWeight,
-                 sentimentWeight,
-                 batch
-               });
-               
-               const newStores = response.data.nearbyStores || [];
-               allStores = [...allStores, ...newStores];
-               hasMore = response.data.hasMore;
-               batch++;
-               setProgress(Math.min((batch / 5) * 100, 95));
-             }
-             setProgress(100);
-             setStores(allStores);
-             setLoading(false);
-          } catch(e) {
-              setLoading(false);
-          }
+          fetchStores(latitude, longitude);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
