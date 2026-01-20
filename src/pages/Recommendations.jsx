@@ -168,87 +168,55 @@ export default function Recommendations() {
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 text-sm">
-                            <div>
-                                <h4 className="font-semibold mb-2">System Overview:</h4>
-                                <p className="text-gray-700 dark:text-gray-300">Hybrid recommendation engine combining collaborative filtering and content-based analysis to suggest stores, categories, and products.</p>
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded border border-indigo-100 dark:border-indigo-800">
+                                <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4" /> 
+                                    New: Smart Tips Engine
+                                </h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                    We now use a Generative AI model to analyze your shopping habits alongside community trends to provide actionable advice:
+                                </p>
+                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                    <li><strong>Money Saving:</strong> Identifies potential savings based on your frequently bought items and active store promotions.</li>
+                                    <li><strong>Health & Diet:</strong> Suggests healthier alternatives or complementary items that match your dietary profile (Vegan, Kosher, etc.).</li>
+                                    <li><strong>Discovery:</strong> Highlights trending products from categories you love but haven't explored yet.</li>
+                                </ul>
                             </div>
-                            
+
                             <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. User Profile Vector Generation:</h4>
+                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. Hybrid Recommendation Engine:</h4>
                                 <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Analyzes all available purchase history:</p>
+                                    <p className="text-xs">Our system combines three distinct signals to rank products:</p>
                                     <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li><strong>Category preferences:</strong> Frequency distribution across product categories</li>
-                                        <li><strong>Price sensitivity:</strong> avg_item_price, price_variance, discount_preference</li>
-                                        <li><strong>Brand affinity:</strong> Ranked list of most purchased brands</li>
-                                        <li><strong>Dietary signals:</strong> organic_ratio, kosher_ratio, health_conscious_ratio</li>
-                                        <li><strong>Shopping behavior:</strong> basket_size, purchase_frequency, time_of_day</li>
+                                        <li><strong>Collaborative Filtering:</strong> "Shopper Twins" analysis finds users with similar vector profiles (diet, budget, taste) and suggests what they buy.</li>
+                                        <li><strong>Content-Based:</strong> Matches products to your explicit preferences (e.g., "Gluten-Free", "Low Budget").</li>
+                                        <li><strong>Contextual Context:</strong> Boosts items based on your current location (nearby store inventory) and active time-sensitive promotions.</li>
                                     </ul>
                                 </div>
                             </div>
                             
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Collaborative Filtering (User Similarity):</h4>
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Vector Similarity (The Math):</h4>
                                 <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Finds "shopper twins" using cosine similarity:</p>
-                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1">
+                                    <p className="text-xs">We represent every user as a multi-dimensional vector:</p>
+                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1 border border-gray-100 dark:border-gray-700">
                                         <code className="text-gray-700 dark:text-gray-300">
-                                            similarity = (V_user · V_other) / (||V_user|| × ||V_other||)<br/>
-                                            where V = normalized preference vector
+                                            User_Vector = [Diet_Score, Price_Sensitivity, Brand_Affinity, ...Category_Weights]
                                         </code>
                                     </div>
-                                    <ul className="list-disc list-inside ml-4 text-xs mt-2">
-                                        <li>Pre-computed similarity scores stored in SimilarUserEdge</li>
-                                        <li>Selects top 10 most similar users (threshold: similarity ≥ 0.3)</li>
-                                        <li>Extracts products/stores they bought that you haven't</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">3. Candidate Scoring & Ranking:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs"><strong>Product Recommendations:</strong></p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li>Collaborative score: Σ(similarity_weight × purchase_frequency)</li>
-                                        <li>Category match bonus: +points if category in user's top 5</li>
-                                        <li>Price appropriateness: Penalize if outside user's price range</li>
-                                        <li>Recency boost: Newer products get slight advantage</li>
-                                    </ul>
-                                    <p className="text-xs mt-2"><strong>Store Recommendations:</strong></p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li>Based on chains where similar users shop</li>
-                                        <li>Location bonus if user coordinates provided</li>
-                                        <li>estimated_savings calculated from price comparisons</li>
-                                    </ul>
-                                    <p className="text-xs mt-2"><strong>Category Suggestions:</strong></p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li>Categories popular among similar users but new to you</li>
-                                        <li>Sorted by aggregate similarity score</li>
-                                    </ul>
+                                    <p className="text-xs mt-1">
+                                        We calculate <strong>Cosine Similarity</strong> between your vector and thousands of others to find your nearest neighbors in taste space.
+                                    </p>
                                 </div>
                             </div>
                             
                             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">4. Insights Generation:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">Smart Insights use rule-based heuristics:</p>
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">3. Continuous Learning:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">Every interaction refines your profile in real-time:</p>
                                 <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>ShopperTwins:</strong> Highlights most similar user (e.g., "74% match with User X")</li>
-                                    <li><strong>CategoryTrend:</strong> Detects if you're buying more of a category lately</li>
-                                    <li><strong>BudgetAlert:</strong> Warns if spending above usual patterns</li>
-                                </ul>
-                            </div>
-                            
-                            <div>
-                                <h4 className="font-semibold mb-2">5. Feedback Loop:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">User interactions (thumbs up/down, add to cart, dismiss) are logged to RecommendationFeedback and used in future training cycles to refine similarity weights.</p>
-                            </div>
-                            
-                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                                <h4 className="font-semibold mb-2">Background Jobs:</h4>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>buildUserVectors:</strong> Nightly rebuild of all user preference vectors</li>
-                                    <li><strong>computeSimilarUsers:</strong> Weekly recalculation of user-user similarity graph</li>
+                                    <li><strong>Thumbs Up/Down:</strong> Explicitly adjusts category and brand weights.</li>
+                                    <li><strong>Dismissals:</strong> Teaches the model what you <em>don't</em> want, reducing the score of similar items.</li>
+                                    <li><strong>Receipt Scans:</strong> The strongest signal—verifies actual purchase behavior to update your "Habit" vectors.</li>
                                 </ul>
                             </div>
                         </div>
