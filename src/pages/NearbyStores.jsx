@@ -86,6 +86,7 @@ export default function NearbyStores() {
       
       setProgress(100);
       setStores(allStores);
+      localStorage.setItem('cached_stores', JSON.stringify(allStores));
 
     } catch (err) {
       setError('Failed to fetch stores: ' + err.message);
@@ -97,21 +98,38 @@ export default function NearbyStores() {
   const getUserLocation = (forceRefresh = false) => {
     setLoading(true);
     setError(null);
-    setStores([]);
-    setProgress(0);
-
-    // Check cache
+    
+    // Check cache for both location and stores
     const cachedLocation = localStorage.getItem('user_location');
+    const cachedStores = localStorage.getItem('cached_stores');
+
     if (!forceRefresh && cachedLocation) {
         try {
             const { lat, lon } = JSON.parse(cachedLocation);
             setUserLocation([lat, lon]);
+            
+            if (cachedStores) {
+                const stores = JSON.parse(cachedStores);
+                if (stores.length > 0) {
+                    setStores(stores);
+                    setLoading(false);
+                    return;
+                }
+            }
+            
+            // If location cached but no stores, fetch them
+            setStores([]);
+            setProgress(0);
             fetchStores(lat, lon);
             return;
         } catch (e) {
-            console.error("Error parsing cached location", e);
+            console.error("Error parsing cached data", e);
         }
     }
+
+    // Only reset if we are actually going to fetch new data
+    setStores([]);
+    setProgress(0);
 
     if (!navigator.geolocation) {
       setError('Geolocation is not supported');
@@ -479,7 +497,7 @@ export default function NearbyStores() {
 
            <Button
              size="sm"
-             onClick={getUserLocation}
+             onClick={() => getUserLocation(true)}
              className="w-full bg-green-600 hover:bg-green-700 text-white"
            >
              <Navigation className="w-4 h-4 mr-2" /> Refresh Stores
