@@ -323,9 +323,6 @@ export default function NearbyStores() {
     
     // Group by Chain
     const groups = scoredStores.reduce((acc, store) => {
-
-    // 2. Group by Chain
-    const groups = stores.reduce((acc, store) => {
       if (!acc[store.chain_id]) {
         acc[store.chain_id] = {
           id: store.chain_id,
