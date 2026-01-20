@@ -352,7 +352,7 @@ export default Deno.serve(async (req) => {
             // Sorting
             finalSuggestions.sort((a, b) => {
                 const priority = { 
-                    "Weekly+Restock": 5, "Hybrid": 4, "Restock": 3, "Weekly": 2, "Collaborative": 1 
+                    "Weekly+Restock": 5, "Collaborative": 4, "Hybrid": 3, "Restock": 2, "Weekly": 1 
                 };
                 const pA = priority[a.reason_type] || 0;
                 const pB = priority[b.reason_type] || 0;
