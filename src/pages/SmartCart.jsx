@@ -535,15 +535,36 @@ export default function SmartCart() {
                                       {expandedSuggestion === idx &&
                         <div className="mt-2 text-xs text-gray-600 bg-gray-50 dark:bg-gray-700 p-3 rounded space-y-2">
                                               {item.reason_type.includes('Weekly') &&
-                          <p className="text-slate-50">You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
+                          <p className="text-gray-700 dark:text-gray-300">You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
                           }
                                               {item.reason_type.includes('Restock') &&
                           <>
                                                       <p className="font-semibold text-gray-800 dark:text-gray-200">Restock Recommendation</p>
-                                                      <p className="text-slate-50 dark:text-black-300">Based on your buying patterns:</p>
+                                                      <p className="text-gray-700 dark:text-gray-300">Based on your buying patterns:</p>
                                                       <p className="text-gray-600 dark:text-gray-300">• Average purchase every <span className="font-semibold">{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)} days</span></p>
                                                       <p className="text-gray-600 dark:text-gray-300">• Last purchased <span className="font-semibold">{Number(item.evidence?.days_since_last_purchase || 0)} days ago</span></p>
                                                       <p className="text-amber-600 dark:text-amber-400 font-semibold mt-1">You're {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x through your cycle - time to restock!</p>
+                                                  </>
+                          }
+                                              {item.reason_type.includes('Collaborative') &&
+                          <>
+                                                      <p className="font-semibold text-gray-800 dark:text-gray-200">Community Favorite</p>
+                                                      <p className="text-gray-700 dark:text-gray-300">
+                                                          Popular among <span className="font-semibold">{item.evidence?.similar_users_count || 1} users</span> with similar shopping habits to yours.
+                                                      </p>
+                                                  </>
+                          }
+                                              {item.reason_type.includes('Hybrid') &&
+                          <>
+                                                      <p className="font-semibold text-gray-800 dark:text-gray-200">Hybrid Recommendation</p>
+                                                      <p className="text-gray-700 dark:text-gray-300">
+                                                          Combined insights from your weekly habits and community trends.
+                                                      </p>
+                                                      {item.evidence?.collaborative_evidence &&
+                                                          <p className="text-xs text-gray-500 mt-1">
+                                                              Also popular with {item.evidence.collaborative_evidence.similar_users_count} similar shoppers.
+                                                          </p>
+                                                      }
                                                   </>
                           }
                                           </div>
