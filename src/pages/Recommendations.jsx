@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -26,32 +27,6 @@ export default function Recommendations() {
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
-
-  const refreshTips = async (currentCandidates = candidates) => {
-      setTipsLoading(true);
-      try {
-          const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
-          if (tipRes.data && tipRes.data.tips) {
-              setSmartTips(tipRes.data.tips);
-              toast.success("Tips refreshed!");
-          }
-      } catch (e) {
-          console.error("Smart tips failed", e);
-          toast.error("Failed to refresh tips");
-      } finally {
-          setTipsLoading(false);
-      }
-  };
-
-  const handleTipFeedback = async (tip, action) => {
-      try {
-          await base44.functions.invoke('logSmartTipFeedback', { tip, action });
-          toast.success(action === 'like' ? "Thanks! We'll show more like this." : "Got it, fewer tips like this.");
-      } catch (e) {
-          console.error(e);
-          toast.error("Failed to log feedback");
-      }
-  };
 
   useEffect(() => {
     const init = async () => {
@@ -97,7 +72,15 @@ export default function Recommendations() {
             setCandidates(newCandidates);
 
             // Generate Smart Tips
-            refreshTips(newCandidates);
+            setTipsLoading(true);
+            base44.functions.invoke('generateSmartTips', { recommendations: newCandidates })
+                .then(tipRes => {
+                    if (tipRes.data && tipRes.data.tips) {
+                        setSmartTips(tipRes.data.tips);
+                    }
+                })
+                .catch(e => console.error("Smart tips failed", e))
+                .finally(() => setTipsLoading(false));
         }
 
         // 2. Fetch Insights
@@ -186,55 +169,87 @@ export default function Recommendations() {
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 text-sm">
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded border border-indigo-100 dark:border-indigo-800">
-                                <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4" /> 
-                                    New: Smart Tips Engine
-                                </h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                    We now use a Generative AI model to analyze your shopping habits alongside community trends to provide actionable advice:
-                                </p>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>Money Saving:</strong> Identifies potential savings based on your frequently bought items and active store promotions.</li>
-                                    <li><strong>Health & Diet:</strong> Suggests healthier alternatives or complementary items that match your dietary profile (Vegan, Kosher, etc.).</li>
-                                    <li><strong>Discovery:</strong> Highlights trending products from categories you love but haven't explored yet.</li>
-                                </ul>
+                            <div>
+                                <h4 className="font-semibold mb-2">System Overview:</h4>
+                                <p className="text-gray-700 dark:text-gray-300">Hybrid recommendation engine combining collaborative filtering and content-based analysis to suggest stores, categories, and products.</p>
                             </div>
-
+                            
                             <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. Hybrid Recommendation Engine:</h4>
+                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. User Profile Vector Generation:</h4>
                                 <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Our system combines three distinct signals to rank products:</p>
+                                    <p className="text-xs">Analyzes all available purchase history:</p>
                                     <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li><strong>Collaborative Filtering:</strong> "Shopper Twins" analysis finds users with similar vector profiles (diet, budget, taste) and suggests what they buy.</li>
-                                        <li><strong>Content-Based:</strong> Matches products to your explicit preferences (e.g., "Gluten-Free", "Low Budget").</li>
-                                        <li><strong>Contextual Context:</strong> Boosts items based on your current location (nearby store inventory) and active time-sensitive promotions.</li>
+                                        <li><strong>Category preferences:</strong> Frequency distribution across product categories</li>
+                                        <li><strong>Price sensitivity:</strong> avg_item_price, price_variance, discount_preference</li>
+                                        <li><strong>Brand affinity:</strong> Ranked list of most purchased brands</li>
+                                        <li><strong>Dietary signals:</strong> organic_ratio, kosher_ratio, health_conscious_ratio</li>
+                                        <li><strong>Shopping behavior:</strong> basket_size, purchase_frequency, time_of_day</li>
                                     </ul>
                                 </div>
                             </div>
                             
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Vector Similarity (The Math):</h4>
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Collaborative Filtering (User Similarity):</h4>
                                 <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">We represent every user as a multi-dimensional vector:</p>
-                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1 border border-gray-100 dark:border-gray-700">
+                                    <p className="text-xs">Finds "shopper twins" using cosine similarity:</p>
+                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1">
                                         <code className="text-gray-700 dark:text-gray-300">
-                                            User_Vector = [Diet_Score, Price_Sensitivity, Brand_Affinity, ...Category_Weights]
+                                            similarity = (V_user · V_other) / (||V_user|| × ||V_other||)<br/>
+                                            where V = normalized preference vector
                                         </code>
                                     </div>
-                                    <p className="text-xs mt-1">
-                                        We calculate <strong>Cosine Similarity</strong> between your vector and thousands of others to find your nearest neighbors in taste space.
-                                    </p>
+                                    <ul className="list-disc list-inside ml-4 text-xs mt-2">
+                                        <li>Pre-computed similarity scores stored in SimilarUserEdge</li>
+                                        <li>Selects top 10 most similar users (threshold: similarity ≥ 0.3)</li>
+                                        <li>Extracts products/stores they bought that you haven't</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">3. Candidate Scoring & Ranking:</h4>
+                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                                    <p className="text-xs"><strong>Product Recommendations:</strong></p>
+                                    <ul className="list-disc list-inside ml-4 text-xs">
+                                        <li>Collaborative score: Σ(similarity_weight × purchase_frequency)</li>
+                                        <li>Category match bonus: +points if category in user's top 5</li>
+                                        <li>Price appropriateness: Penalize if outside user's price range</li>
+                                        <li>Recency boost: Newer products get slight advantage</li>
+                                    </ul>
+                                    <p className="text-xs mt-2"><strong>Store Recommendations:</strong></p>
+                                    <ul className="list-disc list-inside ml-4 text-xs">
+                                        <li>Based on chains where similar users shop</li>
+                                        <li>Location bonus if user coordinates provided</li>
+                                        <li>estimated_savings calculated from price comparisons</li>
+                                    </ul>
+                                    <p className="text-xs mt-2"><strong>Category Suggestions:</strong></p>
+                                    <ul className="list-disc list-inside ml-4 text-xs">
+                                        <li>Categories popular among similar users but new to you</li>
+                                        <li>Sorted by aggregate similarity score</li>
+                                    </ul>
                                 </div>
                             </div>
                             
                             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">3. Continuous Learning:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">Every interaction refines your profile in real-time:</p>
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">4. Insights Generation:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">Smart Insights use rule-based heuristics:</p>
                                 <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>Thumbs Up/Down:</strong> Explicitly adjusts category and brand weights.</li>
-                                    <li><strong>Dismissals:</strong> Teaches the model what you <em>don't</em> want, reducing the score of similar items.</li>
-                                    <li><strong>Receipt Scans:</strong> The strongest signal—verifies actual purchase behavior to update your "Habit" vectors.</li>
+                                    <li><strong>ShopperTwins:</strong> Highlights most similar user (e.g., "74% match with User X")</li>
+                                    <li><strong>CategoryTrend:</strong> Detects if you're buying more of a category lately</li>
+                                    <li><strong>BudgetAlert:</strong> Warns if spending above usual patterns</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h4 className="font-semibold mb-2">5. Feedback Loop:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">User interactions (thumbs up/down, add to cart, dismiss) are logged to RecommendationFeedback and used in future training cycles to refine similarity weights.</p>
+                            </div>
+                            
+                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                                <h4 className="font-semibold mb-2">Background Jobs:</h4>
+                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                    <li><strong>buildUserVectors:</strong> Nightly rebuild of all user preference vectors</li>
+                                    <li><strong>computeSimilarUsers:</strong> Weekly recalculation of user-user similarity graph</li>
                                 </ul>
                             </div>
                         </div>
@@ -249,21 +264,9 @@ export default function Recommendations() {
       {/* Smart Tips (AI Generated) */}
       {(smartTips.length > 0 || tipsLoading) && (
           <section className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                  <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200">
-                      <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
-                  </h2>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => refreshTips()}
-                    disabled={tipsLoading}
-                    className="text-gray-500 hover:text-indigo-600"
-                  >
-                      <RotateCcw className={`w-4 h-4 mr-2 ${tipsLoading ? 'animate-spin' : ''}`} />
-                      Refresh
-                  </Button>
-              </div>
+              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
+                  <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
+              </h2>
               
               {tipsLoading ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
@@ -305,22 +308,6 @@ export default function Recommendations() {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex flex-col gap-1 ml-auto shrink-0">
-                                        <button 
-                                            onClick={() => handleTipFeedback(tip, 'like')}
-                                            className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
-                                            title="Helpful"
-                                        >
-                                            <ThumbsUp className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                            onClick={() => handleTipFeedback(tip, 'dislike')}
-                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                            title="Not helpful"
-                                        >
-                                            <ThumbsDown className="w-4 h-4" />
-                                        </button>
-                                    </div>
                                 </CardContent>
                             </Card>
                           );
@@ -359,22 +346,6 @@ export default function Recommendations() {
       <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />
 
 
-
-      {/* Empty State */}
-      {!loading && candidates.products.length === 0 && candidates.categories.length === 0 && smartTips.length === 0 && !tipsLoading && (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No recommendations yet</h3>
-              <p className="text-sm text-gray-500 max-w-sm mt-2 mb-6">
-                  We need a bit more data to personalize your feed. Try searching for products or scanning some receipts!
-              </p>
-              <Button onClick={() => window.location.reload()} variant="outline">
-                  Refresh Page
-              </Button>
-          </div>
-      )}
 
       {/* Store Details Dialog */}
       <Dialog open={!!selectedStore} onOpenChange={(open) => !open && setSelectedStore(null)}>
