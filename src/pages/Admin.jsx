@@ -168,12 +168,11 @@ export default function Admin() {
     }
   };
 
-  const handleBackfillUserIds = async () => {
+  const handleRebuildUserHabits = async () => {
     try {
-        // Pass a larger limit for faster processing
-        await processManager.startProcess('backfillUserIds', { limit: 50 });
+        await processManager.startProcess('rebuildUserHabits', { limit: 1 });
     } catch (err) {
-        console.error('Backfill failed:', err);
+        console.error('Rebuild failed:', err);
     }
   };
 
@@ -507,12 +506,12 @@ export default function Admin() {
 
             <div className="relative">
                 <Button 
-                    onClick={handleBackfillUserIds}
+                    onClick={handleRebuildUserHabits}
                     disabled={processState.loading}
                     className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
                 >
                     <Database className="w-4 h-4 mr-2" />
-                    {processState.loading && processState.activeProcess === 'backfillUserIds' ? 'Processing...' : 'Backfill User IDs'}
+                    {processState.loading && processState.activeProcess === 'rebuildUserHabits' ? 'Processing...' : 'Rebuild User Habits'}
                 </Button>
             </div>
         </div>
