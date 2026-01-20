@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import { storeManager } from "@/components/storeManager";
 import { MapPin, Navigation, Star, Phone, Clock, Loader2, AlertCircle, Target, Car, Bus, Layers, ChevronDown, ChevronUp, Trophy, Medal, MessageSquare, Flag, HelpCircle, Settings } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
@@ -46,9 +47,10 @@ function MapController({ center, bounds, selectedStore }) {
 }
 
 export default function NearbyStores() {
-  const [stores, setStores] = useState([]);
+  const [storeState, setStoreState] = useState(storeManager.getState());
+  const { stores, loading, progress, error: storeError } = storeState;
+
   const [userLocation, setUserLocation] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
@@ -57,7 +59,10 @@ export default function NearbyStores() {
   const [distanceWeight, setDistanceWeight] = useState(0.5);
   const [ratingWeight, setRatingWeight] = useState(0.25);
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
-  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    return storeManager.subscribe(setStoreState);
+  }, []);
 
   const getUserLocation = (forceRefresh = false) => {
     // If we're already loading in the background, just ensure we have location
@@ -254,7 +259,7 @@ export default function NearbyStores() {
   };
 
 
-  if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
+  if (error || storeError) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error || storeError}<Button onClick={() => getUserLocation(true)} className="mt-4 block mx-auto">Retry</Button></div>;
 
   return (
     <div className="space-y-8 pb-20">
