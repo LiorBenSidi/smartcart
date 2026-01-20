@@ -32,9 +32,11 @@ export default Deno.serve(async (req) => {
             return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Parse request body for currentCartItems
+        // Parse request body for currentCartItems and weights
         const body = await req.json().catch(() => ({}));
         const currentCartItems = body.currentCartItems || [];
+        const weeklyWeight = body.weeklyWeight !== undefined ? body.weeklyWeight : 0.5;
+        const collaborativeWeight = body.collaborativeWeight !== undefined ? body.collaborativeWeight : 0.5;
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
@@ -303,12 +305,14 @@ export default Deno.serve(async (req) => {
                 // Set reason to Hybrid if merging
                 existing.reason_type = "Hybrid";
                 
-                // 50-50 Confidence Blending
-                existing.confidence = (existing.confidence + s.confidence) / 2;
+                // Weighted Confidence Blending
+                const totalWeight = weeklyWeight + collaborativeWeight || 1;
+                existing.confidence = (existing.confidence * weeklyWeight + s.confidence * collaborativeWeight) / totalWeight;
                 
                 existing.evidence = { 
                     ...existing.evidence, 
-                    collaborative_evidence: s.evidence 
+                    collaborative_evidence: s.evidence,
+                    blending_weights: { weekly: weeklyWeight, collaborative: collaborativeWeight }
                 };
             } else {
                 // Only add if user doesn't have it in their current shopping list (which is checked later) or purchases?

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck, Search, Loader2, ThumbsUp, ThumbsDown, HelpCircle } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, RefreshCw, Store as StoreIcon, TrendingDown, Sparkles, CheckCircle, AlertCircle, Leaf, Heart, Tag, Car, Bus, Split, ArrowRight, Clock, CalendarDays, ChevronDown, ChevronUp, X, ShieldCheck, Search, Loader2, ThumbsUp, ThumbsDown, HelpCircle, Settings } from 'lucide-react';
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CartAlternatives from '@/components/CartAlternatives';
@@ -31,6 +31,8 @@ export default function SmartCart() {
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [likedItems, setLikedItems] = useState(new Set());
   const [refreshingSuggestions, setRefreshingSuggestions] = useState(false);
+  const [weeklyWeight, setWeeklyWeight] = useState(0.5);
+  const [collaborativeWeight, setCollaborativeWeight] = useState(0.5);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -55,7 +57,9 @@ export default function SmartCart() {
         } else {
           // Trigger generation if none exists
           const res = await base44.functions.invoke('generateDailySuggestions', {
-            currentCartItems: cartItems.map((item) => item.gtin)
+            currentCartItems: cartItems.map((item) => item.gtin),
+            weeklyWeight,
+            collaborativeWeight
           });
           if (res.data.success) {
             setSuggestions(res.data.draft);
@@ -74,7 +78,9 @@ export default function SmartCart() {
     try {
       setRefreshingSuggestions(true);
       const res = await base44.functions.invoke('generateDailySuggestions', {
-        currentCartItems: cartItems.map((item) => item.gtin)
+        currentCartItems: cartItems.map((item) => item.gtin),
+        weeklyWeight,
+        collaborativeWeight
       });
       if (res.data.success) {
         setSuggestions(res.data.draft);
@@ -413,15 +419,60 @@ export default function SmartCart() {
                           </Dialog>
                       </div>
                       <div className="flex items-center gap-2">
-                          <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={refreshSuggestions}
-                      disabled={refreshingSuggestions}
-                      className="h-8 text-xs">
-                              <RefreshCw className={`w-3 h-3 mr-1 ${refreshingSuggestions ? 'animate-spin' : ''}`} />
-                              Refresh
-                          </Button>
+                          <div className="flex items-center gap-1">
+                              <Dialog>
+                                  <DialogTrigger asChild>
+                                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
+                                          <Settings className="w-4 h-4 text-gray-500" />
+                                      </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-sm">
+                                      <DialogHeader>
+                                          <DialogTitle>Suggestion Preferences</DialogTitle>
+                                      </DialogHeader>
+                                      <div className="space-y-6 py-4">
+                                          <div>
+                                              <div className="flex justify-between items-center mb-2">
+                                                  <label className="text-sm font-medium">Weekly/Restock Weight</label>
+                                                  <span className="text-sm text-gray-500">{(weeklyWeight * 100).toFixed(0)}%</span>
+                                              </div>
+                                              <Slider
+                                                  value={[weeklyWeight]}
+                                                  onValueChange={([val]) => setWeeklyWeight(val)}
+                                                  min={0}
+                                                  max={1}
+                                                  step={0.1}
+                                              />
+                                          </div>
+                                          <div>
+                                              <div className="flex justify-between items-center mb-2">
+                                                  <label className="text-sm font-medium">Collaborative Weight</label>
+                                                  <span className="text-sm text-gray-500">{(collaborativeWeight * 100).toFixed(0)}%</span>
+                                              </div>
+                                              <Slider
+                                                  value={[collaborativeWeight]}
+                                                  onValueChange={([val]) => setCollaborativeWeight(val)}
+                                                  min={0}
+                                                  max={1}
+                                                  step={0.1}
+                                              />
+                                          </div>
+                                          <Button onClick={() => { refreshSuggestions(); }} className="w-full">
+                                              Apply & Refresh
+                                          </Button>
+                                      </div>
+                                  </DialogContent>
+                              </Dialog>
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={refreshSuggestions}
+                                  disabled={refreshingSuggestions}
+                                  className="h-8 text-xs">
+                                  <RefreshCw className={`w-3 h-3 mr-1 ${refreshingSuggestions ? 'animate-spin' : ''}`} />
+                                  Refresh
+                              </Button>
+                          </div>
                           <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
                               {suggestions.items.length} items
                           </Badge>
