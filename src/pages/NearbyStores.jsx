@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useStore } from '@/components/StoreContext';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -287,7 +288,7 @@ export default function NearbyStores() {
   };
 
 
-  if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
+  if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={refreshStores} className="mt-4 block mx-auto">Retry</Button></div>;
 
   return (
     <div className="space-y-8 pb-20">
@@ -503,7 +504,7 @@ export default function NearbyStores() {
 
            <Button
              size="sm"
-             onClick={() => getUserLocation(true)}
+             onClick={refreshStores}
              className="w-full bg-green-600 hover:bg-green-700 text-white"
            >
              <Navigation className="w-4 h-4 mr-2" /> Refresh Stores
