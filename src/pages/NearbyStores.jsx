@@ -47,20 +47,20 @@ function MapController({ center, bounds, selectedStore }) {
 }
 
 export default function NearbyStores() {
-  const [stores, setStores] = useState([]);
-  const [userLocation, setUserLocation] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { 
+    stores, loading, error, progress, userLocation, getUserLocation,
+    distanceWeight, setDistanceWeight,
+    ratingWeight, setRatingWeight,
+    sentimentWeight, setSentimentWeight
+  } = useStores();
+
   const [selectedStore, setSelectedStore] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [expandedChain, setExpandedChain] = useState(null);
-  const [distanceWeight, setDistanceWeight] = useState(0.5);
-  const [ratingWeight, setRatingWeight] = useState(0.25);
-  const [sentimentWeight, setSentimentWeight] = useState(0.25);
-  const [progress, setProgress] = useState(0);
 
-  const fetchStores = async (latitude, longitude) => {
+  // Removed local fetchStores and getUserLocation
+  const _fetchStores = async (latitude, longitude) => {
     try {
       let batch = 0;
       let hasMore = true;
