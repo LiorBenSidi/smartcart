@@ -170,8 +170,8 @@ export default function Admin() {
 
   const handleBackfillUserIds = async () => {
     try {
-        await processManager.startProcess('backfillUserIds');
-        // toast.success is handled by processManager state usually, or we can add it here
+        // Pass a larger limit for faster processing
+        await processManager.startProcess('backfillUserIds', { limit: 50 });
     } catch (err) {
         console.error('Backfill failed:', err);
     }
