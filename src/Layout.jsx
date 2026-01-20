@@ -6,6 +6,7 @@ import { NAV_ITEMS } from '@/components/mockData';
 import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun, Loader2 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { storeManager } from "@/components/storeManager";
+import { processManager } from "@/components/processManager";
 
 export const ThemeContext = React.createContext();
 
@@ -20,10 +21,15 @@ export default function Layout({ children, currentPageName }) {
   });
 
   const [storeState, setStoreState] = useState(storeManager.getState());
+  const [processState, setProcessState] = useState(processManager.getState());
 
   useEffect(() => {
-    const unsubscribe = storeManager.subscribe(setStoreState);
-    return unsubscribe;
+    const unsubscribeStore = storeManager.subscribe(setStoreState);
+    const unsubscribeProcess = processManager.subscribe(setProcessState);
+    return () => {
+      unsubscribeStore();
+      unsubscribeProcess();
+    };
   }, []);
 
   useEffect(() => {
@@ -81,6 +87,18 @@ export default function Layout({ children, currentPageName }) {
                 <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 mt-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   <span>Updating stores... {Math.round(storeState.progress)}%</span>
+                </div>
+              )}
+              {processState.loading && (
+                <div className="flex flex-col gap-1 w-full max-w-xs mt-1">
+                   <div className="flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400">
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        {processState.status}
+                      </span>
+                      <span>{Math.round(processState.progress)}%</span>
+                   </div>
+                   <Progress value={processState.progress} className="h-1" />
                 </div>
               )}
             </div>
