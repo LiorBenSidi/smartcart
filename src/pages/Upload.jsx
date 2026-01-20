@@ -472,9 +472,7 @@ export default function Upload() {
       <section className="space-y-4 pt-8 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Recent Receipts</h3>
-            <Link to={createPageUrl('upload')} className="text-xs text-indigo-600 font-semibold hover:underline flex items-center" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-              <Plus className="w-3 h-3 mr-1" /> Scan New
-            </Link>
+
           </div>
 
           <ReceiptFolderView receipts={receipts} onDelete={handleDeleteReceipt} />
