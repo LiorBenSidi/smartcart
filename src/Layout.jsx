@@ -102,6 +102,7 @@ export default function Layout({ children, currentPageName }) {
               </Link>
             </div>
           </header>
+          </>
           }
 
         <main className="pt-6 pr-6 pb-32 pl-6">
