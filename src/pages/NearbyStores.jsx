@@ -288,8 +288,8 @@ export default function NearbyStores() {
                           <div className="space-y-2 text-gray-700 dark:text-gray-300">
                               <p className="text-xs">Uses Open Source Routing Machine (OSRM) API for accurate distance ranking:</p>
                               <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                  <li><strong>Top 25 stores</strong> (by Haversine distance): Fetches actual road routes with real driving duration</li>
-                                  <li><strong>Stores beyond top 25</strong>: Ranked by straight-line (Haversine) distance due to API rate limits</li>
+                                  <li><strong>Top 15 stores</strong> (by Haversine distance): Fetches actual road routes with real driving duration</li>
+                                  <li><strong>Stores beyond top 15</strong>: Ranked by straight-line (Haversine) distance due to API rate limits</li>
                                   <li>Uses cached route data from RouteCache to reduce API calls</li>
                                   <li>Returns distance (meters) and duration (seconds) for routing calculations</li>
                                   <li>Provides route geometry for map visualization</li>
@@ -355,7 +355,6 @@ export default function NearbyStores() {
               </DialogContent>
            </Dialog>
         </div>
-        <Button variant="outline" size="sm" onClick={getUserLocation} className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
         </div>
 
         {/* Filter Weights */}
@@ -436,15 +435,22 @@ export default function NearbyStores() {
              />
            </div>
 
+           <Button 
+             size="sm" 
+             onClick={getUserLocation} 
+             className="w-full bg-green-600 hover:bg-green-700 text-white mb-2"
+           >
+             <Navigation className="w-4 h-4 mr-2" /> Refresh
+           </Button>
+
            <Button
-             variant="outline"
              size="sm"
              onClick={() => {
                setDistanceWeight(0.5);
                setRatingWeight(0.25);
                setSentimentWeight(0.25);
              }}
-             className="w-full"
+             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
            >
              Reset to Defaults
            </Button>
@@ -645,7 +651,7 @@ export default function NearbyStores() {
                                       }
                                           {!store.usingRouteDuration &&
                                       <span className="text-[9px] bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
-                                                  Haversine distance (beyond top 25)
+                                                  Haversine distance (beyond top 15)
                                               </span>
                                       }
                                       </div>

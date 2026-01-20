@@ -79,9 +79,9 @@ Deno.serve(async (req) => {
     // Get user's receipt history
     const receipts = await base44.entities.Receipt.filter({ created_by: user.email });
 
-    // Enrich only top 25 closest stores (by Haversine distance) with driving duration
+    // Enrich only top 15 closest stores (by Haversine distance) with driving duration
     // This balances accuracy with API rate limits and performance
-    const storesToEnrichEarly = nearbyStores.slice(0, 25);
+    const storesToEnrichEarly = nearbyStores.slice(0, 15);
 
     // Fetch routes sequentially with 1000ms delay between requests
     for (const store of storesToEnrichEarly) {
@@ -107,8 +107,8 @@ Deno.serve(async (req) => {
         }
     }
 
-    // Mark stores beyond top 25 as using Haversine distance
-    nearbyStores.slice(25).forEach(store => {
+    // Mark stores beyond top 15 as using Haversine distance
+    nearbyStores.slice(15).forEach(store => {
         store.usingRouteDuration = false;
     });
 
