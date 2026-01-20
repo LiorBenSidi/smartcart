@@ -3,6 +3,7 @@ import CatalogAdmin from './pages/CatalogAdmin';
 import Feedback from './pages/Feedback';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
+import NearbyStores from './pages/NearbyStores';
 import PriceComparison from './pages/PriceComparison';
 import Profile from './pages/Profile';
 import Receipt from './pages/Receipt';
@@ -18,6 +19,7 @@ export const PAGES = {
     "Feedback": Feedback,
     "Home": Home,
     "Landing": Landing,
+    "NearbyStores": NearbyStores,
     "PriceComparison": PriceComparison,
     "Profile": Profile,
     "Receipt": Receipt,
