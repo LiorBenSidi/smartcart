@@ -355,7 +355,6 @@ export default function NearbyStores() {
               </DialogContent>
            </Dialog>
         </div>
-        <Button variant="outline" size="sm" onClick={getUserLocation} className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"><Navigation className="w-4 h-4 mr-2" /> Refresh</Button>
         </div>
 
         {/* Filter Weights */}
@@ -437,14 +436,21 @@ export default function NearbyStores() {
            </div>
 
            <Button
-             variant="outline"
+             size="sm"
+             onClick={getUserLocation}
+             className="w-full bg-green-600 hover:bg-green-700 text-white"
+           >
+             <Navigation className="w-4 h-4 mr-2" /> Refresh Stores
+           </Button>
+
+           <Button
              size="sm"
              onClick={() => {
                setDistanceWeight(0.5);
                setRatingWeight(0.25);
                setSentimentWeight(0.25);
              }}
-             className="w-full"
+             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
            >
              Reset to Defaults
            </Button>
