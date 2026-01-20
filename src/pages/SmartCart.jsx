@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CartAlternatives from '@/components/CartAlternatives';
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
+import { processManager } from "@/components/processManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function SmartCart() {
@@ -56,14 +57,20 @@ export default function SmartCart() {
         if (drafts.length > 0) {
           setSuggestions(drafts[0]);
         } else {
-          // Trigger generation if none exists
-          const res = await base44.functions.invoke('generateDailySuggestions', {
+          // Trigger generation via processManager if none exists
+          await processManager.startProcess('generateDailySuggestions', {
             currentCartItems: cartItems.map((item) => item.gtin),
             weeklyWeight,
             collaborativeWeight
           });
-          if (res.data.success) {
-            setSuggestions(res.data.draft);
+          
+          // Fetch the newly created draft
+          const newDrafts = await base44.entities.SuggestedCartDraft.filter({
+            created_by: user.email,
+            generated_date: today
+          });
+          if (newDrafts.length > 0) {
+            setSuggestions(newDrafts[0]);
           }
         }
       } catch (error) {
@@ -78,20 +85,27 @@ export default function SmartCart() {
   const refreshSuggestions = async () => {
     try {
       setRefreshingSuggestions(true);
-      const res = await base44.functions.invoke('generateDailySuggestions', {
+      await processManager.startProcess('generateDailySuggestions', {
         currentCartItems: cartItems.map((item) => item.gtin),
         weeklyWeight,
         collaborativeWeight
       });
-      if (res.data.success) {
-        setSuggestions(res.data.draft);
+
+      // Fetch the updated draft
+      const user = await base44.auth.me();
+      const today = new Date().toISOString().split('T')[0];
+      const drafts = await base44.entities.SuggestedCartDraft.filter({
+        created_by: user.email,
+        generated_date: today
+      });
+      
+      if (drafts.length > 0) {
+        setSuggestions(drafts[0]);
         toast.success("Suggestions refreshed!");
-      } else {
-        toast.error("Failed to refresh suggestions");
       }
     } catch (error) {
       console.error("Failed to refresh suggestions", error);
-      toast.error("Failed to refresh suggestions");
+      toast.error("Failed to refresh suggestions: " + error.message);
     } finally {
       setRefreshingSuggestions(false);
     }
