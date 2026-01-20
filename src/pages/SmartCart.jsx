@@ -439,7 +439,10 @@ export default function SmartCart() {
                                               </div>
                                               <Slider
                                                   value={[weeklyWeight]}
-                                                  onValueChange={([val]) => setWeeklyWeight(val)}
+                                                  onValueChange={([val]) => {
+                                                      setWeeklyWeight(val);
+                                                      setCollaborativeWeight(parseFloat((1 - val).toFixed(1)));
+                                                  }}
                                                   min={0}
                                                   max={1}
                                                   step={0.1}
@@ -452,7 +455,10 @@ export default function SmartCart() {
                                               </div>
                                               <Slider
                                                   value={[collaborativeWeight]}
-                                                  onValueChange={([val]) => setCollaborativeWeight(val)}
+                                                  onValueChange={([val]) => {
+                                                      setCollaborativeWeight(val);
+                                                      setWeeklyWeight(parseFloat((1 - val).toFixed(1)));
+                                                  }}
                                                   min={0}
                                                   max={1}
                                                   step={0.1}
