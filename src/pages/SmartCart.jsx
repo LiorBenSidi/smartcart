@@ -351,6 +351,8 @@ export default function SmartCart() {
                                                   <li>Groups receipts by day of week (e.g., all your Fridays)</li>
                                                   <li>Counts how often each product appears on this weekday</li>
                                                   <li>Threshold: Product must appear ≥50% of weeks</li>
+                                                  <li>occurrences: This represents the number of times the user has purchased that specific item on the same day of the week (e.g., every Monday) within the observation period</li>
+                                                  <li>total_weeks: This is the total number of weeks being considered in that observation period</li>
                                                   <li>Confidence = (occurrences / total_weeks)</li>
                                               </ul>
                                               <p className="text-xs mt-3"><strong>Example:</strong> If you bought milk on 6 out of 8 Fridays → 75% confidence for Friday milk suggestion</p>
