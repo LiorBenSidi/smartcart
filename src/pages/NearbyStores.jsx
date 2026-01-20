@@ -59,11 +59,13 @@ export default function NearbyStores() {
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState('');
+  const [foundCount, setFoundCount] = useState(0);
 
   const getUserLocation = () => {
     setLoading(true);
     setError(null);
     setLoadingProgress(0);
+    setFoundCount(0);
     setLoadingStatus('Locating you...');
     
     if (!navigator.geolocation) {
@@ -111,6 +113,7 @@ export default function NearbyStores() {
               
               const newStores = res.data.nearbyStores || [];
               allStores = [...allStores, ...newStores];
+              setFoundCount(allStores.length);
               hasMore = res.data.hasMore;
               batch++;
 
@@ -316,7 +319,7 @@ export default function NearbyStores() {
           <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
           <p className="text-gray-700 font-medium mb-4">{loadingStatus}</p>
           <Progress value={loadingProgress} className="w-full max-w-md h-2" />
-          <p className="text-xs text-gray-400 mt-2">{stores.length} stores found so far...</p>
+          <p className="text-xs text-gray-400 mt-2">{foundCount} stores found so far...</p>
       </div>
   );
   if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
