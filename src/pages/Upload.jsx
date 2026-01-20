@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle, Plus } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle, Plus, Download } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from "@/components/lib/utils";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
@@ -27,6 +28,7 @@ export default function Upload() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [receipts, setReceipts] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleDeleteReceipt = async (receiptId) => {
@@ -38,6 +40,61 @@ export default function Upload() {
             console.error("Failed to delete receipt", error);
             alert("Failed to delete receipt");
         }
+    }
+  };
+
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+      const user = await base44.auth.me();
+      // Fetch all receipts for export
+      const allReceipts = await base44.entities.Receipt.filter({ created_by: user.email });
+      
+      const headers = ['Date', 'Store', 'Address', 'Total Amount', 'Item Name', 'Category', 'Quantity', 'Price', 'Item Total'];
+      const rows = [];
+
+      allReceipts.forEach(r => {
+        if (r.items && r.items.length > 0) {
+            r.items.forEach(item => {
+                rows.push([
+                    r.date,
+                    `"${r.storeName}"`,
+                    `"${r.address || ''}"`,
+                    r.totalAmount,
+                    `"${item.name}"`,
+                    item.category,
+                    item.quantity,
+                    item.price,
+                    item.total
+                ].join(','));
+            });
+        } else {
+             rows.push([
+                    r.date,
+                    `"${r.storeName}"`,
+                    `"${r.address || ''}"`,
+                    r.totalAmount,
+                    '',
+                    '',
+                    '',
+                    '',
+                    ''
+                ].join(','));
+        }
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `all_receipts_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Export failed", error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -150,6 +207,16 @@ export default function Upload() {
   return (
     <div className="space-y-6 pb-20 max-w-2xl mx-auto">
       <div className="text-center space-y-2 relative">
+        <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleExportAll} 
+            disabled={isExporting}
+            className="absolute top-0 left-0 h-8 px-2 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50"
+        >
+            <Download className="w-4 h-4 mr-1" />
+            Export
+        </Button>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Scan Receipt</h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm">Upload a photo to analyze your groceries</p>
         <Dialog>
