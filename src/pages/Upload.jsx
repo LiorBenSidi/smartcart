@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle, Plus, Download } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from "@/components/lib/utils";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import ReceiptFolderView from '../components/ReceiptFolderView';
 
 export default function Upload() {
   const [file, setFile] = useState(null);
@@ -24,12 +27,87 @@ export default function Upload() {
   const [loadingStores, setLoadingStores] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [receipts, setReceipts] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef(null);
+
+  const handleDeleteReceipt = async (receiptId) => {
+    if (confirm("Are you sure you want to delete this receipt?")) {
+        try {
+            await base44.entities.Receipt.delete(receiptId);
+            setReceipts(receipts.filter(r => r.id !== receiptId));
+        } catch (error) {
+            console.error("Failed to delete receipt", error);
+            alert("Failed to delete receipt");
+        }
+    }
+  };
+
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+      const user = await base44.auth.me();
+      // Fetch all receipts for export
+      const allReceipts = await base44.entities.Receipt.filter({ created_by: user.email });
+      
+      const headers = ['Date', 'Store', 'Address', 'Total Amount', 'Item Name', 'Category', 'Quantity', 'Price', 'Item Total'];
+      const rows = [];
+
+      allReceipts.forEach(r => {
+        if (r.items && r.items.length > 0) {
+            r.items.forEach(item => {
+                rows.push([
+                    r.date,
+                    `"${r.storeName}"`,
+                    `"${r.address || ''}"`,
+                    r.totalAmount,
+                    `"${item.name}"`,
+                    item.category,
+                    item.quantity,
+                    item.price,
+                    item.total
+                ].join(','));
+            });
+        } else {
+             rows.push([
+                    r.date,
+                    `"${r.storeName}"`,
+                    `"${r.address || ''}"`,
+                    r.totalAmount,
+                    '',
+                    '',
+                    '',
+                    '',
+                    ''
+                ].join(','));
+        }
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `all_receipts_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Export failed", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const user = await base44.auth.me();
+        
+        // Fetch receipts
+        try {
+            const userReceipts = await base44.entities.Receipt.filter({ created_by: user.email }, '-date', 20);
+            setReceipts(userReceipts);
+        } catch (e) { console.error("Failed to fetch receipts", e); }
         const adminStatus = user.role === 'admin';
         if (!adminStatus) {
           const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
@@ -128,9 +206,106 @@ export default function Upload() {
 
   return (
     <div className="space-y-6 pb-20 max-w-2xl mx-auto">
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-2 relative">
+        <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleExportAll} 
+            disabled={isExporting}
+            className="absolute top-0 left-0 h-8 px-2 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50"
+        >
+            <Download className="w-4 h-4 mr-1" />
+            Export
+        </Button>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Scan Receipt</h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm">Upload a photo to analyze your groceries</p>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="absolute top-0 right-0 h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ScanLine className="w-5 h-5 text-indigo-600" />
+                Receipt Scanning - Technical Details
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-sm">
+              <div>
+                <h4 className="font-semibold mb-2">Process Overview:</h4>
+                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                  <li>Upload receipt image/PDF to cloud storage</li>
+                  <li>Create pending Receipt entity record</li>
+                  <li>Redirect to Receipt page for processing</li>
+                  <li>AI extraction runs in background</li>
+                  <li>Post-processing analysis generates insights</li>
+                </ol>
+              </div>
+              
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded">
+                <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200">AI Data Extraction (processReceipt):</h4>
+                <p className="mb-2 text-gray-700 dark:text-gray-300">LLM analyzes receipt image with vision capabilities:</p>
+                <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono space-y-2">
+                  <p className="font-semibold">Prompt Instructions:</p>
+                  <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
+                    <li>Extract store metadata (name, date, time, address, total)</li>
+                    <li>Parse each line item (name, code, quantity, price)</li>
+                    <li>Infer product category for each item</li>
+                    <li>Assign confidence scores (0-1) to every field</li>
+                    <li>Default currency to ILS if not visible</li>
+                    <li>Return null for missing data (no hallucination)</li>
+                  </ul>
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <p className="font-semibold mb-1">Returns JSON with:</p>
+                    <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
+                      <li>storeName, date, time, address, totalAmount</li>
+                      <li>Confidence scores for each metadata field</li>
+                      <li>items[] with raw_text, code, name, category, quantity, price</li>
+                      <li>Per-item confidence_score</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
+                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Validation & Review Flags:</h4>
+                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                  <p><strong>Metadata Validation:</strong></p>
+                  <ul className="list-disc list-inside ml-4 text-xs">
+                    <li>Threshold: 0.9 confidence required</li>
+                    <li>Checks storeName, totalAmount, date confidence</li>
+                    <li>Sets needs_metadata_review flag if below threshold</li>
+                  </ul>
+                  <p className="mt-2"><strong>Item Validation:</strong></p>
+                  <ul className="list-disc list-inside ml-4 text-xs">
+                    <li>Threshold: 0.85 confidence per item</li>
+                    <li>Marks individual items with needs_review flag</li>
+                    <li>Sets global needs_review if any item flagged</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Post-Processing (analyzeReceiptEconomics):</h4>
+                <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                  <p className="text-xs">After extraction, generates insights:</p>
+                  <ul className="list-disc list-inside ml-4 text-xs">
+                    <li><strong>Price Benchmarking:</strong> Compares each item price to market minimum/average</li>
+                    <li><strong>Chain Comparison:</strong> Finds cheaper chains for entire cart</li>
+                    <li><strong>AI Summary:</strong> LLM generates concise receipt summary</li>
+                    <li><strong>Overpayment Detection:</strong> Creates ReceiptInsight records for items/receipts exceeding benchmarks</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Chain & Store Selection */}
@@ -359,6 +534,16 @@ export default function Upload() {
           </p>
         )}
       </div>
+
+      {/* Receipt History (Folder View) */}
+      <section className="space-y-4 pt-8 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Recent Receipts</h3>
+
+          </div>
+
+          <ReceiptFolderView receipts={receipts} onDelete={handleDeleteReceipt} />
+      </section>
     </div>
   );
 }

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Star, MessageSquare, User, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subWeeks, subMonths, subYears, subDays, subHours } from 'date-fns';
 
 export default function StoreReviews({ storeId, storeName, onClose }) {
     const [reviews, setReviews] = useState([]);
@@ -11,6 +12,8 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
     const [submitting, setSubmitting] = useState(false);
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
+    const [displayName, setDisplayName] = useState('');
+    const [reviewTime, setReviewTime] = useState('');
     const [hoverRating, setHoverRating] = useState(0);
 
     const fetchReviews = async () => {
@@ -28,21 +31,47 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
         if (storeId) fetchReviews();
     }, [storeId]);
 
+    const parseRelativeTime = (timeStr) => {
+        if (!timeStr.trim()) return new Date();
+        
+        const match = timeStr.match(/(\d+)\s+(week|month|year|day|hour)s?\s+ago/i);
+        if (!match) return new Date();
+        
+        const amount = parseInt(match[1]);
+        const unit = match[2].toLowerCase();
+        const now = new Date();
+        
+        switch (unit) {
+            case 'week': return subWeeks(now, amount);
+            case 'month': return subMonths(now, amount);
+            case 'year': return subYears(now, amount);
+            case 'day': return subDays(now, amount);
+            case 'hour': return subHours(now, amount);
+            default: return now;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (rating === 0) return;
+        if (rating === 0 || !displayName.trim()) return;
 
         setSubmitting(true);
         try {
+            const reviewDate = parseRelativeTime(reviewTime);
+            
             const res = await base44.functions.invoke('submitStoreReview', {
                 store_id: storeId,
                 rating,
-                comment
+                comment,
+                user_display_name: displayName.trim(),
+                review_date: reviewDate.toISOString()
             });
 
             if (res.data.success) {
                 setRating(0);
                 setComment('');
+                setDisplayName('');
+                setReviewTime('');
                 fetchReviews();
             }
         } catch (error) {
@@ -57,6 +86,20 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-3">Write a Review for {storeName}</h3>
                 <div className="flex flex-col gap-4">
+                    <Input 
+                        placeholder="Your name" 
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        className="bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
+                    />
+
+                    <Input 
+                        placeholder="Review date (e.g. 3 weeks ago, 6 months ago)" 
+                        value={reviewTime}
+                        onChange={(e) => setReviewTime(e.target.value)}
+                        className="bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 text-sm"
+                    />
+
                     <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -91,7 +134,7 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                     
                     <Button 
                         onClick={handleSubmit} 
-                        disabled={rating === 0 || submitting}
+                        disabled={rating === 0 || !displayName.trim() || submitting}
                         className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto self-end"
                     >
                         {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <MessageSquare className="w-4 h-4 mr-2" />}
@@ -125,8 +168,8 @@ export default function StoreReviews({ storeId, storeName, onClose }) {
                                             {review.user_display_name?.[0]?.toUpperCase() || <User className="w-4 h-4" />}
                                         </div>
                                         <div>
-                                            <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{review.user_display_name || 'Anonymous'}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(review.created_date), 'PPP')}</div>
+                                           <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{review.user_display_name || 'Anonymous'}</div>
+                                           <div className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(review.review_date || review.created_date), 'PPP')}</div>
                                         </div>
                                     </div>
                                     <div className="flex text-yellow-400">

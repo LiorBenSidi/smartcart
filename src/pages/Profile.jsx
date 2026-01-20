@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
-import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2, Moon, Sun } from 'lucide-react';
+import { LogOut, UserCircle, Settings, Check, RefreshCw, Camera, Loader2, Moon, Sun, MessageSquarePlus, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Onboarding from '../components/Onboarding';
 
 export default function Profile() {
@@ -30,6 +30,7 @@ export default function Profile() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { darkMode, setDarkMode } = useContext(ThemeContext) || {};
+  const [preferences, setPreferences] = useState([]);
 
   const loadProfile = async () => {
     try {
@@ -52,9 +53,22 @@ export default function Profile() {
               display_name: currentUser.display_name || ''
           }));
         }
+
+        // Load preferences
+        const prefs = await base44.entities.UserProductPreference.list();
+        setPreferences(prefs);
       }
     } catch (err) {
       console.error("Error loading profile:", err);
+    }
+  };
+
+  const handleRemovePreference = async (id) => {
+    try {
+        await base44.entities.UserProductPreference.delete(id);
+        setPreferences(preferences.filter(p => p.id !== id));
+    } catch (error) {
+        console.error("Failed to remove preference", error);
     }
   };
 
@@ -181,8 +195,55 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* User Similarity Section */}
-      <UserSimilarityDisplay currentUser={user} />
+      {/* Product Preferences */}
+      <div className="bg-white p-6 rounded-2xl dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+        <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mb-4">
+            <ThumbsUp className="w-4 h-4 text-gray-400 dark:text-gray-500" /> Product Preferences
+        </h3>
+        <div className="grid md:grid-cols-2 gap-6">
+            {/* Liked Items */}
+            <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2 text-green-600 dark:text-green-400">
+                    <ThumbsUp className="w-3 h-3" /> Liked Items
+                </h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {preferences.filter(p => p.preference === 'like').length === 0 ? (
+                        <p className="text-xs text-gray-400 italic">No liked items yet</p>
+                    ) : (
+                        preferences.filter(p => p.preference === 'like').map(p => (
+                            <div key={p.id} className="flex justify-between items-center p-2 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg group">
+                                <span className="text-sm text-gray-700 dark:text-gray-300 truncate mr-2" title={p.product_name}>{p.product_name}</span>
+                                <button onClick={() => handleRemovePreference(p.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Trash2 className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Disliked Items */}
+            <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
+                    <ThumbsDown className="w-3 h-3" /> Disliked Items
+                </h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {preferences.filter(p => p.preference === 'dislike').length === 0 ? (
+                        <p className="text-xs text-gray-400 italic">No disliked items yet</p>
+                    ) : (
+                        preferences.filter(p => p.preference === 'dislike').map(p => (
+                            <div key={p.id} className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg group">
+                                <span className="text-sm text-gray-700 dark:text-gray-300 truncate mr-2" title={p.product_name}>{p.product_name}</span>
+                                <button onClick={() => handleRemovePreference(p.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Trash2 className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+      </div>
 
       {/* Preferences Form */}
       <div className="bg-white pr-6 pb-3 pl-6 rounded-2xl dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 space-y-6">
@@ -350,6 +411,12 @@ export default function Profile() {
 
         <RefreshCw className="w-4 h-4 mr-2" /> Retake Onboarding
       </Button>
+
+      <Link to={createPageUrl('Feedback')} className="block w-full">
+        <Button variant="outline" className="w-full text-indigo-600 border-indigo-200 hover:bg-indigo-50">
+            <MessageSquarePlus className="w-4 h-4 mr-2" /> Send Feedback
+        </Button>
+      </Link>
 
       <Button
         variant="outline"
