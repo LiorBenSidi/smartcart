@@ -48,22 +48,32 @@ export default function RecommendationExplainer({ mode = 'general', className = 
             ]
         },
         smart_cart: {
-            title: "Smart Cart Optimization",
+            title: "Daily Suggestions - Technical Details",
             steps: [
                 {
-                    icon: Split,
-                    title: "Basket Optimization",
-                    desc: "We calculate the total cost of your cart at different store chains nearby to find the cheapest option."
-                },
-                {
                     icon: Clock,
-                    title: "Predictive Restock",
-                    desc: "We analyze your purchase history to predict when you're running low on essentials and suggest them at the right time."
+                    title: "Weekly Patterns (Predictive)",
+                    desc: "Suggests items you frequently purchase on specific days of the week, ensuring you never run out of your routine groceries."
                 },
                 {
-                    icon: MapPin,
-                    title: "Route Awareness",
-                    desc: "We factor in travel time and potential savings when suggesting a 'Split Cart' strategy across two stores."
+                    icon: TrendingUp,
+                    title: "Restock Reminders (Habit-based)",
+                    desc: "Identifies products based on your past purchase cadence, suggesting a restock when you're likely running low."
+                },
+                {
+                    icon: Users,
+                    title: "Collaborative Filtering (Community Favorites)",
+                    desc: "Recommends products popular among users with similar dietary preferences, health goals, and shopping habits."
+                },
+                {
+                    icon: Split,
+                    title: "Hybrid Recommendations (Blended Insights)",
+                    desc: "Combines your personal purchase history with community trends to offer a balanced and relevant set of suggestions."
+                },
+                {
+                    icon: ShoppingCart,
+                    title: "Weekly + Restock (Optimized Habits)",
+                    desc: "The most confident suggestions, combining both your consistent weekly purchases and predicting when an item is due for a restock."
                 }
             ]
         }
