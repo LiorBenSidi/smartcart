@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
