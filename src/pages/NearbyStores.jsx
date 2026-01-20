@@ -128,7 +128,6 @@ export default function NearbyStores() {
     }
 
     // Only reset if we are actually going to fetch new data
-    setStores([]);
     setProgress(0);
 
     if (!navigator.geolocation) {
@@ -287,17 +286,24 @@ export default function NearbyStores() {
     return bounds;
   };
 
-  if (loading) return (
-    <div className="h-64 flex flex-col items-center justify-center space-y-4 px-10">
-      <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-      <p className="text-gray-600">Finding stores... ({stores.length} found)</p>
-      <Progress value={progress} className="w-full max-w-md" />
-    </div>
-  );
+
   if (error) return <div className="text-center p-8 text-red-500 bg-red-50 rounded-lg">{error}<Button onClick={getUserLocation} className="mt-4 block mx-auto">Retry</Button></div>;
 
   return (
     <div className="space-y-8 pb-20">
+      {loading && (
+        <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur py-2 -mx-4 px-4 border-b border-indigo-100 dark:border-indigo-900 mb-4">
+           <div className="flex justify-between text-xs text-indigo-600 dark:text-indigo-400 mb-2 font-medium">
+             <span className="flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Refreshing stores...
+             </span>
+             <span>{stores.length} found ({Math.round(progress)}%)</span>
+           </div>
+           <Progress value={progress} className="w-full h-1" />
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
            <div>
