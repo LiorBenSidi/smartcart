@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { NAV_ITEMS } from '@/components/mockData';
-import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun } from 'lucide-react';
+import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun, Loader2 } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
+import { storeManager } from "@/components/storeManager";
 
 export const ThemeContext = React.createContext();
 
@@ -16,6 +18,13 @@ export default function Layout({ children, currentPageName }) {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
+
+  const [storeState, setStoreState] = useState(storeManager.getState());
+
+  useEffect(() => {
+    const unsubscribe = storeManager.subscribe(setStoreState);
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,10 +71,19 @@ export default function Layout({ children, currentPageName }) {
         
         {/* Header - only show on authenticated pages */}
         {!isLanding && user &&
+          <>
           <header className="px-6 py-4 flex justify-between items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-              {currentPageName === 'Home' ? 'Dashboard' : currentPageName}
-            </h1>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+                {currentPageName === 'Home' ? 'Dashboard' : currentPageName}
+              </h1>
+              {storeState.loading && (
+                <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Updating stores... {Math.round(storeState.progress)}%</span>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               {user.display_name && (

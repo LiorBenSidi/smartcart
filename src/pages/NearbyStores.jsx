@@ -59,95 +59,62 @@ export default function NearbyStores() {
   const [sentimentWeight, setSentimentWeight] = useState(0.25);
   const [progress, setProgress] = useState(0);
 
-  const fetchStores = async (latitude, longitude) => {
-    try {
-      let batch = 0;
-      let hasMore = true;
-      let allStores = [];
-      
-      while (hasMore) {
-         const response = await base44.functions.invoke('getNearbyStores', { 
-          latitude, 
-          longitude,
-          distanceWeight,
-          ratingWeight,
-          sentimentWeight,
-          batch
-        });
-        
-        const newStores = response.data.nearbyStores || [];
-        allStores = [...allStores, ...newStores];
-        setStores(allStores);
-        
-        hasMore = response.data.hasMore;
-        batch++;
-        setProgress(Math.min((batch / 5) * 100, 95));
-      }
-      
-      setProgress(100);
-      setStores(allStores);
-      localStorage.setItem('cached_stores', JSON.stringify(allStores));
-
-    } catch (err) {
-      setError('Failed to fetch stores: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getUserLocation = (forceRefresh = false) => {
-    setLoading(true);
+    // If we're already loading in the background, just ensure we have location
+    if (loading && !forceRefresh) {
+         const cachedLocation = localStorage.getItem('user_location');
+         if (cachedLocation) {
+             const { lat, lon } = JSON.parse(cachedLocation);
+             setUserLocation([lat, lon]);
+         }
+         return;
+    }
+
     setError(null);
     
-    // Check cache for both location and stores
+    // Check cache for location
     const cachedLocation = localStorage.getItem('user_location');
-    const cachedStores = localStorage.getItem('cached_stores');
-
-    if (!forceRefresh && cachedLocation) {
+    
+    // If we have cached stores and not forcing refresh, we don't need to do anything 
+    // because storeManager initializes with cached stores.
+    // Just need to set user location.
+    if (!forceRefresh && cachedLocation && stores.length > 0) {
         try {
             const { lat, lon } = JSON.parse(cachedLocation);
             setUserLocation([lat, lon]);
-            
-            if (cachedStores) {
-                const stores = JSON.parse(cachedStores);
-                if (stores.length > 0) {
-                    setStores(stores);
-                    setLoading(false);
-                    return;
-                }
-            }
-            
-            // If location cached but no stores, fetch them
-            setStores([]);
-            setProgress(0);
-            fetchStores(lat, lon);
             return;
-        } catch (e) {
-            console.error("Error parsing cached data", e);
-        }
+        } catch (e) { console.error(e); }
     }
-
-    // Only reset if we are actually going to fetch new data
-    setProgress(0);
 
     if (!navigator.geolocation) {
       setError('Geolocation is not supported');
-      setLoading(false);
       return;
     }
 
+    // If forcing refresh or no data, get location and start fetch
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
         localStorage.setItem('user_location', JSON.stringify({ lat: latitude, lon: longitude }));
-        fetchStores(latitude, longitude);
+        
+        // Start background fetch via manager
+        storeManager.startFetch(latitude, longitude, {
+            distanceWeight,
+            ratingWeight,
+            sentimentWeight
+        });
       },
       async (err) => {
           // Fallback location
           const latitude = 32.0853;
           const longitude = 34.7818;
-          fetchStores(latitude, longitude);
+          // Start background fetch via manager
+          storeManager.startFetch(latitude, longitude, {
+            distanceWeight,
+            ratingWeight,
+            sentimentWeight
+        });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
