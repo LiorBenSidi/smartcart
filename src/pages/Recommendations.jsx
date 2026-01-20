@@ -13,8 +13,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DialogTrigger } from
+"@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 
@@ -33,60 +33,60 @@ export default function Recommendations() {
       try {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
-        
+
         // Get Location
         let loc = {};
         try {
-            const position = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-            });
-            loc = {
-                user_lat: position.coords.latitude,
-                user_lon: position.coords.longitude
-            };
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+          });
+          loc = {
+            user_lat: position.coords.latitude,
+            user_lon: position.coords.longitude
+          };
         } catch (e) {
-            console.log("Location access denied or timeout");
+          console.log("Location access denied or timeout");
         }
 
         // 1. Generate Recommendations
-        const res = await base44.functions.invoke('api_createRecommendationRun', { 
-            user_id: currentUser.email,
-            context: { 
-                k_items: 30, 
-                k_categories: 5, 
-                k_stores: 3,
-                ...loc
-                // current_store_id could be passed if we knew the user was in a store
-            },
-            options: { lookback_days: 90 }
+        const res = await base44.functions.invoke('api_createRecommendationRun', {
+          user_id: currentUser.email,
+          context: {
+            k_items: 30,
+            k_categories: 5,
+            k_stores: 3,
+            ...loc
+            // current_store_id could be passed if we knew the user was in a store
+          },
+          options: { lookback_days: 90 }
         });
-        
-        if (res.data && res.data.run) {
-            setRunId(res.data.run.id);
-            // New API returns pre-grouped candidates
-            const newCandidates = {
-                chains: res.data.candidates.stores || [],
-                categories: res.data.candidates.categories || [],
-                products: res.data.candidates.items || []
-            };
-            setCandidates(newCandidates);
 
-            // Generate Smart Tips
-            setTipsLoading(true);
-            base44.functions.invoke('generateSmartTips', { recommendations: newCandidates })
-                .then(tipRes => {
-                    if (tipRes.data && tipRes.data.tips) {
-                        setSmartTips(tipRes.data.tips);
-                    }
-                })
-                .catch(e => console.error("Smart tips failed", e))
-                .finally(() => setTipsLoading(false));
+        if (res.data && res.data.run) {
+          setRunId(res.data.run.id);
+          // New API returns pre-grouped candidates
+          const newCandidates = {
+            chains: res.data.candidates.stores || [],
+            categories: res.data.candidates.categories || [],
+            products: res.data.candidates.items || []
+          };
+          setCandidates(newCandidates);
+
+          // Generate Smart Tips
+          setTipsLoading(true);
+          base44.functions.invoke('generateSmartTips', { recommendations: newCandidates }).
+          then((tipRes) => {
+            if (tipRes.data && tipRes.data.tips) {
+              setSmartTips(tipRes.data.tips);
+            }
+          }).
+          catch((e) => console.error("Smart tips failed", e)).
+          finally(() => setTipsLoading(false));
         }
 
         // 2. Fetch Insights
-        const insightsRes = await base44.entities.Insight.filter({ 
-            user_id: currentUser.email, 
-            status: 'active' 
+        const insightsRes = await base44.entities.Insight.filter({
+          user_id: currentUser.email,
+          status: 'active'
         });
         setInsights(insightsRes);
 
@@ -101,43 +101,43 @@ export default function Recommendations() {
   }, []);
 
   const handleFeedback = async (candidate, action) => {
-      // Optimistic UI update for view action
-      if (action === 'click' && candidate.store_chain_id) {
-          setSelectedStore(candidate);
-      }
+    // Optimistic UI update for view action
+    if (action === 'click' && candidate.store_chain_id) {
+      setSelectedStore(candidate);
+    }
 
-      try {
-          await base44.functions.invoke('api_logRecommendationFeedback', {
-              user_id: user.email,
-              run_id: runId,
-              candidate_id: candidate.candidate_id,
-              action: action,
-              context: { page: 'Recommendations' }
-          });
-          
-          if (action === 'dismiss' || action === 'add_to_cart') {
-              let type = 'products';
-              if (candidate.store_chain_id) type = 'chains';
-              else if (candidate.category) type = 'categories';
-              
-              setCandidates(prev => ({
-                  ...prev,
-                  [type]: prev[type].filter(c => c !== candidate)
-              }));
+    try {
+      await base44.functions.invoke('api_logRecommendationFeedback', {
+        user_id: user.email,
+        run_id: runId,
+        candidate_id: candidate.candidate_id,
+        action: action,
+        context: { page: 'Recommendations' }
+      });
 
-              if (action === 'add_to_cart') toast.success("Added to cart");
-              else toast.info("Recommendation dismissed");
-          }
-      } catch (e) {
-          console.error(e);
+      if (action === 'dismiss' || action === 'add_to_cart') {
+        let type = 'products';
+        if (candidate.store_chain_id) type = 'chains';else
+        if (candidate.category) type = 'categories';
+
+        setCandidates((prev) => ({
+          ...prev,
+          [type]: prev[type].filter((c) => c !== candidate)
+        }));
+
+        if (action === 'add_to_cart') toast.success("Added to cart");else
+        toast.info("Recommendation dismissed");
       }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const getMatchQuality = (score) => {
-      if (score >= 0.8) return { label: 'Excellent Match', color: 'bg-emerald-500' };
-      if (score >= 0.6) return { label: 'Great Match', color: 'bg-green-500' };
-      if (score >= 0.4) return { label: 'Good Match', color: 'bg-blue-500' };
-      return { label: 'Potential Match', color: 'bg-gray-500' };
+    if (score >= 0.8) return { label: 'Excellent Match', color: 'bg-emerald-500' };
+    if (score >= 0.6) return { label: 'Great Match', color: 'bg-green-500' };
+    if (score >= 0.4) return { label: 'Good Match', color: 'bg-blue-500' };
+    return { label: 'Potential Match', color: 'bg-gray-500' };
   };
 
   if (loading) {
@@ -145,8 +145,8 @@ export default function Recommendations() {
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
         <p className="text-gray-500 font-medium">Analyzing your taste profile...</p>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -194,7 +194,7 @@ export default function Recommendations() {
                                     <p className="text-xs">Finds "shopper twins" using cosine similarity:</p>
                                     <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1">
                                         <code className="text-gray-700 dark:text-gray-300">
-                                            similarity = (V_user · V_other) / (||V_user|| × ||V_other||)<br/>
+                                            similarity = (V_user · V_other) / (||V_user|| × ||V_other||)<br />
                                             where V = normalized preference vector
                                         </code>
                                     </div>
@@ -262,38 +262,38 @@ export default function Recommendations() {
       </div>
 
       {/* Smart Tips (AI Generated) */}
-      {(smartTips.length > 0 || tipsLoading) && (
-          <section className="mb-8">
+      {(smartTips.length > 0 || tipsLoading) &&
+      <section className="mb-8">
               <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
                   <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
               </h2>
               
-              {tipsLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-500 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
+              {tipsLoading ?
+        <div className="flex items-center gap-2 text-sm text-gray-500 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Generating personalized tips based on your budget and diet...
-                  </div>
-              ) : (
-                  <div className="grid grid-cols-1 gap-3">
+                  </div> :
+
+        <div className="grid grid-cols-1 gap-3">
                       {smartTips.map((tip, i) => {
-                          const isSaving = tip.type === 'money_saving';
-                          const isHealth = tip.type === 'health_dietary';
-                          
-                          return (
-                            <Card key={i} className={`border-l-4 ${
-                                isSaving ? 'border-l-green-500 border-green-100 bg-green-50/20' : 
-                                isHealth ? 'border-l-emerald-500 border-emerald-100 bg-emerald-50/20' : 
-                                'border-l-indigo-500 border-indigo-100 bg-indigo-50/20'
-                            }`}>
+            const isSaving = tip.type === 'money_saving';
+            const isHealth = tip.type === 'health_dietary';
+
+            return (
+              <Card key={i} className={`border-l-4 ${
+              isSaving ? 'border-l-green-500 border-green-100 bg-green-50/20' :
+              isHealth ? 'border-l-emerald-500 border-emerald-100 bg-emerald-50/20' :
+              'border-l-indigo-500 border-indigo-100 bg-indigo-50/20'}`
+              }>
                                 <CardContent className="p-4 flex gap-4 items-start">
                                     <div className={`p-2 rounded-full shrink-0 ${
-                                        isSaving ? 'bg-green-100 text-green-600' :
-                                        isHealth ? 'bg-emerald-100 text-emerald-600' :
-                                        'bg-indigo-100 text-indigo-600'
-                                    }`}>
-                                        {isSaving ? <Tag className="w-5 h-5" /> : 
-                                         isHealth ? <Leaf className="w-5 h-5" /> : 
-                                         <Lightbulb className="w-5 h-5" />}
+                  isSaving ? 'bg-green-100 text-green-600' :
+                  isHealth ? 'bg-emerald-100 text-emerald-600' :
+                  'bg-indigo-100 text-indigo-600'}`
+                  }>
+                                        {isSaving ? <Tag className="w-5 h-5" /> :
+                    isHealth ? <Leaf className="w-5 h-5" /> :
+                    <Lightbulb className="w-5 h-5" />}
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide opacity-70 mb-1">
@@ -302,30 +302,30 @@ export default function Recommendations() {
                                         <p className="text-gray-800 dark:text-gray-200 font-medium leading-snug">
                                             {tip.message}
                                         </p>
-                                        {tip.related_entity_name && (
-                                            <span className="inline-block mt-2 text-xs bg-white/80 px-2 py-1 rounded border shadow-sm">
+                                        {tip.related_entity_name &&
+                    <span className="bg-white/80 text-slate-950 mt-2 px-2 py-1 text-sm rounded inline-block border shadow-sm">
                                                 Related: {tip.related_entity_name}
                                             </span>
-                                        )}
+                    }
                                     </div>
                                 </CardContent>
-                            </Card>
-                          );
-                      })}
+                            </Card>);
+
+          })}
                   </div>
-              )}
+        }
           </section>
-      )}
+      }
 
       {/* Legacy Insights (Keep if needed, or remove if redundant) */}
-      {insights.length > 0 && (
-          <section>
+      {insights.length > 0 &&
+      <section>
               <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
                   <Lightbulb className="w-5 h-5 text-yellow-500" /> Additional Insights
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {insights.map((insight, i) => (
-                       <Card key={i} className="border-yellow-100 bg-yellow-50/30 dark:bg-yellow-900/10 dark:border-yellow-900/30">
+                  {insights.map((insight, i) =>
+          <Card key={i} className="border-yellow-100 bg-yellow-50/30 dark:bg-yellow-900/10 dark:border-yellow-900/30">
                            <CardContent className="p-4">
                                <div className="flex gap-3">
                                    <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg h-fit">
@@ -338,27 +338,27 @@ export default function Recommendations() {
                                </div>
                            </CardContent>
                        </Card>
-                  ))}
+          )}
               </div>
           </section>
-      )}
+      }
 
-      <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />
+      <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find((i) => i.type === 'ShopperTwins')?.message} />
 
 
 
       {/* Store Details Dialog */}
       <Dialog open={!!selectedStore} onOpenChange={(open) => !open && setSelectedStore(null)}>
         <DialogContent className="sm:max-w-md">
-          {selectedStore && (
-            <>
+          {selectedStore &&
+          <>
               <DialogHeader>
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-lg border flex items-center justify-center p-2">
-                        {selectedStore.image_url ? 
-                            <img src={selectedStore.image_url} alt={selectedStore.name} className="w-full h-full object-contain" /> :
-                            <Store className="w-6 h-6 text-indigo-600" />
-                        }
+                        {selectedStore.image_url ?
+                  <img src={selectedStore.image_url} alt={selectedStore.name} className="w-full h-full object-contain" /> :
+                  <Store className="w-6 h-6 text-indigo-600" />
+                  }
                     </div>
                     <div>
                         <DialogTitle>{selectedStore.name}</DialogTitle>
@@ -382,52 +382,52 @@ export default function Recommendations() {
                       </div>
                   </div>
                   
-                  {selectedStore.website_url && (
-                      <div className="pt-2">
-                          <a 
-                              href={selectedStore.website_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
-                          >
+                  {selectedStore.website_url &&
+              <div className="pt-2">
+                          <a
+                  href={selectedStore.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-indigo-600 hover:underline">
+
                               Visit Website <ExternalLink className="w-3 h-3" />
                           </a>
                       </div>
-                  )}
+              }
               </div>
             </>
-          )}
+          }
         </DialogContent>
       </Dialog>
 
       {/* 2. Categories */}
-      {candidates.categories.length > 0 && (
-          <section>
+      {candidates.categories.length > 0 &&
+      <section>
               <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
                   <Tag className="w-5 h-5 text-pink-500" /> Categories to Explore
               </h2>
               <div className="flex flex-wrap gap-3">
-                  {candidates.categories.map((c, i) => (
-                      <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 flex items-center gap-3 shadow-sm hover:shadow-md transition-all">
+                  {candidates.categories.map((c, i) =>
+          <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 flex items-center gap-3 shadow-sm hover:shadow-md transition-all">
                           <span className="font-medium text-sm">{c.category}</span>
                           <button onClick={() => handleFeedback(c, 'dismiss')} className="text-gray-400 hover:text-red-500">
                               <X className="w-4 h-4" />
                           </button>
                       </div>
-                  ))}
+          )}
               </div>
           </section>
-      )}
+      }
 
       {/* 3. Items */}
-      {candidates.products.length > 0 && (
-          <section>
+      {candidates.products.length > 0 &&
+      <section>
               <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
                   <Package className="w-5 h-5 text-emerald-500" /> Recommended Items
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {candidates.products.map((c, i) => (
-                      <Card key={i} className="group relative overflow-hidden border-gray-100 dark:border-gray-700">
+                  {candidates.products.map((c, i) =>
+          <Card key={i} className="group relative overflow-hidden border-gray-100 dark:border-gray-700">
                           <CardContent className="p-4 flex items-start justify-between gap-3">
                               <div className="flex items-start gap-3 flex-1">
                                   {c.image_url && <img src={c.image_url} alt={c.name} className="w-12 h-12 object-contain rounded bg-white border border-gray-100" />}
@@ -442,12 +442,12 @@ export default function Recommendations() {
                                           <button onClick={() => handleFeedback(c, 'thumbs_down')} className="text-gray-400 hover:text-red-500 transition-colors">
                                               <ThumbsDown className="w-4 h-4" />
                                           </button>
-                                          <DataCorrectionDialog 
-                                              entityType="product" 
-                                              entityId={c.canonical_product_id} 
-                                              entityName={c.name}
-                                              defaultIssueType="price"
-                                          />
+                                          <DataCorrectionDialog
+                      entityType="product"
+                      entityId={c.canonical_product_id}
+                      entityName={c.name}
+                      defaultIssueType="price" />
+
                                       </div>
                                   </div>
                               </div>
@@ -461,10 +461,10 @@ export default function Recommendations() {
                               </div>
                           </CardContent>
                       </Card>
-                  ))}
+          )}
               </div>
           </section>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
