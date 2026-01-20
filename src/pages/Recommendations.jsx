@@ -362,22 +362,6 @@ export default function Recommendations() {
           </div>
       )}
 
-      {/* Empty State */}
-      {!loading && candidates.products.length === 0 && candidates.categories.length === 0 && smartTips.length === 0 && !tipsLoading && (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No recommendations yet</h3>
-              <p className="text-sm text-gray-500 max-w-sm mt-2 mb-6">
-                  We need a bit more data to personalize your feed. Try searching for products or scanning some receipts!
-              </p>
-              <Button onClick={() => window.location.reload()} variant="outline">
-                  Refresh Page
-              </Button>
-          </div>
-      )}
-
       {/* Store Details Dialog */}
       <Dialog open={!!selectedStore} onOpenChange={(open) => !open && setSelectedStore(null)}>
         <DialogContent className="sm:max-w-md">
