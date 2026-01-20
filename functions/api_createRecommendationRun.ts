@@ -93,7 +93,9 @@ export default Deno.serve(async (req) => {
                 rank: idx + 1
             }));
             
-            await base44.entities.RecommendationCandidate.bulkCreate(dbCandidates);
+            if (dbCandidates.length > 0) {
+                await base44.entities.RecommendationCandidate.bulkCreate(dbCandidates);
+            }
             
             // 5. Store Source Meta
             await base44.entities.RecommendationSourceMeta.create({
