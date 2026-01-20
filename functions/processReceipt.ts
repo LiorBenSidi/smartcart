@@ -191,6 +191,75 @@ export default Deno.serve(async (req) => {
         // Update Receipt
         await base44.entities.Receipt.update(receipt.id, updatePayload);
 
+        // Update User Product Habits
+        try {
+            for (const item of processedItems) {
+                if (!item.name) continue;
+
+                // Use SKU as product ID if available, otherwise name (fallback)
+                // In a real app, we would match to CanonicalProduct first
+                const productId = item.sku || item.name;
+
+                // Check for existing habit
+                const habits = await base44.entities.UserProductHabit.filter({
+                    user_id: user.id,
+                    product_id: productId
+                });
+
+                const now = new Date();
+                const quantity = Number(item.quantity) || 1;
+
+                if (habits.length > 0) {
+                    const habit = habits[0];
+                    const lastDate = new Date(habit.last_purchase_date);
+                    const daysSince = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+
+                    // Skip update if processed very recently (e.g. same receipt re-processed immediately)
+                    // But allow if it's been at least an hour or so? 
+                    // For now, we update every time to be safe, or maybe check distinct receipt?
+                    // Ideally we track which receipts contributed to the habit.
+                    // Simplified: just update.
+                    
+                    const newCount = (habit.purchase_count || 0) + 1;
+                    const oldCadence = habit.avg_cadence_days || 0;
+                    
+                    // Update cadence only if there's a previous interval
+                    let newCadence = oldCadence;
+                    if (newCount > 1 && daysSince > 0) {
+                         newCadence = newCount === 2 ? daysSince : 
+                                      (oldCadence * (newCount - 2) + daysSince) / (newCount - 1);
+                    }
+
+                    const newAvgQty = ((habit.avg_quantity || 1) * (newCount - 1) + quantity) / newCount;
+
+                    await base44.entities.UserProductHabit.update(habit.id, {
+                        purchase_count: newCount,
+                        last_purchase_date: now.toISOString(),
+                        avg_cadence_days: newCadence,
+                        avg_quantity: newAvgQty,
+                        user_id: user.id, // Explicitly ensure user_id is set
+                        last_calculated_at: now.toISOString()
+                    });
+                } else {
+                    // Create new habit
+                    await base44.entities.UserProductHabit.create({
+                        user_id: user.id, // Explicitly set user_id
+                        product_id: productId,
+                        product_name: item.name,
+                        purchase_count: 1,
+                        last_purchase_date: now.toISOString(),
+                        avg_cadence_days: 0,
+                        avg_quantity: quantity,
+                        confidence_score: item.confidence_score || 0.5,
+                        last_calculated_at: now.toISOString()
+                    });
+                }
+            }
+        } catch (habitError) {
+            console.error("Failed to update user habits:", habitError);
+            // Don't fail the whole request if habit update fails
+        }
+
         return Response.json({ 
             success: true, 
             needs_review: needsReview,
