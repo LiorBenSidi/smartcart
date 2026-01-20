@@ -513,6 +513,58 @@ export default function Admin() {
                     <Database className="w-4 h-4 mr-2" />
                     {processState.loading && processState.activeProcess === 'rebuildUserHabits' ? 'Processing...' : 'Rebuild User Habits'}
                 </Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                            <HelpCircle className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Database className="w-5 h-5 text-orange-600" />
+                                Rebuild User Habits - Technical Details
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 text-sm">
+                            <div>
+                                <h4 className="font-semibold mb-2">Process Overview:</h4>
+                                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                                    <li>Iterates through all users in batches.</li>
+                                    <li>For each user, fetches all their receipts, sorted by purchase date.</li>
+                                    <li>Deletes any existing UserProductHabit records for that user to ensure a clean slate.</li>
+                                    <li>Re-calculates product purchase habits based on the user's entire receipt history. This includes tracking purchase count, last purchase date, average cadence (days between purchases), and average quantity.</li>
+                                    <li>Habits are processed chronologically to correctly derive cadence.</li>
+                                    <li>Bulk creates the newly calculated UserProductHabit records for the user.</li>
+                                </ul>
+                            </div>
+
+                            <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-orange-900 dark:text-orange-200">Habit Calculation Logic:</h4>
+                                <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300 space-y-1">
+                                    <li><strong>Product Identification:</strong> Uses SKU, code, or product name from receipt items.</li>
+                                    <li><strong>Cadence Calculation:</strong> For subsequent purchases of the same product, it calculates the days since the last purchase and updates the average cadence incrementally.</li>
+                                    <li><strong>Average Quantity:</strong> Calculates the average quantity purchased per item.</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-2">Batch Processing:</h4>
+                                <p className="text-gray-700 dark:text-gray-300 mb-2">The function processes users in small batches (default 1 user per batch) to prevent timeouts, especially for apps with many users or extensive receipt histories.</p>
+                                <p className="text-gray-700 dark:text-gray-300">This allows the processManager to update progress and manage the overall operation.</p>
+                            </div>
+
+                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                                <h4 className="font-semibold mb-2">Idempotency:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">The process ensures idempotency by clearing existing habits for a user before recalculating, meaning running it multiple times for the same user yields the same result.</p>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
 
