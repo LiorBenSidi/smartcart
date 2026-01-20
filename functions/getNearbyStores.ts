@@ -121,7 +121,8 @@ Deno.serve(async (req) => {
       // Prioritize driving duration if available, fall back to Haversine distance
       let distanceScore;
       if (store.rawDuration) {
-          const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || Infinity), 1);
+          //const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || Infinity), 1);
+          const maxDuration = Math.max(...nearbyStores.map(s => s.rawDuration || 0), 1);
           distanceScore = 1 - (store.rawDuration / maxDuration);
       } else {
           const maxDistance = Math.max(...nearbyStores.map(s => s.distance), 1);
