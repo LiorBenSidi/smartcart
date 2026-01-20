@@ -244,6 +244,11 @@ export default function NearbyStores() {
       return acc;
     }, {});
 
+    // Sort stores within each group by store name
+    Object.values(groups).forEach(chain => {
+      chain.stores.sort((a, b) => a.name.localeCompare(b.name));
+    });
+
     // Sort groups by name
     const sortedGroups = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 
