@@ -4,7 +4,6 @@ import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { NAV_ITEMS } from '@/components/mockData';
 import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun } from 'lucide-react';
-import { StoreProvider } from '@/components/StoreContext';
 
 export const ThemeContext = React.createContext();
 
@@ -55,7 +54,6 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
-    <StoreProvider>
     <div className="bg-gray-50 text-gray-900 font-sans min-h-screen dark:bg-gray-900 dark:text-gray-100 antialiased relative transition-colors duration-200">
 
 
@@ -139,7 +137,6 @@ export default function Layout({ children, currentPageName }) {
           }
       </div>
     </div>
-    </StoreProvider>
     </ThemeContext.Provider>);
 
 }
