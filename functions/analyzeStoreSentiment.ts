@@ -11,8 +11,14 @@ Deno.serve(async (req) => {
             return Response.json({ error: "Admin access required" }, { status: 403 });
         }
 
-        // Fetch all stores and chains
-        const stores = await base44.entities.Store.list('', 1000);
+        const payload = await req.json().catch(() => ({}));
+        const batch = payload.batch || 0;
+        const limit = payload.limit || 5;
+        const skip = batch * limit;
+
+        // Fetch stores for this batch
+        // Note: SDK list(sort, limit, skip)
+        const stores = await base44.entities.Store.list('', limit, skip);
         const chains = await base44.entities.Chain.list('', 1000);
         const chainMap = {};
         chains.forEach(c => chainMap[c.id] = c.name);
@@ -21,96 +27,65 @@ Deno.serve(async (req) => {
         let consecutiveErrors = 0;
         const MAX_CONSECUTIVE_ERRORS = 1;
 
+        console.log(`Processing batch ${batch}, skip ${skip}, stores found: ${stores.length}`);
+
         for (let i = 0; i < stores.length; i++) {
-            // Stop processing if too many consecutive errors
             if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-                console.error(`Stopping analysis after ${consecutiveErrors} consecutive errors`);
                 results.push({ error: `Stopped after ${consecutiveErrors} consecutive errors` });
                 break;
             }
             const store = stores[i];
-            // Add delay between requests to avoid rate limiting (1000ms between LLM calls)
-            if (i > 0) {
-                await delay(1000);
-            }
+            
+            // Add delay
+            if (i > 0) await delay(1000);
+
             try {
-                // Fetch all reviews for this store
+                // Fetch reviews
                 const reviews = await base44.entities.StoreReview.filter({ store_id: store.id }, '', 1000);
-                // console.log(`Store ${store.id}: Found ${reviews.length} reviews`);
 
                 if (reviews.length === 0) {
-                    // No reviews yet, skip this store
-                    // console.log(`Store ${store.id}: No reviews, skipping`);
                     results.push({ 
-                        index: i + 1,
+                        index: skip + i + 1,
                         store_id: store.id, 
                         chain_name: chainMap[store.chain_id] || 'Unknown',
                         external_store_code: store.external_store_code,
                         action: 'no_reviews' 
                     });
-                    consecutiveErrors = 0; // Reset error counter
                     continue;
                 }
 
                 // Calculate mean rating
                 const ratings = reviews.map(r => r.rating).filter(Boolean);
                 const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-                console.log(`Store ${store.id}: ${reviews.length} reviews, avg rating: ${avgRating.toFixed(2)}`);
 
-                // Get reviews with comments for sentiment analysis
+                // Get reviews with comments
                 const reviewsWithComments = reviews.filter(r => r.comment && r.comment.trim());
                 
                 if (reviewsWithComments.length === 0) {
-                    // No comments to analyze, skip
-                    // console.log(`Store ${store.id}: No comments, skipping`);
                     results.push({ 
-                        index: i + 1,
+                        index: skip + i + 1,
                         store_id: store.id,
                         chain_name: chainMap[store.chain_id] || 'Unknown',
                         external_store_code: store.external_store_code,
                         action: 'no_comments' 
                     });
-                    consecutiveErrors = 0;
                     continue;
                 }
 
-                // Analyze each review with LLM (like=1, dislike=-1) with explanations and themes
-                console.log(`Store ${store.id}: Analyzing ${reviewsWithComments.length} reviews with LLM`);
+                // Analyze with LLM
                 const sentimentScores = [];
                 const sentimentDetails = [];
                 
                 for (const review of reviewsWithComments) {
                     try {
                         const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-                            prompt: `You are an expert sentiment analyst specializing in customer reviews for grocery stores.
-
-Your task: Analyze the following store review and classify the sentiment as either positive (like) or negative (dislike).
-
-Review: "${review.comment}"
-
-Provide:
-1. Sentiment classification (1 for positive/like, -1 for negative/dislike)
-2. A brief explanation (1-2 sentences) justifying your classification
-3. Key themes mentioned in the review (e.g., "cleanliness", "staff friendliness", "product quality", "prices", "wait times")
-
-Think carefully about the overall tone and specific details mentioned in the review.`,
+                            prompt: `Analyze review for grocery store. Return JSON. Review: "${review.comment}"`,
                             response_json_schema: {
                                 type: "object",
                                 properties: {
-                                    sentiment: { 
-                                        type: "number", 
-                                        enum: [1, -1],
-                                        description: "1 for positive/like, -1 for negative/dislike"
-                                    },
-                                    explanation: {
-                                        type: "string",
-                                        description: "Brief explanation for the sentiment classification"
-                                    },
-                                    themes: {
-                                        type: "array",
-                                        items: { type: "string" },
-                                        description: "Key themes or topics mentioned in the review"
-                                    }
+                                    sentiment: { type: "number", enum: [1, -1] },
+                                    explanation: { type: "string" },
+                                    themes: { type: "array", items: { type: "string" } }
                                 },
                                 required: ["sentiment", "explanation", "themes"]
                             }
@@ -121,17 +96,15 @@ Think carefully about the overall tone and specific details mentioned in the rev
                             explanation: result.explanation,
                             themes: result.themes || []
                         });
-                        await delay(500); // Small delay between LLM calls
+                        await delay(500);
                     } catch (llmError) {
-                        console.error(`LLM error for review:`, llmError.message);
-                        // Continue with other reviews
+                        console.error(`LLM error:`, llmError.message);
                     }
                 }
 
                 if (sentimentScores.length === 0) {
-                    console.log(`Store ${store.id}: LLM analysis failed for all reviews, skipping`);
                     results.push({ 
-                        index: i + 1,
+                        index: skip + i + 1,
                         store_id: store.id,
                         chain_name: chainMap[store.chain_id] || 'Unknown',
                         external_store_code: store.external_store_code,
@@ -141,201 +114,119 @@ Think carefully about the overall tone and specific details mentioned in the rev
                     continue;
                 }
 
-                // Calculate majority sentiment
+                // Calculate stats
                 const likes = sentimentScores.filter(s => s === 1).length;
                 const dislikes = sentimentScores.filter(s => s === -1).length;
                 const sentimentScore = likes > dislikes ? 1 : (dislikes > likes ? -1 : 0);
                 const overallSentiment = sentimentScore > 0 ? 'positive' : (sentimentScore < 0 ? 'negative' : 'neutral');
                 
-                console.log(`Store ${store.id}: Sentiment - ${likes} likes, ${dislikes} dislikes -> ${overallSentiment}`);
-
-                // Aggregate themes from all reviews
+                // Aggregate themes
                 const allThemes = {};
                 sentimentDetails.forEach(detail => {
                     detail.themes.forEach(theme => {
-                        const themeLower = theme.toLowerCase();
-                        allThemes[themeLower] = (allThemes[themeLower] || 0) + 1;
+                        const t = theme.toLowerCase();
+                        allThemes[t] = (allThemes[t] || 0) + 1;
                     });
                 });
-                
-                // Get top 5 most mentioned themes
-                const topThemes = Object.entries(allThemes)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5)
-                    .map(([theme]) => theme);
+                const topThemes = Object.entries(allThemes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t);
 
-                const effectiveAnalysis = {
-                    overall_sentiment: overallSentiment,
-                    sentiment_score: sentimentScore,
-                    positive_count: likes,
-                    neutral_count: 0,
-                    negative_count: dislikes,
-                    themes: topThemes,
-                    sentiment_details: sentimentDetails
-                };
-
-                // Check if sentiment record exists
-                const existing = await base44.asServiceRole.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
-
+                // Update DB
                 const sentimentData = {
                     store_id: store.id,
-                    overall_sentiment: effectiveAnalysis.overall_sentiment,
-                    sentiment_score: effectiveAnalysis.sentiment_score,
+                    overall_sentiment: overallSentiment,
+                    sentiment_score: sentimentScore,
                     review_count: reviews.length,
                     average_rating: avgRating,
-                    positive_reviews: effectiveAnalysis.positive_count,
-                    neutral_reviews: effectiveAnalysis.neutral_count,
-                    negative_reviews: effectiveAnalysis.negative_count,
-                    common_themes: effectiveAnalysis.themes || [],
-                    sentiment_explanations: effectiveAnalysis.sentiment_details.map(d => d.explanation),
+                    positive_reviews: likes,
+                    neutral_reviews: 0,
+                    negative_reviews: dislikes,
+                    common_themes: topThemes,
+                    sentiment_explanations: sentimentDetails.map(d => d.explanation),
                     last_analyzed_at: new Date().toISOString()
                 };
 
+                const existing = await base44.asServiceRole.entities.StoreSentiment.filter({ store_id: store.id }, '', 1);
                 if (existing.length > 0) {
-                    // Update existing
                     await base44.asServiceRole.entities.StoreSentiment.update(existing[0].id, sentimentData);
-                    results.push({ 
-                        index: i + 1,
-                        store_id: store.id,
-                        chain_name: chainMap[store.chain_id] || 'Unknown',
-                        external_store_code: store.external_store_code,
-                        action: 'updated' 
-                    });
+                    results.push({ index: skip + i + 1, store_id: store.id, chain_name: chainMap[store.chain_id], action: 'updated' });
                 } else {
-                    // Create new
                     await base44.asServiceRole.entities.StoreSentiment.create(sentimentData);
-                    results.push({ 
-                        index: i + 1,
-                        store_id: store.id,
-                        chain_name: chainMap[store.chain_id] || 'Unknown',
-                        external_store_code: store.external_store_code,
-                        action: 'created' 
-                    });
-                    }
+                    results.push({ index: skip + i + 1, store_id: store.id, chain_name: chainMap[store.chain_id], action: 'created' });
+                }
+                consecutiveErrors = 0;
 
-                    // Reset consecutive error counter on success
-                    consecutiveErrors = 0;
-
-                    } catch (storeError) {
-                    console.error(`Failed to analyze store ${store.id}:`, storeError);
-                    results.push({ 
-                        index: i + 1,
-                        store_id: store.id,
-                        chain_name: chainMap[store.chain_id] || 'Unknown',
-                        external_store_code: store.external_store_code,
-                        action: 'failed', 
-                        error: storeError.message 
-                    });
-                    consecutiveErrors++;
-                    }
-                    }
-
-                    // Calculate chain-level aggregations
-        console.log("Calculating chain-level sentiment...");
-        const chainResults = [];
-
-        // Get all stores with their chains
-        const storesWithChains = await base44.asServiceRole.entities.Store.list('', 5000);
-
-        // Get all store sentiments
-        const storeSentiments = await base44.asServiceRole.entities.StoreSentiment.list('', 5000);
-        const sentimentMap = {};
-        storeSentiments.forEach(s => {
-            sentimentMap[s.store_id] = s;
-        });
-
-        // Group stores by chain
-        const chainGroups = {};
-        storesWithChains.forEach(store => {
-            if (!store.chain_id) return;
-            if (!chainGroups[store.chain_id]) {
-                chainGroups[store.chain_id] = [];
+            } catch (storeError) {
+                console.error(`Store error:`, storeError);
+                results.push({ index: skip + i + 1, store_id: store.id, action: 'failed', error: storeError.message });
+                consecutiveErrors++;
             }
-            chainGroups[store.chain_id].push(store);
-        });
+        }
 
-        // Calculate for each chain
-        for (const [chainId, chainStores] of Object.entries(chainGroups)) {
-            const storesWithSentiment = chainStores
-                .map(s => ({ store: s, sentiment: sentimentMap[s.id] }))
-                .filter(x => x.sentiment);
+        // Check if we need to run chain aggregation (end of list)
+        let chainResults = [];
+        let hasMore = stores.length === limit;
 
-            // Mean rating (0 if no sentiment data)
-            const avgRating = storesWithSentiment.length > 0 
-                ? storesWithSentiment.reduce((sum, x) => sum + (x.sentiment.average_rating || 0), 0) / storesWithSentiment.length
-                : 0;
+        if (!hasMore) {
+            console.log("Running chain aggregation...");
+            const allStores = await base44.asServiceRole.entities.Store.list('', 5000);
+            const allSentiments = await base44.asServiceRole.entities.StoreSentiment.list('', 5000);
+            const sentimentMap = {};
+            allSentiments.forEach(s => sentimentMap[s.store_id] = s);
 
-            // Majority sentiment
-            const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
-            storesWithSentiment.forEach(x => {
-                const s = x.sentiment.overall_sentiment;
-                if (s) sentimentCounts[s]++;
+            const chainGroups = {};
+            allStores.forEach(s => {
+                if (!s.chain_id) return;
+                if (!chainGroups[s.chain_id]) chainGroups[s.chain_id] = [];
+                chainGroups[s.chain_id].push(s);
             });
 
-            const majoritysentiment = storesWithSentiment.length === 0 ? 'neutral'
-                : sentimentCounts.positive >= sentimentCounts.negative && sentimentCounts.positive >= sentimentCounts.neutral ? 'positive'
-                : sentimentCounts.negative >= sentimentCounts.neutral ? 'negative' : 'neutral';
+            for (const [chainId, chainStores] of Object.entries(chainGroups)) {
+                const storesWithSentiment = chainStores.map(s => ({ store: s, sentiment: sentimentMap[s.id] })).filter(x => x.sentiment);
+                
+                const avgRating = storesWithSentiment.length > 0 
+                    ? storesWithSentiment.reduce((sum, x) => sum + (x.sentiment.average_rating || 0), 0) / storesWithSentiment.length
+                    : 0;
 
-            const chainData = {
-                chain_id: chainId,
-                average_rating: Number(avgRating.toFixed(2)),
-                overall_sentiment: majoritysentiment,
-                positive_stores: sentimentCounts.positive,
-                neutral_stores: sentimentCounts.neutral,
-                negative_stores: sentimentCounts.negative,
-                total_stores_analyzed: storesWithSentiment.length,
-                last_analyzed_at: new Date().toISOString()
-            };
-
-            // Check if exists
-            const existing = await base44.asServiceRole.entities.ChainSentiment.filter({ chain_id: chainId }, '', 1);
-            if (existing.length > 0) {
-                await base44.asServiceRole.entities.ChainSentiment.update(existing[0].id, chainData);
-                chainResults.push({ 
-                    chain_id: chainId, 
-                    chain_name: chainMap[chainId] || 'Unknown', 
-                    action: 'updated',
-                    average_rating: chainData.average_rating,
-                    overall_sentiment: chainData.overall_sentiment,
-                    positive_stores: chainData.positive_stores,
-                    neutral_stores: chainData.neutral_stores,
-                    negative_stores: chainData.negative_stores,
-                    total_stores_analyzed: chainData.total_stores_analyzed
+                const counts = { positive: 0, neutral: 0, negative: 0 };
+                storesWithSentiment.forEach(x => {
+                    if (x.sentiment.overall_sentiment) counts[x.sentiment.overall_sentiment]++;
                 });
-            } else {
-                await base44.asServiceRole.entities.ChainSentiment.create(chainData);
-                chainResults.push({ 
-                    chain_id: chainId, 
-                    chain_name: chainMap[chainId] || 'Unknown', 
-                    action: 'created',
-                    average_rating: chainData.average_rating,
-                    overall_sentiment: chainData.overall_sentiment,
-                    positive_stores: chainData.positive_stores,
-                    neutral_stores: chainData.neutral_stores,
-                    negative_stores: chainData.negative_stores,
-                    total_stores_analyzed: chainData.total_stores_analyzed
-                });
+
+                const majority = storesWithSentiment.length === 0 ? 'neutral'
+                    : counts.positive >= counts.negative && counts.positive >= counts.neutral ? 'positive'
+                    : counts.negative >= counts.neutral ? 'negative' : 'neutral';
+
+                const chainData = {
+                    chain_id: chainId,
+                    average_rating: Number(avgRating.toFixed(2)),
+                    overall_sentiment: majority,
+                    positive_stores: counts.positive,
+                    neutral_stores: counts.neutral,
+                    negative_stores: counts.negative,
+                    total_stores_analyzed: storesWithSentiment.length,
+                    last_analyzed_at: new Date().toISOString()
+                };
+
+                const existing = await base44.asServiceRole.entities.ChainSentiment.filter({ chain_id: chainId }, '', 1);
+                if (existing.length > 0) {
+                    await base44.asServiceRole.entities.ChainSentiment.update(existing[0].id, chainData);
+                    chainResults.push({ chain_id: chainId, chain_name: chainMap[chainId], action: 'updated', ...chainData });
+                } else {
+                    await base44.asServiceRole.entities.ChainSentiment.create(chainData);
+                    chainResults.push({ chain_id: chainId, chain_name: chainMap[chainId], action: 'created', ...chainData });
+                }
             }
-            }
+        }
 
-            console.log("✅ Sentiment analysis completed:", {
-            total_stores: results.length,
-            total_chains: chainResults.length
-            });
-
-            // console.log("\n📊 STORE RESULTS:");
-            // console.log(JSON.stringify(results, null, 2));
-
-            console.log("\n🏢 CHAIN RESULTS:");
-            console.log(JSON.stringify(chainResults, null, 2));
-
-            return Response.json({
+        return Response.json({
             success: true,
-            message: `Sentiment analysis completed for ${results.length} stores and ${chainResults.length} chains`
+            results: results,
+            chainResults: chainResults,
+            hasMore: hasMore,
+            message: hasMore ? `Processed batch ${batch} (${results.length} results)` : `Completed. Analyzed ${results.length} stores and aggregated chains.`
         });
 
     } catch (error) {
-        console.error("Sentiment analysis failed:", error);
         return Response.json({ error: error.message }, { status: 500 });
     }
 });

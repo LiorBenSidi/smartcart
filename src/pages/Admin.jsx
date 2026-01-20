@@ -19,10 +19,13 @@ export default function Admin() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
-  const [sentimentResults, setSentimentResults] = useState(null);
-  const [isRebuildingVectors, setIsRebuildingVectors] = useState(false);
-  const [vectorResults, setVectorResults] = useState(null);
+import { processManager } from "@/components/processManager";
+  const [processState, setProcessState] = useState(processManager.getState());
+
+  useEffect(() => {
+    const unsubscribe = processManager.subscribe(setProcessState);
+    return unsubscribe;
+  }, []);
 
   const checkAdmin = async () => {
       const user = await base44.auth.me();
@@ -148,54 +151,20 @@ export default function Admin() {
   };
 
   const handleAnalyzeSentiment = async () => {
-    setSentimentResults(null);
-    base44.functions.invoke('analyzeStoreSentiment').catch(err => console.error('Sentiment analysis error:', err));
-    setSentimentResults({ 
-      message: 'Sentiment analysis started. Check the function logs in the dashboard to see the results.' 
-    });
+    try {
+        await processManager.startProcess('analyzeStoreSentiment', { limit: 5 });
+    } catch (err) {
+        console.error('Sentiment analysis failed:', err);
+    }
   };
 
   const handleRebuildUserVectors = async () => {
-    setIsRebuildingVectors(true);
-    setVectorResults(null);
     try {
-      // Delete all existing user vectors
-      const allVectors = await base44.entities.UserVectorSnapshot.list();
-      for (const v of allVectors) {
-        await base44.entities.UserVectorSnapshot.delete(v.id);
-      }
-
-      // Get all users
-      const allUsers = await base44.entities.User.list();
-      
-      // Rebuild vectors for each user
-      let successCount = 0;
-      let errorCount = 0;
-      
-      for (const user of allUsers) {
-        try {
-          await base44.functions.invoke('buildUserVectors', { userId: user.email });
-          successCount++;
-        } catch (err) {
-          console.error(`Failed to build vectors for ${user.email}:`, err);
-          errorCount++;
-        }
-      }
-
-      setVectorResults({
-        success: true,
-        message: `Rebuilt vectors for ${successCount} users. ${errorCount} errors.`,
-        successCount,
-        errorCount
-      });
-    } catch (error) {
-      console.error('Failed to rebuild user vectors:', error);
-      setVectorResults({
-        success: false,
-        message: 'Failed to rebuild user vectors: ' + error.message
-      });
-    } finally {
-      setIsRebuildingVectors(false);
+        // Optional: clear existing vectors first if you want a clean slate
+        // But for now we just start the process which will overwrite/create new snapshots
+        await processManager.startProcess('buildUserVectors', { limit: 10 });
+    } catch (err) {
+        console.error('Vector rebuild failed:', err);
     }
   };
 
@@ -333,10 +302,11 @@ export default function Admin() {
             <div className="relative">
                 <Button 
                     onClick={handleAnalyzeSentiment}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={processState.loading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 >
                     <Zap className="w-4 h-4 mr-2" />
-                    Analyze Store Sentiment
+                    {processState.loading ? 'Processing...' : 'Analyze Store Sentiment'}
                 </Button>
                 <Dialog>
                     <DialogTrigger asChild>
@@ -414,11 +384,11 @@ export default function Admin() {
             <div className="relative">
                 <Button 
                     onClick={handleRebuildUserVectors}
-                    disabled={isRebuildingVectors}
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    disabled={processState.loading}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
                 >
                     <Brain className="w-4 h-4 mr-2" />
-                    {isRebuildingVectors ? 'Rebuilding...' : 'Rebuild User Vectors'}
+                    {processState.loading ? 'Processing...' : 'Rebuild User Vectors'}
                 </Button>
                 <Dialog>
                     <DialogTrigger asChild>
@@ -527,110 +497,22 @@ export default function Admin() {
             </div>
         </div>
 
-        {vectorResults && (
-            <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
-                <CardContent className="p-6">
-                    <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
-                        User Vectors Rebuild
-                    </h3>
-                    <p className={`text-sm ${vectorResults.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {vectorResults.message}
-                    </p>
-                </CardContent>
-            </Card>
-        )}
-
-
-
         <SystemValidationPanel />
 
-        {sentimentResults && (
+        {/* Global Process Results Display */}
+        {processState.results && processState.results.length > 0 && !processState.loading && (
             <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
                 <CardContent className="p-6">
                     <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
-                        Sentiment Analysis
+                        Process Results: {processState.status}
                     </h3>
-                    {sentimentResults.error ? (
-                        <p className="text-red-600 dark:text-red-400">{sentimentResults.error}</p>
-                    ) : sentimentResults.message && !sentimentResults.results ? (
-                        <p className="text-blue-600 dark:text-blue-400">{sentimentResults.message}</p>
-                    ) : (
-                        <div className="space-y-4">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{sentimentResults.message}</p>
-                            
-                            {sentimentResults.results && sentimentResults.results.length > 0 && (
-                                <div className="mt-4">
-                                    <h4 className="font-semibold mb-2 text-gray-800 dark:text-gray-200">Store Analysis Details</h4>
-                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-64 overflow-y-auto space-y-1">
-                                        {sentimentResults.results.map((store) => (
-                                            <div key={store.store_id} className="text-xs flex items-center gap-2">
-                                                <span className="font-mono text-gray-500 dark:text-gray-500 w-8">#{store.index}</span>
-                                                <span className="font-medium text-gray-700 dark:text-gray-300 flex-1">{store.chain_name}</span>
-                                                <span className="text-gray-500 dark:text-gray-500">({store.external_store_code})</span>
-                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                                                    store.action === 'created' || store.action === 'updated' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 
-                                                    store.action === 'no_reviews' || store.action === 'no_comments' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' :
-                                                    'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-                                                }`}>
-                                                    {store.action}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {sentimentResults.chainResults && sentimentResults.chainResults.length > 0 && (
-                                <div className="mt-4">
-                                    <h4 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Chain Sentiment Summary</h4>
-                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-3">
-                                        {sentimentResults.chainResults.map((chain, idx) => (
-                                            <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="font-bold text-gray-900 dark:text-gray-100">{chain.chain_name}</span>
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                                        chain.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 
-                                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                                                    }`}>
-                                                        {chain.action}
-                                                    </span>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                                    <div>
-                                                        <span className="text-gray-500 dark:text-gray-400">Rating:</span>
-                                                        <span className="ml-1 font-semibold text-gray-900 dark:text-gray-100">
-                                                            {chain.average_rating || 0}/5
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-500 dark:text-gray-400">Sentiment:</span>
-                                                        <span className={`ml-1 font-semibold ${
-                                                            chain.overall_sentiment === 'positive' ? 'text-green-600 dark:text-green-400' :
-                                                            chain.overall_sentiment === 'negative' ? 'text-red-600 dark:text-red-400' :
-                                                            'text-gray-600 dark:text-gray-400'
-                                                        }`}>
-                                                            {chain.overall_sentiment || 'neutral'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="col-span-2">
-                                                        <span className="text-gray-500 dark:text-gray-400">Stores:</span>
-                                                        <span className="ml-1 text-green-600 dark:text-green-400">{chain.positive_stores || 0}+</span>
-                                                        <span className="mx-1 text-gray-400">/</span>
-                                                        <span className="text-gray-600 dark:text-gray-400">{chain.neutral_stores || 0}○</span>
-                                                        <span className="mx-1 text-gray-400">/</span>
-                                                        <span className="text-red-600 dark:text-red-400">{chain.negative_stores || 0}-</span>
-                                                        <span className="ml-2 text-gray-500 dark:text-gray-400">
-                                                            ({chain.total_stores_analyzed || 0} total)
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto space-y-2">
+                        {processState.results.map((item, idx) => (
+                            <div key={idx} className="text-xs border-b border-gray-200 dark:border-gray-700 pb-2 last:border-0 last:pb-0">
+                                <pre className="whitespace-pre-wrap">{JSON.stringify(item, null, 2)}</pre>
+                            </div>
+                        ))}
+                    </div>
                 </CardContent>
             </Card>
         )}
