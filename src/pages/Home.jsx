@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList, PieChart, Pie, Legend } from 'recharts';
+import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download, Loader2, AlertCircle, RefreshCw, Sparkles, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import Onboarding from '../components/Onboarding';
 import ReceiptFolderView from '../components/ReceiptFolderView';
+import SpendingTrendChart from '../components/dashboard/SpendingTrendChart';
+import FrequentItemsCard from '../components/dashboard/FrequentItemsCard';
+import AIInsightsPanel from '../components/dashboard/AIInsightsPanel';
 
 export default function Home() {
   const [receipts, setReceipts] = useState([]);
@@ -18,6 +21,9 @@ export default function Home() {
   const [displayCount, setDisplayCount] = useState(5);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
+  const [aiInsights, setAiInsights] = useState(null);
+  const [loadingInsights, setLoadingInsights] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
 
   const handleDeleteReceipt = async (receiptId) => {
     if (confirm("Are you sure you want to delete this receipt?")) {
@@ -111,6 +117,11 @@ export default function Home() {
         if (data.length === 0 && profiles.length === 0) {
             setShowOnboarding(true);
         }
+
+        // Fetch AI insights if user has receipts
+        if (data.length > 0) {
+            fetchAIInsights();
+        }
       } catch (error) {
         console.error("Error fetching dashboard data", error);
       } finally {
@@ -119,6 +130,21 @@ export default function Home() {
     };
     fetchData();
   }, []);
+
+  const fetchAIInsights = async () => {
+    setLoadingInsights(true);
+    try {
+      const response = await base44.functions.invoke('generateDashboardInsights', {});
+      if (response.data.success) {
+        setAiInsights(response.data.aiInsights);
+        setDashboardData(response.data.rawData);
+      }
+    } catch (error) {
+      console.error("Error fetching AI insights", error);
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
 
   // Calculate stats
   const now = new Date();
@@ -221,12 +247,30 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 p-1 md:p-0">
+    <div className="space-y-6 animate-in fade-in duration-500 p-1 md:p-0">
       
-
+      {/* Header with Refresh */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">AI-powered insights from your shopping data</p>
+        </div>
+        {receipts.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchAIInsights}
+            disabled={loadingInsights}
+            className="gap-2"
+          >
+            {loadingInsights ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Refresh
+          </Button>
+        )}
+      </div>
 
       {/* Overview Cards */}
-      <section className="grid grid-cols-2 gap-4 lg:gap-8">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
             <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
@@ -252,7 +296,48 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
+          <CardContent className="p-5">
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Avg Receipt</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+              ₪{dashboardData?.avgReceiptValue || (totalSpent / receipts.length).toFixed(2)}
+            </h2>
+            <div className="flex items-center mt-2 text-gray-400 text-xs">
+              <ShoppingBag className="w-3 h-3 mr-1" />
+              <span>Per shopping trip</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
+          <CardContent className="p-5">
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Last 30 Days</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+              ₪{dashboardData?.last30DaysTotal || '0.00'}
+            </h2>
+            <div className="flex items-center mt-2 text-gray-400 text-xs">
+              <Calendar className="w-3 h-3 mr-1" />
+              <span>Recent spending</span>
+            </div>
+          </CardContent>
+        </Card>
       </section>
+
+      {/* AI Insights Loading State */}
+      {loadingInsights && (
+        <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
+          <CardContent className="p-6 flex items-center justify-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Insights Panel */}
+      {aiInsights && !loadingInsights && (
+        <AIInsightsPanel insights={aiInsights} />
+      )}
 
       {/* Top Insights Section */}
       {insights.length > 0 && (
@@ -293,52 +378,94 @@ export default function Home() {
           </section>
       )}
 
-      <div className={`grid grid-cols-1 gap-8 ${chartData.length > 0 ? 'lg:grid-cols-3' : ''}`}>
-        {/* Spending Chart */}
-        {chartData.length > 0 && (
-        <section className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Spending by Category</h3>
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Spending Trend */}
+        {receipts.length > 0 && (
+          <div className="lg:col-span-2">
+            <SpendingTrendChart receipts={receipts} />
           </div>
-          <Card className="border-none shadow-sm bg-white dark:bg-gray-800 overflow-hidden h-[300px] lg:h-[400px]">
-            <CardContent className="p-4 pt-8 h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} barGap={8}>
-                  <XAxis
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fontSize: 12, fill: '#9ca3af'}} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fontSize: 12, fill: '#9ca3af'}} 
-                  />
-                  <Tooltip 
-                    cursor={{fill: 'transparent'}}
-                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                    formatter={(value, name) => [`₪${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
-                  />
-                  <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
+        )}
+
+        {/* Top Categories Pie Chart */}
+        {dashboardData?.topCategories && dashboardData.topCategories.length > 0 && (
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Top Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={dashboardData.topCategories}
+                    dataKey="amount"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={(entry) => `${entry.name}`}
+                    labelLine={false}
+                  >
+                    {dashboardData.topCategories.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
-                    <LabelList dataKey="thisMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
-                  </Bar>
-                  <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth">
-                    <LabelList dataKey="lastMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
-                  </Bar>
-                </BarChart>
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value) => `₪${value.toFixed(2)}`}
+                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                  />
+                </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </section>
         )}
-
-
       </div>
+
+      {/* Category Comparison Bar Chart */}
+      {chartData.length > 0 && (
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Category Comparison (This Month vs Last)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData} barGap={8}>
+                <XAxis
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 12, fill: '#9ca3af'}} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 12, fill: '#9ca3af'}} 
+                />
+                <Tooltip 
+                  cursor={{fill: 'transparent'}}
+                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                  formatter={(value, name) => [`₪${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
+                />
+                <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
+                  ))}
+                  <LabelList dataKey="thisMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
+                </Bar>
+                <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth">
+                  <LabelList dataKey="lastMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Frequent Items */}
+      {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
+        <FrequentItemsCard items={dashboardData.frequentItems} />
+      )}
     </div>
   );
 }
