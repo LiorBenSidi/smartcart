@@ -378,9 +378,9 @@ export default function Home() {
           </section>
       )}
 
-      {/* Top Categories Pie Chart - Always calculated from receipts */}
+      {/* Top Categories Pie Chart - Calculated from ALL user receipts */}
       {(() => {
-        // Always calculate from receipts data
+        // Calculate from ALL receipts (not just this month)
         const allCategoryTotals = receipts.reduce((acc, receipt) => {
           if (receipt.items && Array.isArray(receipt.items)) {
             receipt.items.forEach(item => {
