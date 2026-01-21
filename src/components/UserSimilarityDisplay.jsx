@@ -3,10 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Users, Shield, User, Sparkles, TrendingUp } from 'lucide-react';
+import { Users, Shield, User, Sparkles, TrendingUp, Lightbulb } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export default function UserSimilarityDisplay({ currentUser }) {
+export default function UserSimilarityDisplay({ currentUser, learningSnippet }) {
     const [edges, setEdges] = useState([]);
     const [loading, setLoading] = useState(true);
     const [neighborDetails, setNeighborDetails] = useState({});
@@ -100,7 +100,7 @@ export default function UserSimilarityDisplay({ currentUser }) {
     const getDisplayName = (neighborId) => {
         if (currentUser.role === 'admin') {
             const user = neighborDetails[neighborId];
-            return user?.full_name || user?.email || neighborId;
+            return user?.display_name || user?.full_name || user?.email || neighborId;
         }
         // Generate consistent random code for regular users
         // Simple hash of string to number
@@ -149,56 +149,5 @@ export default function UserSimilarityDisplay({ currentUser }) {
         );
     }
 
-    return (
-        <Card className="border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-white to-indigo-50/30 dark:from-gray-800 dark:to-indigo-950/20">
-            <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                        <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
-                    </div>
-                    <div>
-                        <CardTitle className="text-lg">Shopper Twins</CardTitle>
-                        <CardDescription>People with similar taste profiles</CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {edges.map((edge, i) => {
-                        const score = Math.round(edge.similarity * 100);
-                        const name = getDisplayName(edge.neighbor_user_id);
-                        const isAdminView = currentUser.role === 'admin';
-
-                        return (
-                            <div key={i} className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
-                                <Avatar className="h-10 w-10 border border-indigo-100">
-                                    <AvatarImage src="" />
-                                    <AvatarFallback className={`${isAdminView ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}>
-                                        {isAdminView ? (name[0] || 'U') : <User className="w-5 h-5" />}
-                                    </AvatarFallback>
-                                </Avatar>
-                                
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <h4 className="font-semibold text-sm truncate flex items-center gap-2">
-                                            {name}
-                                            {isAdminView && <Badge variant="outline" className="text-[10px] h-4 px-1 py-0">Real User</Badge>}
-                                        </h4>
-                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{score}% Match</span>
-                                    </div>
-                                    
-                                    <Progress value={score} className="h-1.5 mb-2 bg-gray-100 dark:bg-gray-700" indicatorClassName="bg-gradient-to-r from-indigo-500 to-purple-500" />
-                                    
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                                        <Sparkles className="w-3 h-3 text-amber-500" />
-                                        {getExplanation(edge.similarity, edge.neighbor_user_id)}
-                                    </p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </CardContent>
-        </Card>
-    );
+    return null;
 }
