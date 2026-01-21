@@ -270,7 +270,7 @@ export default function Home() {
       </div>
 
       {/* Overview Cards */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
             <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
@@ -343,33 +343,41 @@ export default function Home() {
             .map(([name, amount]) => ({ name, amount }));
           
           return categoryData.length > 0 ? (
-            <Card className="border-none shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Top Categories</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      dataKey="amount"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={(entry) => `${entry.name}`}
-                      labelLine={false}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => `₪${value.toFixed(2)}`}
-                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+            <Card className="border-none shadow-sm col-span-2 lg:col-span-2">
+              <CardContent className="p-5 h-full flex flex-col">
+                <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">Top Categories</p>
+                <div className="flex-1 min-h-[80px]">
+                  <ResponsiveContainer width="100%" height={80}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        dataKey="amount"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={35}
+                        label={false}
+                        labelLine={false}
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value) => `₪${value.toFixed(2)}`}
+                        contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {categoryData.slice(0, 3).map((cat, idx) => (
+                    <span key={idx} className="text-[10px] flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx] }}></span>
+                      {cat.name}
+                    </span>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           ) : null;
