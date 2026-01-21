@@ -223,7 +223,7 @@ export default function Recommendations() {
                                         </code>
                                     </div>
                                     <p className="text-xs mt-1">
-                                        We calculate <strong>Cosine Similarity</strong> between your vector and thousands of others to find your nearest neighbors in taste space.
+                                        We calculate <strong>Cosine Similarity</strong> between your vector and of others to find your nearest neighbors in taste space.
                                     </p>
                                 </div>
                             </div>
