@@ -187,7 +187,7 @@ export default function Profile() {
         </div>
         
         <div className="flex-1 space-y-3 w-full">
-            <div>
+            <div className="space-y-1">
                 <Label htmlFor="fullName">Full Name</Label>
                 <Input
               id="fullName"
@@ -197,7 +197,7 @@ export default function Profile() {
               placeholder="Enter your full name" />
             </div>
 
-            <div>
+            <div className="space-y-1">
                 <Label htmlFor="displayName">Display Name (App Nickname)</Label>
                 <Input
               id="displayName"
