@@ -49,6 +49,7 @@ export default function Recommendations() {
 
           if (action === 'like') {
               toast.success("Thanks! We'll show more like this.");
+              refreshTips();
           } else if (action === 'dislike') {
               // Remove the disliked tip immediately
               setSmartTips(prev => prev.filter(t => t !== tip));
