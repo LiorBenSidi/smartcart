@@ -94,37 +94,7 @@ export default function Landing() {
                     <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
 
-                <a 
-                  href={(() => {
-                      const urlStr = base44.agents.getWhatsAppConnectURL('grocery_bot');
-                      if (!user?.email || !urlStr) return urlStr || '#';
-                      try {
-                          const url = new URL(urlStr);
-                          const text = url.searchParams.get('text');
-                          if (text) {
-                              // Ensure we decode first to avoid double encoding issues, though searchParams handles it
-                              // We replace the start of the text if it doesn't have the greeting
-                              const decodedText = decodeURIComponent(text); 
-                              if (!decodedText.startsWith('👋 Hello')) {
-                                  url.searchParams.set('text', `👋 Hello, ${user.email}\n\n${text}`);
-                              }
-                              return url.toString();
-                          }
-                          return urlStr;
-                      } catch (e) { return urlStr; }
-                  })()}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block w-full"
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full h-14 text-lg border-green-500 text-green-600 hover:bg-green-50 rounded-xl border-2"
-                  >
-                    <MessageCircle className="mr-2 w-5 h-5" /> 
-                    Chat on WhatsApp
-                  </Button>
-                </a>
+
             </div>
             ) :
 

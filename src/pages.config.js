@@ -5,11 +5,11 @@ import Home from './pages/Home';
 import Landing from './pages/Landing';
 import NearbyStores from './pages/NearbyStores';
 import PriceComparison from './pages/PriceComparison';
+import Profile from './pages/Profile';
 import Receipt from './pages/Receipt';
 import Recommendations from './pages/Recommendations';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
-import Profile from './pages/Profile';
 import __Layout from './Layout.jsx';
 
 
@@ -21,11 +21,11 @@ export const PAGES = {
     "Landing": Landing,
     "NearbyStores": NearbyStores,
     "PriceComparison": PriceComparison,
+    "Profile": Profile,
     "Receipt": Receipt,
     "Recommendations": Recommendations,
     "SmartCart": SmartCart,
     "Upload": Upload,
-    "Profile": Profile,
 }
 
 export const pagesConfig = {
