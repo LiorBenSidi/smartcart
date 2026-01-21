@@ -152,7 +152,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
 
         const debounce = setTimeout(searchProducts, 300);
         return () => clearTimeout(debounce);
-    }, [searchTerm, filters, sortBy]);
+    }, [searchTerm, filters, sortBy, hasActiveFilters]);
 
     // Get unique categories for filter (async load when needed)
     const [categories, setCategories] = useState([]);
