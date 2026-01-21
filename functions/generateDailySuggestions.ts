@@ -295,25 +295,6 @@ export default Deno.serve(async (req) => {
             }).catch(() => []);
             const dislikedGTINs = new Set(userPreferences.map(p => p.product_gtin));
 
-            // Fetch Smart Tip Feedback to influence suggestions
-            const tipFeedback = await base44.entities.SmartTipFeedback.filter({
-                created_by: user.email
-            }).catch(() => []);
-            
-            const likedTipProducts = new Set();
-            const dislikedTipProducts = new Set();
-            
-            tipFeedback.forEach(feedback => {
-                const productName = feedback.related_entity_name?.toLowerCase();
-                if (productName) {
-                    if (feedback.action === 'like') {
-                        likedTipProducts.add(productName);
-                    } else if (feedback.action === 'dislike') {
-                        dislikedTipProducts.add(productName);
-                    }
-                }
-            });
-
             // Need purchase history to filter Collaborative (if user already buys it)
             // Ideally we'd have this passed or cached, but let's re-fetch receipts one last time
             // Or just trust that we want to filter OUT anything the user buys regularly?
@@ -367,35 +348,6 @@ export default Deno.serve(async (req) => {
             });
 
             let finalSuggestions = Array.from(suggestionMap.values());
-
-            // Apply Smart Tip Feedback adjustments
-            finalSuggestions = finalSuggestions.map(suggestion => {
-                const productNameLower = suggestion.product_name?.toLowerCase();
-                let confidenceBoost = 0;
-                
-                if (productNameLower) {
-                    // Check if product name matches any liked tip products (boost confidence)
-                    for (const likedProduct of likedTipProducts) {
-                        if (productNameLower.includes(likedProduct) || likedProduct.includes(productNameLower)) {
-                            confidenceBoost += 0.15;
-                            break;
-                        }
-                    }
-                    
-                    // Check if product name matches any disliked tip products (reduce confidence)
-                    for (const dislikedProduct of dislikedTipProducts) {
-                        if (productNameLower.includes(dislikedProduct) || dislikedProduct.includes(productNameLower)) {
-                            confidenceBoost -= 0.2;
-                            break;
-                        }
-                    }
-                }
-                
-                return {
-                    ...suggestion,
-                    confidence: Math.max(0, Math.min(1, suggestion.confidence + confidenceBoost))
-                };
-            });
 
             // Sorting
             finalSuggestions.sort((a, b) => {
