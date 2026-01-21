@@ -46,7 +46,16 @@ export default function Recommendations() {
   const handleTipFeedback = async (tip, action) => {
       try {
           await base44.functions.invoke('logSmartTipFeedback', { tip, action });
-          toast.success(action === 'like' ? "Thanks! We'll show more like this." : "Got it, fewer tips like this.");
+
+          if (action === 'like') {
+              toast.success("Thanks! We'll show more like this.");
+          } else if (action === 'dislike') {
+              // Remove the disliked tip immediately
+              setSmartTips(prev => prev.filter(t => t !== tip));
+              toast.info("Tip hidden. Fetching a new one...");
+              // Fetch a new tip
+              refreshTips();
+          }
       } catch (e) {
           console.error(e);
           toast.error("Failed to log feedback");
