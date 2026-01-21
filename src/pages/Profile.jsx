@@ -79,6 +79,19 @@ export default function Profile() {
     }
   };
 
+  const handleRemoveTipFeedback = async (id, action) => {
+    try {
+        await base44.entities.SmartTipFeedback.delete(id);
+        if (action === 'like') {
+            setTipFeedback(prev => ({ ...prev, liked: prev.liked.filter(t => t.id !== id) }));
+        } else {
+            setTipFeedback(prev => ({ ...prev, disliked: prev.disliked.filter(t => t.id !== id) }));
+        }
+    } catch (error) {
+        console.error("Failed to remove tip feedback", error);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -218,11 +231,17 @@ export default function Profile() {
                         <p className="text-xs text-gray-400 italic">No liked tips yet</p>
                     ) : (
                         tipFeedback.liked.map(tip => (
-                            <div key={tip.id} className="p-3 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg">
+                            <div key={tip.id} className="p-3 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg group relative">
+                                <button 
+                                    onClick={() => handleRemoveTipFeedback(tip.id, 'like')} 
+                                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </button>
                                 <div className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
                                     {tip.tip_type?.replace('_', ' ')}
                                 </div>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{tip.full_message}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 pr-6">{tip.full_message}</p>
                             </div>
                         ))
                     )}
@@ -239,11 +258,17 @@ export default function Profile() {
                         <p className="text-xs text-gray-400 italic">No disliked tips yet</p>
                     ) : (
                         tipFeedback.disliked.map(tip => (
-                            <div key={tip.id} className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg">
+                            <div key={tip.id} className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg group relative">
+                                <button 
+                                    onClick={() => handleRemoveTipFeedback(tip.id, 'dislike')} 
+                                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </button>
                                 <div className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase mb-1">
                                     {tip.tip_type?.replace('_', ' ')}
                                 </div>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{tip.full_message}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 pr-6">{tip.full_message}</p>
                             </div>
                         ))
                     )}
