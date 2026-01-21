@@ -27,7 +27,7 @@ export default Deno.serve(async (req) => {
                 : [];
 
             if (similarUsers.length > 0) {
-                const neighborIds = similarUsers.map(su => su.neighbor_user_id);
+                const neighborIds = similarUsers.map(su => su.neighbor_user_id).filter(Boolean);
 
                 // Get top products purchased by similar users
                 // We'll process each neighbor
