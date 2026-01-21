@@ -75,6 +75,26 @@ export default function EnhancedProductSearch({ onAddToCart }) {
             filtered = filtered.filter(p => p.chain_id === filters.chain);
         }
 
+        // If no filters are active, get top 10 cheapest from each chain
+        if (!hasActiveFilters) {
+            const byChain = {};
+            filtered.forEach(product => {
+                if (!product.current_price) return; // Skip products without price
+                const chainId = product.chain_id || 'unknown';
+                if (!byChain[chainId]) byChain[chainId] = [];
+                byChain[chainId].push(product);
+            });
+
+            // Sort each chain's products by price and take top 10
+            const topCheapestPerChain = [];
+            Object.values(byChain).forEach(chainProducts => {
+                const sorted = chainProducts.sort((a, b) => a.current_price - b.current_price);
+                topCheapestPerChain.push(...sorted.slice(0, 10));
+            });
+
+            filtered = topCheapestPerChain;
+        }
+
         // Apply sorting
         let sorted = [...filtered];
         if (sortBy === 'price_asc') {
@@ -102,10 +122,10 @@ export default function EnhancedProductSearch({ onAddToCart }) {
             setIsSearching(true);
             try {
                 const results = await base44.entities.Product.filter({
-                    $or: [
-                        { canonical_name: { $regex: searchTerm, $options: 'i' } },
-                        { gtin: { $regex: searchTerm, $options: 'i' } },
-                        { brand_name: { $regex: searchTerm, $options: 'i' } }
+                    : [
+                        { canonical_name: { : searchTerm, : 'i' } },
+                        { gtin: { : searchTerm, : 'i' } },
+                        { brand_name: { : searchTerm, : 'i' } }
                     ]
                 }, undefined, 100);
                 
@@ -365,11 +385,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                             return (
                                 <div
                                     key={product.id}
-                                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                                        isCheapest
-                                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-                                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent'
-                                    }`}
+                                    className={}
                                 >
                                     <div className="flex-1 min-w-0 mr-3">
                                         <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -382,14 +398,12 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                             <Badge
                                                 variant="outline"
-                                                className={`text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 ${
-                                                    isCheapest ? 'border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'
-                                                }`}
+                                                className={}
                                             >
                                                 {sourceName}
                                             </Badge>
                                             {product.current_price && (
-                                                <span className={`text-sm font-bold ${isCheapest ? 'text-green-700 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                                <span className={}>
                                                     ₪{product.current_price.toFixed(2)}
                                                 </span>
                                             )}
@@ -416,7 +430,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                                     </div>
                                     <Button
                                         size="sm"
-                                        className={`flex-shrink-0 h-8 w-8 p-0 ${isCheapest ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                                        className={}
                                         onClick={() => handleAddProduct(product)}
                                     >
                                         <Plus className="w-4 h-4" />
