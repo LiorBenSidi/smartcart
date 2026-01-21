@@ -277,7 +277,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold mt-1">₪{thisMonthTotal.toFixed(2)}</h2>
             {showTrend ? (
               <div className="flex items-center mt-2 text-indigo-200 text-xs">
-                <ArrowUpRight className={} />
+                <ArrowUpRight className={`w-3 h-3 mr-1 ${percentChange < 0 ? 'rotate-180' : ''}`} />
                 <span>{percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month</span>
               </div>
             ) : (
@@ -348,10 +348,12 @@ export default function Home() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {insights.map((insight, idx) => (
-                      <Link key={idx} to={}>
+                      <Link key={idx} to={`${createPageUrl('Receipt')}?id=${insight.receiptId}`}>
                           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 h-full flex flex-col">
                               <div className="flex items-start justify-between mb-3">
-                                  <div className={}>
+                                  <div className={`p-2 rounded-lg ${
+                                      insight.type === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
                                       {insight.type === 'warning' ? <AlertCircle className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                   </div>
                                   <span className="text-xs text-gray-400 dark:text-gray-500">{insight.store} • {format(new Date(insight.receiptDate), 'MMM d')}</span>
@@ -374,11 +376,6 @@ export default function Home() {
                   ))}
               </div>
           </section>
-      )}
-
-      {/* Frequent Items */}
-      {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
-        <FrequentItemsCard items={dashboardData.frequentItems} />
       )}
 
       {/* Charts Grid */}
@@ -406,15 +403,15 @@ export default function Home() {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label={(entry) => }
+                    label={(entry) => `${entry.name}`}
                     labelLine={false}
                   >
                     {dashboardData.topCategories.map((entry, index) => (
-                      <Cell key={} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value) => }
+                    formatter={(value) => `₪${value.toFixed(2)}`}
                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
                   />
                 </PieChart>
@@ -448,11 +445,11 @@ export default function Home() {
                 <Tooltip 
                   cursor={{fill: 'transparent'}}
                   contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                  formatter={(value, name) => [, name === 'thisMonth' ? 'This Month' : 'Last Month']}
+                  formatter={(value, name) => [`₪${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
                 />
                 <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
                   {chartData.map((entry, index) => (
-                    <Cell key={} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
+                    <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
                   ))}
                   <LabelList dataKey="thisMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
                 </Bar>
@@ -465,6 +462,10 @@ export default function Home() {
         </Card>
       )}
 
+      {/* Frequent Items */}
+      {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
+        <FrequentItemsCard items={dashboardData.frequentItems} />
+      )}
     </div>
   );
 }
