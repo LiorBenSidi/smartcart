@@ -10,7 +10,8 @@ const CONFIG = {
     MIN_PURCHASE_COUNT_FOR_HABIT: 2,
     // Limits
     MAX_SUGGESTED_ITEMS_PER_DAY: 12,
-    MIN_RECEIPTS_FOR_SUGGESTIONS: 6
+    MIN_RECEIPTS_FOR_SUGGESTIONS: 0,
+    CF_ONLY_RECEIPT_THRESHOLD: 5 // Users with fewer receipts get only CF suggestions
 };
 
 function getMedian(values) {
@@ -117,6 +118,17 @@ export default Deno.serve(async (req) => {
                 return Response.json({ hasMore: false, progress: 100, message: "Not enough data" });
             }
 
+            // CF-only mode for new users
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            if (isCFOnlyUser) {
+                return Response.json({ 
+                    hasMore: true, 
+                    progress: 25, 
+                    message: "Skipping weekly patterns (new user)...",
+                    isCFOnlyUser: true
+                });
+            }
+
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
             const weeklySuggestions = [];
             
@@ -193,6 +205,18 @@ export default Deno.serve(async (req) => {
                 processing_status: 'processed' 
             }, '-purchased_at', 100);
             const validReceipts = receipts.filter(r => r.purchased_at || r.date);
+
+            // CF-only mode for new users
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            if (isCFOnlyUser) {
+                return Response.json({ 
+                    hasMore: true, 
+                    progress: 50, 
+                    message: "Skipping restock patterns (new user)...",
+                    isCFOnlyUser: true
+                });
+            }
+
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
             
             const restockSuggestions = [];
