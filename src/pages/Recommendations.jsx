@@ -301,10 +301,40 @@ export default function Recommendations() {
                                          isHealth ? <Leaf className="w-5 h-5" /> : 
                                          <Lightbulb className="w-5 h-5" />}
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide opacity-70 mb-1">
-                                            {tip.type.replace('_', ' ')}
-                                        </h3>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide opacity-70">
+                                                {tip.type.replace('_', ' ')}
+                                            </h3>
+                                            {tip.inspired_by_liked_tip && (
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <button className="p-1 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-full transition-colors" title="Why this tip?">
+                                                            <HelpCircle className="w-4 h-4" />
+                                                        </button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-md">
+                                                        <DialogHeader>
+                                                            <DialogTitle className="flex items-center gap-2">
+                                                                <Sparkles className="w-5 h-5 text-indigo-600" />
+                                                                Why this tip?
+                                                            </DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="space-y-3">
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                This tip was generated based on a tip you previously liked:
+                                                            </p>
+                                                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-100 dark:border-green-800">
+                                                                <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{tip.inspired_by_liked_tip}"</p>
+                                                            </div>
+                                                            <p className="text-xs text-gray-500">
+                                                                We're learning what tips are helpful for you and generating more similar suggestions.
+                                                            </p>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            )}
+                                        </div>
                                         <p className="text-gray-800 dark:text-gray-200 font-medium leading-snug">
                                             {tip.message}
                                         </p>
