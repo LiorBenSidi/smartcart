@@ -20,7 +20,6 @@ export default function CatalogAdmin() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState(null);
-  const [showImportSettings, setShowImportSettings] = useState(false);
 
   const runCatalogUpdate = async () => {
     setIsLoading(true);
@@ -203,85 +202,60 @@ export default function CatalogAdmin() {
         </Card>
       )}
 
-      {!showImportSettings ? (
-        <Button 
-          variant="outline" 
-          className="w-full py-6 text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100 border-dashed"
-          onClick={() => setShowImportSettings(true)}
-        >
-          <AlertCircle className="w-4 h-4 mr-2" />
-          Fetch from site - not working becuause of security limitiation of base44
-        </Button>
-      ) : (
-        <Card className="relative border-amber-200">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Import Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Chain Username *</label>
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g., TivTaam, RamiLevi, Shufersal"
+            />
+            <p className="text-xs text-gray-500 mt-1">Username for login at publishedprices.co.il (required)</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Password</label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Leave empty if not required"
+            />
+            <p className="text-xs text-gray-500 mt-1">Optional - leave empty if the chain doesn't require a password</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">File Type</label>
+            <Select value={filePattern} onValueChange={setFilePattern}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PriceFull">PriceFull (Full prices)</SelectItem>
+                <SelectItem value="Price">Price (Price updates)</SelectItem>
+                <SelectItem value="PromoFull">PromoFull (Promotions)</SelectItem>
+                <SelectItem value="Stores">Stores (Store list)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button 
-            variant="ghost" 
-            size="sm" 
-            className="absolute top-2 right-2 h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
-            onClick={() => setShowImportSettings(false)}
+            onClick={runCatalogUpdate} 
+            disabled={isLoading || !username}
+            className="w-full bg-indigo-600 hover:bg-indigo-700"
           >
-            ×
+            {isLoading ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+            ) : (
+              <><Download className="w-4 h-4 mr-2" /> Run Catalog Update</>
+            )}
           </Button>
-          <CardHeader>
-            <CardTitle className="text-lg text-amber-800 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Import Settings (Unstable)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-amber-50 p-3 rounded-md text-sm text-amber-800 mb-4 border border-amber-100">
-              Note: Direct fetching from publishedprices.co.il may fail due to security restrictions. Use XML upload above for reliability.
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Chain Username *</label>
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g., TivTaam, RamiLevi, Shufersal"
-              />
-              <p className="text-xs text-gray-500 mt-1">Username for login at publishedprices.co.il (required)</p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Password</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Leave empty if not required"
-              />
-              <p className="text-xs text-gray-500 mt-1">Optional - leave empty if the chain doesn't require a password</p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">File Type</label>
-              <Select value={filePattern} onValueChange={setFilePattern}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PriceFull">PriceFull (Full prices)</SelectItem>
-                  <SelectItem value="Price">Price (Price updates)</SelectItem>
-                  <SelectItem value="PromoFull">PromoFull (Promotions)</SelectItem>
-                  <SelectItem value="Stores">Stores (Store list)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              onClick={runCatalogUpdate} 
-              disabled={isLoading || !username}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
-            >
-              {isLoading ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-              ) : (
-                <><Download className="w-4 h-4 mr-2" /> Run Catalog Update</>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+        </CardContent>
+      </Card>
 
       {error && (
         <Card className="border-red-200 bg-red-50">

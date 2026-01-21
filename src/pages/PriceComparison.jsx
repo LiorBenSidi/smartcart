@@ -1,47 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Play, Pause, HelpCircle } from 'lucide-react';
+import { Search, TrendingDown, TrendingUp, Store as StoreIcon, Calendar, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const ProductSearchItem = ({ product, chains, onClick }) => {
-  const [prices, setPrices] = useState([]);
+  const [chainNames, setChainNames] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [missingChains, setMissingChains] = useState(new Map());
 
   useEffect(() => {
     let mounted = true;
-    const fetchPrices = async () => {
+    const fetchChains = async () => {
       try {
-        // Now we fetch from Product entity, filtering by GTIN
-        const priceList = await base44.entities.Product.filter({ gtin: product.gtin });
+        const prices = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
         if (!mounted) return;
         
-        // Identify missing chains
-        const missingIds = new Set();
-        priceList.forEach(p => {
-            if (p.chain_id && !chains.has(p.chain_id)) {
-                missingIds.add(p.chain_id);
-            }
-        });
-
-        // Fetch missing chains if any
-        if (missingIds.size > 0) {
-            const fetchedChains = await Promise.all(
-                [...missingIds].map(id => base44.entities.Chain.filter({ id }).then(res => res[0]))
-            );
-            const newChainsMap = new Map();
-            fetchedChains.forEach(c => {
-                if (c) newChainsMap.set(c.id, c);
-            });
-            if (mounted) setMissingChains(newChainsMap);
-        }
-
-        setPrices(priceList);
+        const uniqueChainIds = [...new Set(prices.map(p => p.chain_id))];
+        const names = uniqueChainIds
+            .map(id => chains.get(id)?.name)
+            .filter(Boolean)
+            .sort();
+            
+        setChainNames(names);
       } catch (e) {
         console.error(e);
       } finally {
@@ -49,56 +31,40 @@ const ProductSearchItem = ({ product, chains, onClick }) => {
       }
     };
     
-    fetchPrices();
+    fetchChains();
     return () => { mounted = false; };
   }, [product.gtin, chains]);
 
-  if (loading) {
-      return (
-        <div className="p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-            <div className="flex justify-between items-center">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.canonical_name}</div>
-                <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
-            </div>
-        </div>
-      );
-  }
-
-  if (prices.length === 0) {
-      return null;
-  }
-
   return (
-    <>
-      {prices.map((price) => {
-          const chainName = chains.get(price.chain_id)?.name || missingChains.get(price.chain_id)?.name || 'Unknown Chain';
-          return (
-            <button
-              key={price.id}
-              onClick={() => onClick(product)}
-              className="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 transition-colors group"
-            >
-              <div className="flex justify-between items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                        {product.brand_name && <span className="mr-3">{product.brand_name}</span>}
-                        <span className="font-mono">{product.gtin}</span>
-                      </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                      <div className="font-bold text-indigo-600 dark:text-indigo-400">
-                          ₪{price.current_price?.toFixed(2)}
-                      </div>
-                      <Badge variant="outline" className="mt-1 text-[10px] px-1 h-5 font-normal bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">
-                          {chainName}
-                      </Badge>
-                  </div>
+    <button
+      onClick={onClick}
+      className="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 transition-colors group"
+    >
+      <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.canonical_name}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                {product.brand_name && <span className="mr-3">{product.brand_name}</span>}
+                <span className="font-mono">{product.gtin}</span>
               </div>
-            </button>
-          );
-      })}
-    </>
+          </div>
+          <div className="text-right flex-shrink-0 max-w-[40%]">
+             {loading ? (
+                 <span className="text-xs text-gray-400">Checking stores...</span>
+             ) : chainNames.length > 0 ? (
+                 <div className="flex flex-wrap justify-end gap-1">
+                    {chainNames.map(name => (
+                        <Badge key={name} variant="outline" className="text-[10px] px-1 h-5 font-normal bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800">
+                            {name}
+                        </Badge>
+                    ))}
+                 </div>
+             ) : (
+                 <span className="text-xs text-gray-400 italic">No prices found</span>
+             )}
+          </div>
+      </div>
+    </button>
   );
 };
 
@@ -110,53 +76,20 @@ export default function PriceComparison() {
   const [stores, setStores] = useState(new Map());
   const [chains, setChains] = useState(new Map());
   const [loading, setLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    const searchProducts = async () => {
-      if (!searchTerm || searchTerm.length < 2) {
-        if (searchTerm.length === 0) setProducts([]);
-        return;
-      }
-
-      setIsSearching(true);
-      try {
-        const results = await base44.entities.Product.filter({
-            $or: [
-                { canonical_name: { $regex: searchTerm, $options: 'i' } },
-                { gtin: { $regex: searchTerm, $options: 'i' } },
-                { brand_name: { $regex: searchTerm, $options: 'i' } }
-            ]
-        }, undefined, 50);
-        
-        // Deduplicate by GTIN
-        const uniqueProducts = [];
-        const seenGtins = new Set();
-        for (const p of results) {
-            if (p.gtin && !seenGtins.has(p.gtin)) {
-                seenGtins.add(p.gtin);
-                uniqueProducts.push(p);
-            }
-        }
-        
-        setProducts(uniqueProducts);
-      } catch (error) {
-        console.error("Failed to search products", error);
-      } finally {
-        setIsSearching(false);
-      }
+    const loadProducts = async () => {
+      const allProducts = await base44.entities.Product.list('-updated_date', 100);
+      setProducts(allProducts);
     };
-
-    const debounce = setTimeout(searchProducts, 500);
-    return () => clearTimeout(debounce);
-  }, [searchTerm]);
+    loadProducts();
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
-      // Fetch more items to ensure we cover all chains/stores
       const [allStores, allChains] = await Promise.all([
-        base44.entities.Store.list(undefined, 1000),
-        base44.entities.Chain.list(undefined, 1000)
+        base44.entities.Store.list(),
+        base44.entities.Chain.list()
       ]);
       setStores(new Map(allStores.map(s => [s.id, s])));
       setChains(new Map(allChains.map(c => [c.id, c])));
@@ -167,14 +100,13 @@ export default function PriceComparison() {
   const handleProductSelect = async (product) => {
     setSelectedProduct(product);
     setLoading(true);
-
+    
     try {
-      // Fetch all instances of this product (across chains/stores)
-      const prices = await base44.entities.Product.filter({ gtin: product.gtin });
-
+      const prices = await base44.entities.ProductPrice.filter({ gtin: product.gtin });
+      
       // Sort by price (cheapest first)
       prices.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
-
+      
       setPriceData(prices);
     } catch (error) {
       console.error('Failed to load prices', error);
@@ -183,7 +115,13 @@ export default function PriceComparison() {
     }
   };
 
-  const filteredProducts = products;
+  const filteredProducts = searchTerm
+    ? products.filter(p => 
+        p.canonical_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.gtin?.includes(searchTerm) ||
+        p.brand_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
   const cheapestPrice = priceData.length > 0 ? priceData[0].current_price : 0;
   const avgPrice = priceData.length > 0 
@@ -195,87 +133,9 @@ export default function PriceComparison() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-800 dark:to-purple-800 text-white p-6 rounded-2xl shadow-lg relative">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Price Comparison</h1>
-            <p className="text-indigo-100 text-sm">Compare prices across stores and find the best deals</p>
-          </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-white/20">
-                <HelpCircle className="h-5 w-5 text-white" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Search className="w-5 h-5 text-indigo-600" />
-                  Price Comparison - Technical Details
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <h4 className="font-semibold mb-2">Process Overview:</h4>
-                  <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                    <li>Search for products by name, barcode (GTIN), or brand</li>
-                    <li>Fetch all Product records matching the GTIN across chains</li>
-                    <li>Sort by current_price (cheapest first)</li>
-                    <li>Display price distribution statistics</li>
-                  </ol>
-                </div>
-                
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                  <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Search & Deduplication:</h4>
-                  <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                    <p className="text-xs">Multi-field search with regex matching:</p>
-                    <ul className="list-disc list-inside ml-4 text-xs">
-                      <li>Queries canonical_name, gtin, and brand_name fields</li>
-                      <li>Case-insensitive partial matching</li>
-                      <li>Deduplicates results by GTIN (same product, multiple chains)</li>
-                      <li>500ms debounce to prevent excessive API calls</li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                  <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Price Analysis:</h4>
-                  <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                    <p className="text-xs">For each selected product:</p>
-                    <ul className="list-disc list-inside ml-4 text-xs">
-                      <li><strong>Lowest Price:</strong> First item after sorting by current_price</li>
-                      <li><strong>Average Price:</strong> Mean of all prices across chains</li>
-                      <li><strong>Highest Price:</strong> Maximum current_price value</li>
-                      <li><strong>Price Difference:</strong> Shows how much more you'd pay vs cheapest</li>
-                      <li><strong>Deviation Alert:</strong> Flags prices ≥15% above/below average</li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                  <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Data Sources:</h4>
-                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Product prices pulled from:</p>
-                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                    <li><strong>Product entity:</strong> Contains GTIN, canonical_name, current_price, chain_id</li>
-                    <li><strong>Chain entity:</strong> Provides chain name and logo for display</li>
-                    <li><strong>Store entity:</strong> Optional store-specific pricing (if store_id set)</li>
-                  </ul>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">Note: Prices are updated via catalog ingestion (uploadCatalog function)</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Display Logic:</h4>
-                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                    <li>Cheapest option highlighted with green border and "Best Price" badge</li>
-                    <li>Shows unit_price when available (price per kg/L)</li>
-                    <li>Displays price_updated_at timestamp for data freshness</li>
-                    <li>Calculates "X more" difference for non-cheapest options</li>
-                  </ul>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-800 dark:to-purple-800 text-white p-6 rounded-2xl shadow-lg">
+        <h1 className="text-2xl font-bold mb-2">Price Comparison</h1>
+        <p className="text-indigo-100 text-sm">Compare prices across stores and find the best deals</p>
       </div>
 
       {/* Search */}
@@ -291,30 +151,16 @@ export default function PriceComparison() {
             />
           </div>
           
-          {isSearching && (
-              <div className="mt-4 flex items-center justify-center text-gray-500">
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Searching products...
-              </div>
-          )}
-
-          {!isSearching && searchTerm && filteredProducts.length === 0 && (
-              <div className="mt-4 text-center text-gray-500 text-sm">
-                  No products found. Try a different search term.
-              </div>
-          )}
-
-          {!isSearching && filteredProducts.length > 0 && (
-            <div className="mt-3 max-h-96 overflow-y-auto space-y-2">
-              {filteredProducts.map((product) => (
+          {searchTerm && filteredProducts.length > 0 && (
+            <div className="mt-3 max-h-64 overflow-y-auto space-y-2">
+              {filteredProducts.slice(0, 10).map((product) => (
                 <ProductSearchItem 
                   key={product.id} 
                   product={product} 
                   chains={chains} 
-                  onClick={(p) => {
-                    handleProductSelect(p);
+                  onClick={() => {
+                    handleProductSelect(product);
                     setSearchTerm('');
-                    setProducts([]); 
                   }} 
                 />
               ))}

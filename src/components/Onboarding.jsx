@@ -180,33 +180,21 @@ export default function Onboarding({ onComplete }) {
       // Create user profile
       await base44.entities.UserProfile.create(profile);
 
-      // Generate recommendations using AI with hybrid approach including sentiment
-      const stores = await base44.entities.Store.list('', 50);
+      // Generate recommendations using AI
+      const stores = await base44.entities.Store.list();
+      const storeNames = stores.slice(0, 5).map(s => s.name).join(', ');
 
-      // Fetch sentiment data for stores
-      const sentiments = await base44.entities.StoreSentiment.list('', 1000).catch(() => []);
-      const sentimentMap = {};
-      sentiments.forEach(s => {
-          sentimentMap[s.store_id] = s;
-      });
-
-      // Score stores by sentiment + rating
-      const scoredStores = stores.map(s => {
-          const sentiment = sentimentMap[s.id];
-          const sentimentScore = sentiment ? sentiment.sentiment_score : 0;
-          const ratingScore = (s.average_rating || 3) / 5;
-          const combinedScore = (sentimentScore * 0.4) + (ratingScore * 0.6);
-          return { ...s, combinedScore, sentiment };
-      }).sort((a, b) => b.combinedScore - a.combinedScore);
-
-      const storeNames = scoredStores.slice(0, 5).map(s => s.name).join(', ');
-      const storeInfo = scoredStores.slice(0, 5).map(s => 
-          `${s.name} (Sentiment: ${s.sentiment?.overall_sentiment || 'neutral'}, Rating: ${s.average_rating || 'N/A'}/5)`
-      ).join('\n');
-
-      //const prompt = `Generate personalized shopping recommendations for a new user based on their detailed profile and store sentiment analysis. Prioritize practical, actionable advice.\n\nUser Profile:\n- Budget Focus: ${finalAnswers.budget} (monthly target: ₪${profile.monthly_budget || 'not specified'})\n- Dietary Restrictions: ${finalAnswers.restrictions.join(', ')}\n${profile.kashrut_level && profile.kashrut_level !== 'none' ? `- Kashrut Level: ${profile.kashrut_level}\n` : ''}\n${profile.allergen_avoid_list && profile.allergen_avoid_list.length > 0 ? `- Allergies: ${profile.allergen_avoid_list.join(', ')}\n` : ''}\n- Shopping Style: ${finalAnswers.style}\n- Household Size: ${profile.household_size}\n${profile.age_range ? `- Age Range: ${profile.age_range}\n` : ''}\n${profile.user_role ? `- User Role: ${profile.user_role}\n` : ''}\n\nStore Options with Sentiment Analysis:\n${storeInfo}\n\nProvide concise, data-driven recommendations in JSON format:\n1. Best store recommendation from the available list, with a specific, compelling reason that considers user preferences AND store sentiment/ratings.\n2. Two specific product categories the user should focus on for their shopping, with clear reasons aligning to their preferences.\n3. A brief, encouraging, and helpful overall summary (2-3 sentences) that ties together the recommendations and persona.`;
+      const prompt = `Generate personalized shopping recommendations for a new user with these preferences:
+      - Budget: ${finalAnswers.budget}
+      - Restrictions: ${finalAnswers.restrictions}
+      - Shopping Style: ${finalAnswers.style}
       
-      const prompt = `You are an AI assistant specialized in personalized shopping recommendations, focusing on user preferences for budget, diet, and lifestyle. Your goal is to provide practical and actionable advice for a new user.\\n\\nUser Profile Details:\\n- Budget Focus: ${finalAnswers.budget} (monthly target: ₪${profile.monthly_budget || 'not specified'})\\n- Dietary Restrictions: ${finalAnswers.restrictions.join(', ')}\\n${profile.kashrut_level && profile.kashrut_level !== 'none' ? `- Kashrut Level: ${profile.kashrut_level}\\n` : ''}\\n${profile.allergen_avoid_list && profile.allergen_avoid_list.length > 0 ? `- Allergies: ${profile.allergen_avoid_list.join(', ')}\\n` : ''}\\n- Shopping Style: ${finalAnswers.style}\\n- Household Size: ${profile.household_size}\\n${profile.age_range ? `- Age Range: ${profile.age_range}\\n` : ''}\\n${profile.user_role ? `- User Role: ${profile.user_role}\\n` : ''}\\n\\nAvailable Store Information (including sentiment and ratings):\\n${storeInfo}\\n\\nTask:\\n1. Recommend the best store from the 'Available Store Information' list. Provide a specific, compelling reason that explicitly connects the user's profile preferences with the store's sentiment and ratings.\\n2. Suggest two specific product categories the user should prioritize for their shopping, with clear reasons that align directly with their stated preferences (e.g., budget, diet, household size).\\n3. Write a brief (2-3 sentences), encouraging, and helpful overall summary that ties together the recommendations and a concise shopping persona for the user.\\n\\nRespond ONLY in JSON format.`;
+      Available stores: ${storeNames}
+      
+      Provide:
+      1. Best store recommendation (from the list) and why
+      2. Two specific product categories they should focus on
+      3. Brief explanation (2-3 sentences)`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
