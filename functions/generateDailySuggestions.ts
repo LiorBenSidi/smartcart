@@ -10,7 +10,7 @@ const CONFIG = {
     MIN_PURCHASE_COUNT_FOR_HABIT: 2,
     // Limits
     MAX_SUGGESTED_ITEMS_PER_DAY: 12,
-    MIN_RECEIPTS_FOR_SUGGESTIONS: 6
+    MIN_RECEIPTS_FOR_SUGGESTIONS: 0
 };
 
 function getMedian(values) {
