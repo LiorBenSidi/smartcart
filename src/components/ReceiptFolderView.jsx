@@ -51,10 +51,10 @@ export default function ReceiptFolderView({ receipts, onDelete }) {
                         </AccordionTrigger>
                         <AccordionContent className="pl-4 pr-1 pt-1 pb-2">
                             <Accordion type="multiple" className="w-full space-y-1">
-                                {Object.keys(grouped[year])
-                                    .sort((a, b) => b - a) // Sort months descending (12, 11, ...)
+                                {Object.keys(grouped[year].months)
+                                    .sort((a, b) => grouped[year].months[a].firstIndex - grouped[year].months[b].firstIndex)
                                     .map(monthKey => {
-                                        const { name: monthName, items } = grouped[year][monthKey];
+                                        const { name: monthName, items } = grouped[year].months[monthKey];
                                         return (
                                             <AccordionItem key={monthKey} value={`${year}-${monthKey}`} className="border-b-0">
                                                 <AccordionTrigger className="hover:no-underline py-2 px-3 rounded-lg text-sm group hover:bg-gray-50 dark:hover:bg-gray-700/50">
