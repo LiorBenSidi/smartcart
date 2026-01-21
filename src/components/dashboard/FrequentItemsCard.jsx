@@ -38,8 +38,8 @@ export default function FrequentItemsCard({ items = [] }) {
                             </div>
                         </div>
                         <div className="text-right">
-                            <div className="font-bold text-indigo-600 dark:text-indigo-400">{item.count}x</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">₪{item.total?.toFixed(2)}</div>
+                            <div className="font-bold text-indigo-600 dark:text-indigo-400">{Math.round(item.count)}x</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">₪{item.total?.toFixed(2) || '0.00'}</div>
                         </div>
                     </div>
                 ))}
