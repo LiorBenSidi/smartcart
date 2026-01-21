@@ -10,8 +10,7 @@ const CONFIG = {
     MIN_PURCHASE_COUNT_FOR_HABIT: 2,
     // Limits
     MAX_SUGGESTED_ITEMS_PER_DAY: 12,
-    MIN_RECEIPTS_FOR_SUGGESTIONS: 0,
-    CF_ONLY_RECEIPT_THRESHOLD: 5 // Users with fewer receipts get only CF suggestions
+    MIN_RECEIPTS_FOR_SUGGESTIONS: 0
 };
 
 function getMedian(values) {
@@ -118,17 +117,6 @@ export default Deno.serve(async (req) => {
                 return Response.json({ hasMore: false, progress: 100, message: "Not enough data" });
             }
 
-            // CF-only mode for new users
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
-            if (isCFOnlyUser) {
-                return Response.json({ 
-                    hasMore: true, 
-                    progress: 25, 
-                    message: "Skipping weekly patterns (new user)...",
-                    isCFOnlyUser: true
-                });
-            }
-
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
             const weeklySuggestions = [];
             
@@ -205,18 +193,6 @@ export default Deno.serve(async (req) => {
                 processing_status: 'processed' 
             }, '-purchased_at', 100);
             const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-
-            // CF-only mode for new users
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
-            if (isCFOnlyUser) {
-                return Response.json({ 
-                    hasMore: true, 
-                    progress: 50, 
-                    message: "Skipping restock patterns (new user)...",
-                    isCFOnlyUser: true
-                });
-            }
-
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
             
             const restockSuggestions = [];
@@ -285,9 +261,6 @@ export default Deno.serve(async (req) => {
         if (batch === 2) {
             let collaborativeSuggestions = [];
             try {
-                // Ensure user vectors are computed (important for new users)
-                await base44.functions.invoke('computeUserVectorsAndSimilarity', { userId: user.email });
-                
                 const collabRes = await base44.functions.invoke('getCollaborativeRecommendations', {});
                 if (collabRes.data.success) {
                     collaborativeSuggestions = collabRes.data.recommendations || [];

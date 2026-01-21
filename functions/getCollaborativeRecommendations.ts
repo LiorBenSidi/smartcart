@@ -11,23 +11,20 @@ export default Deno.serve(async (req) => {
 
         const collaborativeSuggestions = [];
         
-        // Check for user vectors - use UserProfileVector entity
-        const userVectors = await base44.entities.UserProfileVector.filter({ user_id: user.email }, '-updated_at', 1).catch(() => []);
+        // Check for user vectors (mock check as we might not have real vector data in this env)
+        // In a real scenario, this would rely on the UserVectorSnapshot entity.
+        const userVectors = await base44.entities.UserVectorSnapshot.filter({ created_by: user.email }, '-computed_at', 1).catch(() => []);
 
         if (userVectors.length > 0) {
-            // Get similar users from SimilarUserIndex
-            const similarUserIndex = await base44.entities.SimilarUserIndex.filter(
+            // Get similar users
+            const similarUsers = await base44.entities.SimilarUserEdge.filter(
                 { user_id: user.email },
-                '-updated_at',
-                1
+                '-similarity',
+                10
             ).catch(() => []);
-            
-            const similarUsers = similarUserIndex.length > 0 && similarUserIndex[0].similar_user_ids 
-                ? similarUserIndex[0].similar_user_ids.map(id => ({ neighbor_user_id: id }))
-                : [];
 
             if (similarUsers.length > 0) {
-                const neighborIds = similarUsers.map(su => su.neighbor_user_id).filter(Boolean);
+                const neighborIds = similarUsers.map(su => su.neighbor_user_id);
 
                 // Get top products purchased by similar users
                 // We'll process each neighbor
@@ -69,43 +66,6 @@ export default Deno.serve(async (req) => {
                 aggregated[item.product_id].evidence.similar_users_count = (aggregated[item.product_id].evidence.similar_users_count || 1) + 1;
             }
         });
-
-        // COLD-START FALLBACK: If no CF suggestions, return popular products across all users
-        if (Object.keys(aggregated).length === 0) {
-            const allHabits = await base44.asServiceRole.entities.UserProductHabit.list('-purchase_count', 50).catch(() => []);
-            
-            // Aggregate by product to find most popular
-            const popularProducts = {};
-            allHabits.forEach(habit => {
-                if (!popularProducts[habit.product_id]) {
-                    popularProducts[habit.product_id] = {
-                        product_id: habit.product_id,
-                        product_name: habit.product_name,
-                        suggested_qty: 1,
-                        reason_type: "Collaborative",
-                        confidence: 0.4, // Lower confidence for cold-start
-                        evidence: {
-                            source: "popular_items",
-                            user_count: 1
-                        },
-                        total_purchases: habit.purchase_count || 1
-                    };
-                } else {
-                    popularProducts[habit.product_id].evidence.user_count++;
-                    popularProducts[habit.product_id].total_purchases += (habit.purchase_count || 1);
-                    // Boost confidence slightly for more popular items
-                    popularProducts[habit.product_id].confidence = Math.min(0.7, 0.4 + popularProducts[habit.product_id].evidence.user_count * 0.05);
-                }
-            });
-
-            // Sort by total purchases and return top 10
-            const sortedPopular = Object.values(popularProducts)
-                .sort((a, b) => b.total_purchases - a.total_purchases)
-                .slice(0, 10)
-                .map(({ total_purchases, ...rest }) => rest); // Remove internal field
-
-            return Response.json({ success: true, recommendations: sortedPopular, source: "cold_start" });
-        }
 
         return Response.json({ success: true, recommendations: Object.values(aggregated) });
 
