@@ -13,6 +13,7 @@ import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import ReceiptFolderView from '../components/ReceiptFolderView';
+import ReceiptFilters from '../components/ReceiptFilters';
 
 export default function Upload() {
   const [file, setFile] = useState(null);
@@ -28,6 +29,7 @@ export default function Upload() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [receipts, setReceipts] = useState([]);
+  const [filteredReceipts, setFilteredReceipts] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -537,12 +539,14 @@ export default function Upload() {
 
       {/* Receipt History (Folder View) */}
       <section className="space-y-4 pt-8 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Recent Receipts</h3>
+          <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Receipt History</h3>
 
-          </div>
+          <ReceiptFilters 
+            receipts={receipts} 
+            onFilteredReceipts={setFilteredReceipts} 
+          />
 
-          <ReceiptFolderView receipts={receipts} onDelete={handleDeleteReceipt} />
+          <ReceiptFolderView receipts={filteredReceipts} onDelete={handleDeleteReceipt} />
       </section>
     </div>
   );
