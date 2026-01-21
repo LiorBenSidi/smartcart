@@ -31,6 +31,7 @@ export default function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const { darkMode, setDarkMode } = useContext(ThemeContext) || {};
   const [preferences, setPreferences] = useState([]);
+  const [tipFeedback, setTipFeedback] = useState({ liked: [], disliked: [] });
 
   const loadProfile = async () => {
     try {
@@ -57,6 +58,12 @@ export default function Profile() {
         // Load preferences
         const prefs = await base44.entities.UserProductPreference.list();
         setPreferences(prefs);
+
+        // Load tip feedback
+        const feedback = await base44.entities.SmartTipFeedback.filter({ created_by: currentUser.email });
+        const liked = feedback.filter(f => f.action === 'like');
+        const disliked = feedback.filter(f => f.action === 'dislike');
+        setTipFeedback({ liked, disliked });
       }
     } catch (err) {
       console.error("Error loading profile:", err);
@@ -190,6 +197,56 @@ export default function Profile() {
                 <Label>Email</Label>
                 <div className="text-sm text-gray-500 dark:text-gray-400 font-medium px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md border border-gray-200 dark:border-gray-600 max-w-md truncate">
                     {user?.email}
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* Smart Tips Feedback */}
+      <div className="bg-white p-6 rounded-2xl dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+        <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mb-4">
+            <ThumbsUp className="w-4 h-4 text-gray-400 dark:text-gray-500" /> Smart Tips Feedback
+        </h3>
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+            {/* Liked Tips */}
+            <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2 text-green-600 dark:text-green-400">
+                    <ThumbsUp className="w-3 h-3" /> Liked Tips
+                </h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {tipFeedback.liked.length === 0 ? (
+                        <p className="text-xs text-gray-400 italic">No liked tips yet</p>
+                    ) : (
+                        tipFeedback.liked.map(tip => (
+                            <div key={tip.id} className="p-3 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg">
+                                <div className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
+                                    {tip.tip_type?.replace('_', ' ')}
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{tip.full_message}</p>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Disliked Tips */}
+            <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
+                    <ThumbsDown className="w-3 h-3" /> Disliked Tips
+                </h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {tipFeedback.disliked.length === 0 ? (
+                        <p className="text-xs text-gray-400 italic">No disliked tips yet</p>
+                    ) : (
+                        tipFeedback.disliked.map(tip => (
+                            <div key={tip.id} className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg">
+                                <div className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase mb-1">
+                                    {tip.tip_type?.replace('_', ' ')}
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{tip.full_message}</p>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>
