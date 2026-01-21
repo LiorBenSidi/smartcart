@@ -30,6 +30,7 @@ export default function Home() {
         try {
             await base44.entities.Receipt.delete(receiptId);
             setReceipts(receipts.filter(r => r.id !== receiptId));
+            // Update insights too if they were derived from this receipt
             setInsights(insights.filter(i => i.receiptId !== receiptId));
         } catch (error) {
             console.error("Failed to delete receipt", error);
@@ -38,12 +39,14 @@ export default function Home() {
     }
   };
 
+
+
   useEffect(() => {
     const handleResize = () => {
         if (window.innerWidth < 640) {
             setDisplayCount(3);
         } else {
-            setDisplayCount(5);
+            setDisplayCount(5); // Keep 5 or more for larger screens
         }
     };
     
@@ -64,14 +67,14 @@ export default function Home() {
         }
 
         const user = await base44.auth.me();
-        console.log('Current User Email:', user.email);
+        console.log('Current User Email:', user.email); // Check if this is the correct email
         let isAdmin = false;
         if (user.role === 'admin') {
             isAdmin = true;
         } else {
             try {
                 const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-                console.log('User Profile for Admin Check:', profiles);
+                console.log('User Profile for Admin Check:', profiles); // Inspect this object
                 if (profiles.length > 0 && profiles[0].isAdmin) {
                     isAdmin = true;
                 }
@@ -79,11 +82,15 @@ export default function Home() {
                 console.error("Error checking admin status", e);
             }
         }
-        console.log('Is Current User Admin:', isAdmin);
+        console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users
 
+
+        // Check if user has a profile
         const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
         setHasProfile(profiles.length > 0);
 
+        // Fetch receipts for stats and list
+        // Fetching up to 100 receipts to calculate monthly stats accurately
         let data;
         if (isAdmin) {
             data = await base44.entities.Receipt.list('-date', 100);
@@ -92,11 +99,13 @@ export default function Home() {
         }
         setReceipts(data);
 
+        // Extract Insights from receipts for dashboard
         const allInsights = data.flatMap(r => {
              if (!r.insights) return [];
              return r.insights.map(i => ({ ...i, receiptDate: r.date, store: r.storeName, receiptId: r.id }));
         });
         
+        // Prioritize savings and overpay warnings
         const topInsights = allInsights
             .filter(i => i.potential_savings > 0 || i.type === 'warning')
             .sort((a, b) => (b.potential_savings || 0) - (a.potential_savings || 0))
@@ -104,10 +113,12 @@ export default function Home() {
             
         setInsights(topInsights);
 
+        // Show onboarding if new user (no receipts and no profile)
         if (data.length === 0 && profiles.length === 0) {
             setShowOnboarding(true);
         }
 
+        // Fetch AI insights if user has receipts
         if (data.length > 0) {
             fetchAIInsights();
         }
@@ -135,6 +146,7 @@ export default function Home() {
     }
   };
 
+  // Calculate stats
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -165,6 +177,7 @@ export default function Home() {
       showTrend = true;
   }
   
+  // Calculate category stats for this month and last month
   const getCategoryTotals = (receiptList) => {
       return receiptList.reduce((acc, receipt) => {
           if (receipt.items) {
@@ -193,7 +206,10 @@ export default function Home() {
     .sort((a, b) => b.thisMonth - a.thisMonth)
     .slice(0, displayCount);
     
-  const recentReceipts = receipts;
+  // We only want to show the top 5 recent receipts in the list, but we fetched 100 for stats
+  const recentReceipts = receipts; // Pass all receipts to the folder view
+
+
   
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
@@ -225,6 +241,7 @@ export default function Home() {
     );
   }
 
+  // Show onboarding for new users
   if (showOnboarding) {
     return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   }
@@ -232,6 +249,7 @@ export default function Home() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 p-1 md:p-0">
       
+      {/* Header with Refresh */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
@@ -251,6 +269,7 @@ export default function Home() {
         )}
       </div>
 
+      {/* Overview Cards */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
@@ -258,7 +277,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold mt-1">₪{thisMonthTotal.toFixed(2)}</h2>
             {showTrend ? (
               <div className="flex items-center mt-2 text-indigo-200 text-xs">
-                <ArrowUpRight className={} />
+                <ArrowUpRight className={`w-3 h-3 mr-1 ${percentChange < 0 ? 'rotate-180' : ''}`} />
                 <span>{percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month</span>
               </div>
             ) : (
@@ -305,6 +324,7 @@ export default function Home() {
         </Card>
       </section>
 
+      {/* AI Insights Loading State */}
       {loadingInsights && (
         <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
           <CardContent className="p-6 flex items-center justify-center gap-3">
@@ -314,10 +334,12 @@ export default function Home() {
         </Card>
       )}
 
+      {/* AI Insights Panel */}
       {aiInsights && !loadingInsights && (
         <AIInsightsPanel insights={aiInsights} />
       )}
 
+      {/* Top Insights Section */}
       {insights.length > 0 && (
           <section>
               <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-4 flex items-center gap-2">
@@ -326,10 +348,12 @@ export default function Home() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {insights.map((insight, idx) => (
-                      <Link key={idx} to={}>
+                      <Link key={idx} to={`${createPageUrl('Receipt')}?id=${insight.receiptId}`}>
                           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 h-full flex flex-col">
                               <div className="flex items-start justify-between mb-3">
-                                  <div className={}>
+                                  <div className={`p-2 rounded-lg ${
+                                      insight.type === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
                                       {insight.type === 'warning' ? <AlertCircle className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                   </div>
                                   <span className="text-xs text-gray-400 dark:text-gray-500">{insight.store} • {format(new Date(insight.receiptDate), 'MMM d')}</span>
@@ -354,13 +378,16 @@ export default function Home() {
           </section>
       )}
 
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Spending Trend */}
         {receipts.length > 0 && (
           <div className="lg:col-span-2">
             <SpendingTrendChart receipts={receipts} />
           </div>
         )}
 
+        {/* Top Categories Pie Chart */}
         {dashboardData?.topCategories && dashboardData.topCategories.length > 0 && (
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-3">
@@ -376,15 +403,15 @@ export default function Home() {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label={(entry) => }
+                    label={(entry) => `${entry.name}`}
                     labelLine={false}
                   >
                     {dashboardData.topCategories.map((entry, index) => (
-                      <Cell key={} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value) => }
+                    formatter={(value) => `₪${value.toFixed(2)}`}
                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
                   />
                 </PieChart>
@@ -394,6 +421,48 @@ export default function Home() {
         )}
       </div>
 
+      {/* Category Comparison Bar Chart */}
+      {chartData.length > 0 && (
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Category Comparison (This Month vs Last)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData} barGap={8}>
+                <XAxis
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 12, fill: '#9ca3af'}} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 12, fill: '#9ca3af'}} 
+                />
+                <Tooltip 
+                  cursor={{fill: 'transparent'}}
+                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                  formatter={(value, name) => [`₪${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
+                />
+                <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
+                  ))}
+                  <LabelList dataKey="thisMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
+                </Bar>
+                <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth">
+                  <LabelList dataKey="lastMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Frequent Items */}
       {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
         <FrequentItemsCard items={dashboardData.frequentItems} />
       )}
