@@ -89,6 +89,11 @@ export default function RecommendationExplainer({ mode = 'general', className = 
                     icon: ShoppingCart,
                     title: "Weekly + Restock (Optimized Habits)",
                     desc: "The most confident suggestions, combining both your consistent weekly purchases and predicting when an item is due for a restock."
+                },
+                {
+                    icon: Sparkles,
+                    title: "Smart Tip Feedback Learning",
+                    desc: "Your liked and disliked tips influence suggestions—products from liked tips get a confidence boost (+15%), while those from disliked tips are penalized (-20%), ensuring recommendations align with your preferences."
                 }
             ]
         }
