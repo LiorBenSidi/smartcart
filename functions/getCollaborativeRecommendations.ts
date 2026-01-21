@@ -11,17 +11,20 @@ export default Deno.serve(async (req) => {
 
         const collaborativeSuggestions = [];
         
-        // Check for user vectors (mock check as we might not have real vector data in this env)
-        // In a real scenario, this would rely on the UserVectorSnapshot entity.
-        const userVectors = await base44.entities.UserVectorSnapshot.filter({ created_by: user.email }, '-computed_at', 1).catch(() => []);
+        // Check for user vectors - use UserProfileVector entity
+        const userVectors = await base44.entities.UserProfileVector.filter({ user_id: user.email }, '-updated_at', 1).catch(() => []);
 
         if (userVectors.length > 0) {
-            // Get similar users
-            const similarUsers = await base44.entities.SimilarUserEdge.filter(
+            // Get similar users from SimilarUserIndex
+            const similarUserIndex = await base44.entities.SimilarUserIndex.filter(
                 { user_id: user.email },
-                '-similarity',
-                10
+                '-updated_at',
+                1
             ).catch(() => []);
+            
+            const similarUsers = similarUserIndex.length > 0 && similarUserIndex[0].similar_user_ids 
+                ? similarUserIndex[0].similar_user_ids.map(id => ({ neighbor_user_id: id }))
+                : [];
 
             if (similarUsers.length > 0) {
                 const neighborIds = similarUsers.map(su => su.neighbor_user_id);
