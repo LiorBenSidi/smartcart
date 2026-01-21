@@ -48,6 +48,10 @@ export default function EnhancedProductSearch({ onAddToCart }) {
     // Apply filters and sorting
     const applyFiltersAndSort = (results) => {
         let filtered = results;
+        
+        // Check if any filters are active
+        const anyFilterActive = filters.category || filters.kosherLevel || filters.dietary || 
+                                filters.priceMin || filters.priceMax || filters.chain;
 
         // Apply filters
         if (filters.category) {
@@ -76,7 +80,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
         }
 
         // If no filters are active, get top 10 cheapest from each chain
-        if (!hasActiveFilters) {
+        if (!anyFilterActive) {
             const byChain = {};
             filtered.forEach(product => {
                 if (!product.current_price) return; // Skip products without price
