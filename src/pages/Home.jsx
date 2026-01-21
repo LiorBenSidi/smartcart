@@ -30,7 +30,6 @@ export default function Home() {
         try {
             await base44.entities.Receipt.delete(receiptId);
             setReceipts(receipts.filter(r => r.id !== receiptId));
-            // Update insights too if they were derived from this receipt
             setInsights(insights.filter(i => i.receiptId !== receiptId));
         } catch (error) {
             console.error("Failed to delete receipt", error);
@@ -39,14 +38,12 @@ export default function Home() {
     }
   };
 
-
-
   useEffect(() => {
     const handleResize = () => {
         if (window.innerWidth < 640) {
             setDisplayCount(3);
         } else {
-            setDisplayCount(5); // Keep 5 or more for larger screens
+            setDisplayCount(5);
         }
     };
     
@@ -67,14 +64,14 @@ export default function Home() {
         }
 
         const user = await base44.auth.me();
-        console.log('Current User Email:', user.email); // Check if this is the correct email
+        console.log('Current User Email:', user.email);
         let isAdmin = false;
         if (user.role === 'admin') {
             isAdmin = true;
         } else {
             try {
                 const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
-                console.log('User Profile for Admin Check:', profiles); // Inspect this object
+                console.log('User Profile for Admin Check:', profiles);
                 if (profiles.length > 0 && profiles[0].isAdmin) {
                     isAdmin = true;
                 }
@@ -82,15 +79,11 @@ export default function Home() {
                 console.error("Error checking admin status", e);
             }
         }
-        console.log('Is Current User Admin:', isAdmin); // Confirm this is false for regular users
+        console.log('Is Current User Admin:', isAdmin);
 
-
-        // Check if user has a profile
         const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
         setHasProfile(profiles.length > 0);
 
-        // Fetch receipts for stats and list
-        // Fetching up to 100 receipts to calculate monthly stats accurately
         let data;
         if (isAdmin) {
             data = await base44.entities.Receipt.list('-date', 100);
@@ -99,13 +92,11 @@ export default function Home() {
         }
         setReceipts(data);
 
-        // Extract Insights from receipts for dashboard
         const allInsights = data.flatMap(r => {
              if (!r.insights) return [];
              return r.insights.map(i => ({ ...i, receiptDate: r.date, store: r.storeName, receiptId: r.id }));
         });
         
-        // Prioritize savings and overpay warnings
         const topInsights = allInsights
             .filter(i => i.potential_savings > 0 || i.type === 'warning')
             .sort((a, b) => (b.potential_savings || 0) - (a.potential_savings || 0))
@@ -113,12 +104,10 @@ export default function Home() {
             
         setInsights(topInsights);
 
-        // Show onboarding if new user (no receipts and no profile)
         if (data.length === 0 && profiles.length === 0) {
             setShowOnboarding(true);
         }
 
-        // Fetch AI insights if user has receipts
         if (data.length > 0) {
             fetchAIInsights();
         }
@@ -146,7 +135,6 @@ export default function Home() {
     }
   };
 
-  // Calculate stats
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -177,7 +165,6 @@ export default function Home() {
       showTrend = true;
   }
   
-  // Calculate category stats for this month and last month
   const getCategoryTotals = (receiptList) => {
       return receiptList.reduce((acc, receipt) => {
           if (receipt.items) {
@@ -206,10 +193,7 @@ export default function Home() {
     .sort((a, b) => b.thisMonth - a.thisMonth)
     .slice(0, displayCount);
     
-  // We only want to show the top 5 recent receipts in the list, but we fetched 100 for stats
-  const recentReceipts = receipts; // Pass all receipts to the folder view
-
-
+  const recentReceipts = receipts;
   
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
@@ -241,7 +225,6 @@ export default function Home() {
     );
   }
 
-  // Show onboarding for new users
   if (showOnboarding) {
     return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   }
@@ -249,7 +232,6 @@ export default function Home() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 p-1 md:p-0">
       
-      {/* Header with Refresh */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
@@ -269,7 +251,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Overview Cards */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
@@ -324,7 +305,6 @@ export default function Home() {
         </Card>
       </section>
 
-      {/* AI Insights Loading State */}
       {loadingInsights && (
         <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
           <CardContent className="p-6 flex items-center justify-center gap-3">
@@ -334,12 +314,10 @@ export default function Home() {
         </Card>
       )}
 
-      {/* AI Insights Panel */}
       {aiInsights && !loadingInsights && (
         <AIInsightsPanel insights={aiInsights} />
       )}
 
-      {/* Top Insights Section */}
       {insights.length > 0 && (
           <section>
               <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-4 flex items-center gap-2">
@@ -376,16 +354,13 @@ export default function Home() {
           </section>
       )}
 
-      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Spending Trend */}
         {receipts.length > 0 && (
           <div className="lg:col-span-2">
             <SpendingTrendChart receipts={receipts} />
           </div>
         )}
 
-        {/* Top Categories Pie Chart */}
         {dashboardData?.topCategories && dashboardData.topCategories.length > 0 && (
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-3">
@@ -419,7 +394,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Frequent Items */}
       {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
         <FrequentItemsCard items={dashboardData.frequentItems} />
       )}
