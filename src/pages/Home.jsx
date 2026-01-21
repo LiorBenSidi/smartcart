@@ -378,16 +378,24 @@ export default function Home() {
           </section>
       )}
 
-      {/* Top Categories Pie Chart */}
+      {/* Top Categories Pie Chart - Always calculated from receipts */}
       {(() => {
-        // Use dashboardData if available, otherwise calculate from receipts locally
-        const categoryData = dashboardData?.topCategories?.length > 0 
-          ? dashboardData.topCategories 
-          : Object.entries(getCategoryTotals(receipts))
-              .filter(([_, amount]) => amount > 0)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 5)
-              .map(([name, amount]) => ({ name, amount }));
+        // Always calculate from receipts data
+        const allCategoryTotals = receipts.reduce((acc, receipt) => {
+          if (receipt.items && Array.isArray(receipt.items)) {
+            receipt.items.forEach(item => {
+              const cat = item.category || 'Other';
+              acc[cat] = (acc[cat] || 0) + (item.total || item.price || 0);
+            });
+          }
+          return acc;
+        }, {});
+        
+        const categoryData = Object.entries(allCategoryTotals)
+          .filter(([_, amount]) => amount > 0)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, amount]) => ({ name, amount }));
         
         return categoryData.length > 0 ? (
           <Card className="border-none shadow-sm">
