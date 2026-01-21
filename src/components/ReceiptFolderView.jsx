@@ -45,7 +45,7 @@ export default function ReceiptFolderView({ receipts, onDelete }) {
                                 </div>
                                 <span className="font-bold text-gray-900 dark:text-gray-100">{year}</span>
                                 <span className="text-xs text-gray-400 font-normal ml-auto mr-2">
-                                    {Object.values(grouped[year]).reduce((acc, m) => acc + m.items.length, 0)} receipts
+                                    {Object.values(grouped[year].months).reduce((acc, m) => acc + m.items.length, 0)} receipts
                                 </span>
                             </div>
                         </AccordionTrigger>
