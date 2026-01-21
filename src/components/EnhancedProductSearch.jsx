@@ -109,14 +109,35 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                     ]
                 }, undefined, 100);
                 
-                // Apply filters and sorting
-                const filtered = applyFiltersAndSort(results);
+                // If no filters are chosen, get top 10 cheapest from each chain
+                let finalResults = results;
+                if (!hasActiveFilters) {
+                    const byChain = {};
+                    results.forEach(product => {
+                        if (product.chain_id && product.current_price) {
+                            if (!byChain[product.chain_id]) {
+                                byChain[product.chain_id] = [];
+                            }
+                            byChain[product.chain_id].push(product);
+                        }
+                    });
+                    
+                    // Get top 10 cheapest from each chain
+                    finalResults = [];
+                    Object.values(byChain).forEach(chainProducts => {
+                        const sorted = chainProducts.sort((a, b) => a.current_price - b.current_price);
+                        finalResults.push(...sorted.slice(0, 10));
+                    });
+                } else {
+                    // Apply filters and sorting
+                    finalResults = applyFiltersAndSort(results);
+                }
                 
                 // Show top 5 as suggestions
-                setSuggestions(filtered.slice(0, 5));
+                setSuggestions(finalResults.slice(0, 5));
                 
                 // Show all results (limited to 50)
-                setSearchResults(filtered.slice(0, 50));
+                setSearchResults(finalResults.slice(0, 50));
             } catch (error) {
                 console.error("Failed to search products", error);
             } finally {
