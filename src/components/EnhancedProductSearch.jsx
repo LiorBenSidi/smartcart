@@ -45,6 +45,8 @@ export default function EnhancedProductSearch({ onAddToCart }) {
         loadData();
     }, []);
 
+    const hasActiveFilters = Object.values(filters).some(v => v);
+
     // Apply filters and sorting
     const applyFiltersAndSort = (results) => {
         let filtered = results;
@@ -178,8 +180,6 @@ export default function EnhancedProductSearch({ onAddToCart }) {
             chain: ''
         });
     };
-
-    const hasActiveFilters = Object.values(filters).some(v => v);
 
     const getSourceName = (product) => {
         const storeName = stores.find(s => s.id === product.store_id)?.name;
