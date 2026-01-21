@@ -141,8 +141,6 @@ export default function ReceiptFilters({ receipts, onFilteredReceipts }) {
                     <SelectContent>
                         <SelectItem value="date-desc">Newest First</SelectItem>
                         <SelectItem value="date-asc">Oldest First</SelectItem>
-                        <SelectItem value="amount-desc">Highest Amount</SelectItem>
-                        <SelectItem value="amount-asc">Lowest Amount</SelectItem>
                     </SelectContent>
                 </Select>
 
