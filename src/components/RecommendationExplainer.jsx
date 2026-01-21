@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Info, X, MapPin, Users, ShoppingCart, TrendingUp, Filter, Split, Clock } from 'lucide-react';
+import { Info, X, MapPin, Users, ShoppingCart, TrendingUp, Filter, Split, Clock, Sparkles, ShieldCheck, Target } from 'lucide-react';
 
 export default function RecommendationExplainer({ mode = 'general', className = '', triggerVariant = 'ghost' }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +10,21 @@ export default function RecommendationExplainer({ mode = 'general', className = 
         general: {
             title: "How We Recommend Products",
             steps: [
+                {
+                    icon: Sparkles,
+                    title: "Smart Tips Engine",
+                    desc: "Our AI generates personalized tips by analyzing your complete profile (allergies, kosher level, diet, budget) alongside shopping habits and community trends. All suggestions strictly comply with your allergen avoidances and dietary restrictions—no generic recommendations."
+                },
+                {
+                    icon: ShieldCheck,
+                    title: "Strict Preference Adherence",
+                    desc: "Every tip rigorously respects your allergen_avoid_list, kosher_level, dietary_restrictions, and health_preferences. We reference specific products with actual prices and compliance confirmations—never vague suggestions."
+                },
+                {
+                    icon: Target,
+                    title: "Continuous Learning",
+                    desc: "Your thumbs up/down feedback on tips is logged and used to refine future recommendations. The AI learns what you like and avoids styles or topics you've dismissed."
+                },
                 {
                     icon: Users,
                     title: "Community Intelligence",
