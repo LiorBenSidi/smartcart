@@ -328,9 +328,8 @@ export default function SmartCart() {
       </div>
 
       <Tabs defaultValue="build" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsList className="grid w-full grid-cols-1 mb-4">
             <TabsTrigger value="build">Build Cart</TabsTrigger>
-            <TabsTrigger value="ai">AI Recommendations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="build" className="space-y-6">
@@ -1026,93 +1025,6 @@ export default function SmartCart() {
             }
         </>
           }
-      </TabsContent>
-
-      <TabsContent value="ai">
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI-Curated Alternatives</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Personalized product recommendations</p>
-                </div>
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button size="sm" variant="outline">
-                            <HelpCircle className="h-4 w-4 mr-1" />
-                            How it works
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-purple-600" />
-                                AI Recommendations - Technical Details
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 text-sm">
-                            <div>
-                                <h4 className="font-semibold mb-2">Hybrid Recommendation System:</h4>
-                                <p className="text-gray-700 dark:text-gray-300">Combines collaborative filtering + content-based filtering</p>
-                            </div>
-                            
-                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. User Vector Generation:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Analyzes last 90 days of receipts to build preference vector:</p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li><strong>Category preferences:</strong> Normalized purchase frequency per category</li>
-                                        <li><strong>Price sensitivity:</strong> avg_item_price, price_variance</li>
-                                        <li><strong>Brand loyalty:</strong> top_brands[] list</li>
-                                        <li><strong>Dietary flags:</strong> organic_ratio, health_conscious_ratio</li>
-                                        <li><strong>Shopping patterns:</strong> avg_basket_size, purchase_frequency</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Collaborative Filtering:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Finds similar users using cosine similarity:</p>
-                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1">
-                                        <code className="text-gray-700 dark:text-gray-300">
-                                            similarity = (A · B) / (||A|| × ||B||)<br />
-                                            where A, B = user preference vectors
-                                        </code>
-                                    </div>
-                                    <ul className="list-disc list-inside ml-4 text-xs mt-2">
-                                        <li>Finds top 10 most similar users</li>
-                                        <li>Extracts products they bought that you haven't</li>
-                                        <li>Scores by similarity weight × frequency</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">3. Candidate Ranking:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Each recommendation scored by:</p>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li>Collaborative score (from similar users)</li>
-                                    <li>Category match (your preference × product category)</li>
-                                    <li>Price appropriateness (how it fits your budget)</li>
-                                    <li>Recency boost (newer products ranked higher)</li>
-                                </ul>
-                            </div>
-                            
-                            <div>
-                                <h4 className="font-semibold mb-2">4. Chain Filtering:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">Results can be filtered by chain to show alternatives available at specific supermarkets.</p>
-                            </div>
-                            
-                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                                <h4 className="font-semibold mb-2">Feedback Loop:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">User interactions (views, clicks, adds to cart) are logged to RecommendationFeedback and used to improve future recommendations.</p>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </div>
-            <CartAlternatives />
-        </div>
       </TabsContent>
 
       </Tabs>
