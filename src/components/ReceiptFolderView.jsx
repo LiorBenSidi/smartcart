@@ -15,23 +15,23 @@ export default function ReceiptFolderView({ receipts, onDelete }) {
         );
     }
 
-    // Group receipts by Year -> Month
-    const grouped = receipts.reduce((acc, receipt) => {
+    // Group receipts by Year -> Month while preserving original order
+    const grouped = receipts.reduce((acc, receipt, index) => {
         const date = new Date(receipt.date);
         const year = format(date, 'yyyy');
         // Use month index for sorting, display name for rendering
         const monthKey = format(date, 'MM'); 
         const monthName = format(date, 'MMMM');
         
-        if (!acc[year]) acc[year] = {};
-        if (!acc[year][monthKey]) acc[year][monthKey] = { name: monthName, items: [] };
+        if (!acc[year]) acc[year] = { months: {}, firstIndex: index };
+        if (!acc[year].months[monthKey]) acc[year].months[monthKey] = { name: monthName, items: [], firstIndex: index };
         
-        acc[year][monthKey].items.push(receipt);
+        acc[year].months[monthKey].items.push(receipt);
         return acc;
     }, {});
 
-    // Sort years descending
-    const years = Object.keys(grouped).sort((a, b) => b - a);
+    // Sort years by first appearance (preserves filter sort order)
+    const years = Object.keys(grouped).sort((a, b) => grouped[a].firstIndex - grouped[b].firstIndex);
 
     return (
         <div className="space-y-2">
