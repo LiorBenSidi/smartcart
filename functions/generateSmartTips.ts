@@ -68,7 +68,7 @@ export default Deno.serve(async (req) => {
         - Liked Tips (Do more of this): ${JSON.stringify(likedTips)}
         - Disliked Tips (Avoid this style/content): ${JSON.stringify(dislikedTips)}
 
-        IMPORTANT: When generating tips similar to liked tips, include an "inspired_by_liked_tip" field in the response with the text snippet of the liked tip that inspired it. This helps users understand why they're seeing this recommendation.
+        IMPORTANT: When generating tips similar to liked tips, include an "inspired_by_liked_tip" field in the response with the EXACT FULL TEXT of the liked tip that inspired it (copy it verbatim). This helps users understand why they're seeing this recommendation.
 
         **CRITICAL GUIDELINES FOR TIP GENERATION (ADHERE STRICTLY):**
         - **Allergy Avoidance:** The user has strict dietary needs. ALL suggested products MUST be free of items in their 'allergen_avoid_list': ${JSON.stringify(userProfile.allergen_avoid_list || [])}. Never suggest items containing these allergens.
@@ -94,7 +94,7 @@ export default Deno.serve(async (req) => {
         - "type": "money_saving" | "health_dietary" | "discovery" | "general"
         - "message": (string, max 2 sentences, must be specific and actionable)
         - "related_entity_name": (string, optional - use actual product/store name when applicable)
-        - "inspired_by_liked_tip": (string, optional - if this tip is similar to a liked tip, include a brief snippet of that liked tip here)
+        - "inspired_by_liked_tip": (string, optional - if this tip is similar to a liked tip, copy the EXACT FULL MESSAGE of that liked tip here verbatim)
 
         Output ONLY the JSON array.
         `;
