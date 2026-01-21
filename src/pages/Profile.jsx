@@ -187,15 +187,6 @@ export default function Profile() {
         </div>
         
         <div className="flex-1 space-y-3 w-full">
-            <div className="space-y-1">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="max-w-md"
-              placeholder="Enter your full name" />
-            </div>
 
             <div className="space-y-1">
                 <Label htmlFor="displayName">Display Name (App Nickname)</Label>
