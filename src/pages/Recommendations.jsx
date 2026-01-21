@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, DollarSign, Heart, Zap } from 'lucide-react';
 import { toast } from "sonner";
 import {
   Dialog,
@@ -21,6 +21,14 @@ export default function Recommendations() {
   const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
+  const [smartTips, setSmartTips] = useState([]);
+  const [tipsLoading, setTipsLoading] = useState(false);
+  const [tipFilters, setTipFilters] = useState({
+    money_saving: true,
+    health_dietary: true,
+    discovery: true,
+    general: true
+  });
 
   useEffect(() => {
     const init = async () => {
@@ -58,11 +66,15 @@ export default function Recommendations() {
         if (res.data && res.data.run) {
             setRunId(res.data.run.id);
             // New API returns pre-grouped candidates
-            setCandidates({
+            const newCandidates = {
                 chains: res.data.candidates.stores || [],
                 categories: res.data.candidates.categories || [],
                 products: res.data.candidates.items || []
-            });
+            };
+            setCandidates(newCandidates);
+            
+            // Generate Smart Tips
+            refreshTips(newCandidates);
         }
       } catch (error) {
         console.error("Failed to load recommendations", error);
@@ -134,6 +146,133 @@ export default function Recommendations() {
       </div>
 
       <UserSimilarityDisplay currentUser={user} />
+
+      {/* Smart Tips Section */}
+      {smartTips.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200">
+              <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
+            </h2>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => refreshTips()}
+              disabled={tipsLoading}
+              className="text-gray-500 hover:text-indigo-600"
+            >
+              <RotateCcw className={`w-4 h-4 mr-2 ${tipsLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+
+          {/* Tip Filters */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => toggleTipFilter('money_saving')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                tipFilters.money_saving 
+                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
+                  : 'bg-gray-100 text-gray-400 border border-gray-200'
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5" />
+              Money Saving
+            </button>
+            <button
+              onClick={() => toggleTipFilter('health_dietary')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                tipFilters.health_dietary 
+                  ? 'bg-pink-100 text-pink-700 border border-pink-300' 
+                  : 'bg-gray-100 text-gray-400 border border-gray-200'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5" />
+              Health & Diet
+            </button>
+            <button
+              onClick={() => toggleTipFilter('discovery')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                tipFilters.discovery 
+                  ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                  : 'bg-gray-100 text-gray-400 border border-gray-200'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              Discovery
+            </button>
+            <button
+              onClick={() => toggleTipFilter('general')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                tipFilters.general 
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                  : 'bg-gray-100 text-gray-400 border border-gray-200'
+              }`}
+            >
+              <Lightbulb className="w-3.5 h-3.5" />
+              General
+            </button>
+          </div>
+
+          {tipsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+            </div>
+          ) : filteredTips.length === 0 ? (
+            <Card className="border-gray-200 dark:border-gray-700">
+              <CardContent className="p-6 text-center text-gray-500">
+                <Lightbulb className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No tips match your current filters. Try enabling more categories above.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {filteredTips.map((tip, idx) => {
+                const typeConfig = {
+                  money_saving: { icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+                  health_dietary: { icon: Heart, color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-200' },
+                  discovery: { icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+                  general: { icon: Lightbulb, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
+                };
+                const config = typeConfig[tip.type] || typeConfig.general;
+                const Icon = config.icon;
+
+                return (
+                  <Card key={idx} className={`${config.border} hover:shadow-md transition-shadow`}>
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className={`${config.bg} p-2 rounded-lg flex-shrink-0`}>
+                        <Icon className={`w-5 h-5 ${config.color}`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{tip.message}</p>
+                        {tip.related_entity_name && (
+                          <p className="text-xs text-gray-500 mt-1">Related: {tip.related_entity_name}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1 ml-auto shrink-0">
+                        <button 
+                          onClick={() => handleTipFeedback(tip, 'like')}
+                          className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                          title="Helpful"
+                        >
+                          <ThumbsUp className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleTipFeedback(tip, 'dislike')}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          title="Not helpful"
+                        >
+                          <ThumbsDown className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 1. Stores */}
       {candidates.chains.length > 0 && (
