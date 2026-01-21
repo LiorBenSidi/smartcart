@@ -327,12 +327,7 @@ export default function SmartCart() {
         <p className="text-purple-100 text-sm">Compare prices or find better alternatives</p>
       </div>
 
-      <Tabs defaultValue="build" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 mb-4">
-            <TabsTrigger value="build">Build Cart</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="build" className="space-y-6">
+      <div className="space-y-6">
 
       {/* Suggested for Today */}
       {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 &&
@@ -1025,9 +1020,7 @@ export default function SmartCart() {
             }
         </>
           }
-      </TabsContent>
-
-      </Tabs>
+      </div>
     </div>);
 
 }
