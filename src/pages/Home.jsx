@@ -249,7 +249,7 @@ export default function Home() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 p-1 md:p-0">
       
-      {/* Header with Refresh */}
+      {/* Dashboard Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
