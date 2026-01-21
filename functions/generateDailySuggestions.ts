@@ -285,6 +285,9 @@ export default Deno.serve(async (req) => {
         if (batch === 2) {
             let collaborativeSuggestions = [];
             try {
+                // Ensure user vectors are computed (important for new users)
+                await base44.functions.invoke('computeUserVectorsAndSimilarity', { userId: user.email });
+                
                 const collabRes = await base44.functions.invoke('getCollaborativeRecommendations', {});
                 if (collabRes.data.success) {
                     collaborativeSuggestions = collabRes.data.recommendations || [];
