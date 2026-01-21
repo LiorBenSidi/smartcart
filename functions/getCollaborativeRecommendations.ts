@@ -70,6 +70,43 @@ export default Deno.serve(async (req) => {
             }
         });
 
+        // COLD-START FALLBACK: If no CF suggestions, return popular products across all users
+        if (Object.keys(aggregated).length === 0) {
+            const allHabits = await base44.asServiceRole.entities.UserProductHabit.list('-purchase_count', 50).catch(() => []);
+            
+            // Aggregate by product to find most popular
+            const popularProducts = {};
+            allHabits.forEach(habit => {
+                if (!popularProducts[habit.product_id]) {
+                    popularProducts[habit.product_id] = {
+                        product_id: habit.product_id,
+                        product_name: habit.product_name,
+                        suggested_qty: 1,
+                        reason_type: "Collaborative",
+                        confidence: 0.4, // Lower confidence for cold-start
+                        evidence: {
+                            source: "popular_items",
+                            user_count: 1
+                        },
+                        total_purchases: habit.purchase_count || 1
+                    };
+                } else {
+                    popularProducts[habit.product_id].evidence.user_count++;
+                    popularProducts[habit.product_id].total_purchases += (habit.purchase_count || 1);
+                    // Boost confidence slightly for more popular items
+                    popularProducts[habit.product_id].confidence = Math.min(0.7, 0.4 + popularProducts[habit.product_id].evidence.user_count * 0.05);
+                }
+            });
+
+            // Sort by total purchases and return top 10
+            const sortedPopular = Object.values(popularProducts)
+                .sort((a, b) => b.total_purchases - a.total_purchases)
+                .slice(0, 10)
+                .map(({ total_purchases, ...rest }) => rest); // Remove internal field
+
+            return Response.json({ success: true, recommendations: sortedPopular, source: "cold_start" });
+        }
+
         return Response.json({ success: true, recommendations: Object.values(aggregated) });
 
     } catch (error) {
