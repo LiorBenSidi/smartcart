@@ -322,6 +322,58 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Top Categories Pie Chart - Calculated from ALL user receipts */}
+        {(() => {
+          // Calculate from ALL receipts (not just this month)
+          const allCategoryTotals = receipts.reduce((acc, receipt) => {
+            if (receipt.items && Array.isArray(receipt.items)) {
+              receipt.items.forEach(item => {
+                const cat = item.category || 'Other';
+                acc[cat] = (acc[cat] || 0) + (item.total || item.price || 0);
+              });
+            }
+            return acc;
+          }, {});
+          
+          const categoryData = Object.entries(allCategoryTotals)
+            .filter(([_, amount]) => amount > 0)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, amount]) => ({ name, amount }));
+          
+          return categoryData.length > 0 ? (
+            <Card className="border-none shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Top Categories</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      dataKey="amount"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={(entry) => `${entry.name}`}
+                      labelLine={false}
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => `₪${value.toFixed(2)}`}
+                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          ) : null;
+        })()}
       </section>
 
       {/* AI Insights Loading State */}
