@@ -1,30 +1,30 @@
 import Admin from './pages/Admin';
-import Landing from './pages/Landing';
-import SmartCart from './pages/SmartCart';
 import CatalogAdmin from './pages/CatalogAdmin';
-import PriceComparison from './pages/PriceComparison';
 import Feedback from './pages/Feedback';
 import Home from './pages/Home';
-import Receipt from './pages/Receipt';
+import Landing from './pages/Landing';
 import NearbyStores from './pages/NearbyStores';
-import Recommendations from './pages/Recommendations';
+import PriceComparison from './pages/PriceComparison';
 import Profile from './pages/Profile';
+import Receipt from './pages/Receipt';
+import Recommendations from './pages/Recommendations';
+import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Admin": Admin,
-    "Landing": Landing,
-    "SmartCart": SmartCart,
     "CatalogAdmin": CatalogAdmin,
-    "PriceComparison": PriceComparison,
     "Feedback": Feedback,
     "Home": Home,
-    "Receipt": Receipt,
+    "Landing": Landing,
     "NearbyStores": NearbyStores,
-    "Recommendations": Recommendations,
+    "PriceComparison": PriceComparison,
     "Profile": Profile,
+    "Receipt": Receipt,
+    "Recommendations": Recommendations,
+    "SmartCart": SmartCart,
     "Upload": Upload,
 }
 
