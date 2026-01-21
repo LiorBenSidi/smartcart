@@ -378,85 +378,34 @@ export default function Home() {
           </section>
       )}
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Spending Trend */}
-        {receipts.length > 0 && (
-          <div className="lg:col-span-2">
-            <SpendingTrendChart receipts={receipts} />
-          </div>
-        )}
-
-        {/* Top Categories Pie Chart */}
-        {dashboardData?.topCategories && dashboardData.topCategories.length > 0 && (
-          <Card className="border-none shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Top Categories</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={dashboardData.topCategories}
-                    dataKey="amount"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={(entry) => `${entry.name}`}
-                    labelLine={false}
-                  >
-                    {dashboardData.topCategories.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value) => `₪${value.toFixed(2)}`}
-                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Category Comparison Bar Chart */}
-      {chartData.length > 0 && (
-        <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
+      {/* Top Categories Pie Chart */}
+      {dashboardData?.topCategories && dashboardData.topCategories.length > 0 && (
+        <Card className="border-none shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Category Comparison (This Month vs Last)</CardTitle>
+            <CardTitle className="text-lg">Top Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData} barGap={8}>
-                <XAxis
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fontSize: 12, fill: '#9ca3af'}} 
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fontSize: 12, fill: '#9ca3af'}} 
-                />
-                <Tooltip 
-                  cursor={{fill: 'transparent'}}
-                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                  formatter={(value, name) => [`₪${value.toFixed(2)}`, name === 'thisMonth' ? 'This Month' : 'Last Month']}
-                />
-                <Bar dataKey="thisMonth" radius={[4, 4, 0, 0]} name="thisMonth">
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.thisMonth <= entry.lastMonth ? '#10b981' : '#ef4444'} />
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={dashboardData.topCategories}
+                  dataKey="amount"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={(entry) => `${entry.name}`}
+                  labelLine={false}
+                >
+                  {dashboardData.topCategories.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
-                  <LabelList dataKey="thisMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
-                </Bar>
-                <Bar dataKey="lastMonth" fill="#1f2937" radius={[4, 4, 0, 0]} name="lastMonth">
-                  <LabelList dataKey="lastMonthLabel" position="insideBottom" fill="#FFFFFF" style={{ fontSize: '10px', fontWeight: 'bold' }} />
-                </Bar>
-              </BarChart>
+                </Pie>
+                <Tooltip 
+                  formatter={(value) => `₪${value.toFixed(2)}`}
+                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
