@@ -370,10 +370,10 @@ export default function Home() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {categoryData.slice(0, 3).map((cat, idx) => (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                  {categoryData.map((cat, idx) => (
                     <span key={idx} className="text-[10px] flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx] }}></span>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
                       {cat.name}
                     </span>
                   ))}
