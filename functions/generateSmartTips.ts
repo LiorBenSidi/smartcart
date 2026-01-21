@@ -26,11 +26,18 @@ export default Deno.serve(async (req) => {
         // 3. Prepare Prompt Context
         const profileContext = {
             budget_focus: userProfile.budget_focus,
+            monthly_budget: userProfile.monthly_budget,
+            age_range: userProfile.age_range,
+            user_role: userProfile.user_role,
             diet: userProfile.diet,
             kosher_level: userProfile.kosher_level,
-            allergies: userProfile.allergies,
             household_size: userProfile.household_size,
-            preferred_store_chains: userProfile.preferred_store_chains
+            allergies: userProfile.allergies,
+            preferred_store_chains: userProfile.preferred_store_chains,
+            dietary_restrictions: userProfile.dietary_restrictions,
+            allergen_avoid_list: userProfile.allergen_avoid_list,
+            kashrut_level: userProfile.kashrut_level,
+            health_preferences: userProfile.health_preferences
         };
 
         // Simplify recommendations for prompt (avoid token limit)
@@ -50,29 +57,44 @@ export default Deno.serve(async (req) => {
         const habitsContext = habits.map(h => h.product_name);
 
         const prompt = `
-You are SmartShopper, an intelligent shopping assistant.
-Generate 3-5 unique, concise, and personalized shopping tips based on the user's profile and recommendations.
+        You are SmartShopper, an intelligent shopping assistant.
+        Generate 3-5 unique, concise, and personalized shopping tips based on the user's profile and recommendations.
 
-User Profile: ${JSON.stringify(profileContext)}
-Top Habits: ${JSON.stringify(habitsContext)}
-Current Recommendations: ${JSON.stringify(simplifiedRecs)}
+        User Profile: ${JSON.stringify(profileContext)}
+        Top Habits: ${JSON.stringify(habitsContext)}
+        Current Recommendations: ${JSON.stringify(simplifiedRecs)}
 
-User Feedback History (Learn from this):
-- Liked Tips (Do more of this): ${JSON.stringify(likedTips)}
-- Disliked Tips (Avoid this style/content): ${JSON.stringify(dislikedTips)}
+        User Feedback History (Learn from this):
+        - Liked Tips (Do more of this): ${JSON.stringify(likedTips)}
+        - Disliked Tips (Avoid this style/content): ${JSON.stringify(dislikedTips)}
 
-Desired Tip Categories:
-1. Money-saving: Suggest cheaper alternatives or brands based on budget focus.
-2. Health/Dietary: Highlight items fitting their diet (e.g., vegan, kosher).
-3. Discovery: "Users like you also buy..." based on habits/recommendations.
+        **CRITICAL GUIDELINES FOR TIP GENERATION (ADHERE STRICTLY):**
+        - **Allergy Avoidance:** The user has strict dietary needs. ALL suggested products MUST be free of items in their 'allergen_avoid_list': ${JSON.stringify(userProfile.allergen_avoid_list || [])}. Never suggest items containing these allergens.
+        - **Kosher Compliance:** Tips involving food products must rigorously adhere to the user's 'kosher_level': '${userProfile.kosher_level || "none"}'. Only suggest products that meet this kosher standard.
+        - **Dietary Restrictions:** Suggestions must align with the user's 'diet': '${userProfile.diet || "none"}' and 'dietary_restrictions': ${JSON.stringify(userProfile.dietary_restrictions || [])}. Do not suggest products that violate these restrictions.
+        - **Budget Focus:** Tailor money-saving tips to their 'budget_focus': '${userProfile.budget_focus || "medium"}' and 'monthly_budget': ${userProfile.monthly_budget || "not specified"}. Be specific about actual savings amounts when possible.
+        - **Health Preferences:** If 'health_preferences' are specified (${JSON.stringify(userProfile.health_preferences || [])}), prioritize tips that align with them.
+        - **Household Context:** Consider 'household_size': ${userProfile.household_size || 1} and 'user_role': '${userProfile.user_role || "not specified"}' when suggesting quantities or family-oriented products.
+        - **Store Preferences:** If the user prefers specific chains (${JSON.stringify(userProfile.preferred_store_chains || [])}), reference these stores in your tips when relevant.
 
-Format: JSON array of objects with keys:
-- "type": "money_saving" | "health_dietary" | "discovery" | "general"
-- "message": (string, max 2 sentences)
-- "related_entity_name": (string, optional)
+        **SPECIFICITY REQUIREMENTS:**
+        - Use actual product names from recommendations, not generic categories
+        - Include specific price comparisons or savings amounts when suggesting alternatives
+        - Reference real stores from the user's area when applicable
+        - Base discovery tips on the user's actual purchase history and habits
 
-Output ONLY the JSON array.
-`;
+        Desired Tip Categories:
+        1. Money-saving: Suggest specific cheaper alternatives or brands with actual price differences.
+        2. Health/Dietary: Highlight specific items fitting their exact dietary profile with compliance confirmation.
+        3. Discovery: Recommend specific products that similar users buy, ensuring all preferences are met.
+
+        Format: JSON array of objects with keys:
+        - "type": "money_saving" | "health_dietary" | "discovery" | "general"
+        - "message": (string, max 2 sentences, must be specific and actionable)
+        - "related_entity_name": (string, optional - use actual product/store name when applicable)
+
+        Output ONLY the JSON array.
+        `;
 
         // 4. Call LLM
         const completion = await base44.integrations.Core.InvokeLLM({
