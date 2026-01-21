@@ -33,14 +33,15 @@ Deno.serve(async (req) => {
             if (receipt.items) {
                 receipt.items.forEach(item => {
                     const cat = item.category || 'Other';
-                    categoryTotals[cat] = (categoryTotals[cat] || 0) + (item.total || 0);
+                    const itemTotal = item.total || item.price || 0;
+                    categoryTotals[cat] = (categoryTotals[cat] || 0) + itemTotal;
                     
                     const productKey = item.name || 'Unknown';
                     if (!productFrequency[productKey]) {
                         productFrequency[productKey] = { count: 0, total: 0, category: cat };
                     }
                     productFrequency[productKey].count += (item.quantity || 1);
-                    productFrequency[productKey].total += (item.total || 0);
+                    productFrequency[productKey].total += itemTotal;
                 });
             }
         });
