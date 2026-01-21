@@ -379,37 +379,48 @@ export default function Home() {
       )}
 
       {/* Top Categories Pie Chart */}
-      {dashboardData?.topCategories && dashboardData.topCategories.length > 0 && (
-        <Card className="border-none shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Top Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={dashboardData.topCategories}
-                  dataKey="amount"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={(entry) => `${entry.name}`}
-                  labelLine={false}
-                >
-                  {dashboardData.topCategories.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value) => `₪${value.toFixed(2)}`}
-                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+      {(() => {
+        // Use dashboardData if available, otherwise calculate from receipts locally
+        const categoryData = dashboardData?.topCategories?.length > 0 
+          ? dashboardData.topCategories 
+          : Object.entries(getCategoryTotals(receipts))
+              .filter(([_, amount]) => amount > 0)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5)
+              .map(([name, amount]) => ({ name, amount }));
+        
+        return categoryData.length > 0 ? (
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Top Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    dataKey="amount"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={(entry) => `${entry.name}`}
+                    labelLine={false}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value) => `₪${value.toFixed(2)}`}
+                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        ) : null;
+      })()}
 
       {/* Frequent Items */}
       {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
