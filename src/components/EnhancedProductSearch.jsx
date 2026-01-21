@@ -109,7 +109,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                     ]
                 }, undefined, 100);
                 
-                // If no filters are chosen, get top 10 cheapest from each chain
+                // If no filters are chosen, get top 3 cheapest from each chain
                 let finalResults = results;
                 if (!hasActiveFilters) {
                     const byChain = {};
@@ -122,11 +122,11 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                         }
                     });
                     
-                    // Get top 10 cheapest from each chain
+                    // Get top 3 cheapest from each chain
                     finalResults = [];
                     Object.values(byChain).forEach(chainProducts => {
                         const sorted = chainProducts.sort((a, b) => a.current_price - b.current_price);
-                        finalResults.push(...sorted.slice(0, 10));
+                        finalResults.push(...sorted.slice(0, 3));
                     });
                 } else {
                     // Apply filters and sorting
