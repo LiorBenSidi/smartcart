@@ -102,21 +102,45 @@ export default function EnhancedProductSearch({ onAddToCart }) {
             setIsSearching(true);
             try {
                 const results = await base44.entities.Product.filter({
-                    $or: [
-                        { canonical_name: { $regex: searchTerm, $options: 'i' } },
-                        { gtin: { $regex: searchTerm, $options: 'i' } },
-                        { brand_name: { $regex: searchTerm, $options: 'i' } }
+                    : [
+                        { canonical_name: { : searchTerm, : 'i' } },
+                        { gtin: { : searchTerm, : 'i' } },
+                        { brand_name: { : searchTerm, : 'i' } }
                     ]
-                }, undefined, 100);
+                }, undefined, 500);
                 
-                // Apply filters and sorting
-                const filtered = applyFiltersAndSort(results);
+                // If no filters are applied, get top 10 cheapest from each chain
+                let filtered;
+                if (!hasActiveFilters) {
+                    // Group by chain
+                    const byChain = {};
+                    results.forEach(product => {
+                        if (product.chain_id && product.current_price != null) {
+                            if (!byChain[product.chain_id]) {
+                                byChain[product.chain_id] = [];
+                            }
+                            byChain[product.chain_id].push(product);
+                        }
+                    });
+                    
+                    // Get top 10 cheapest from each chain
+                    const top10PerChain = [];
+                    Object.values(byChain).forEach(chainProducts => {
+                        const sorted = chainProducts.sort((a, b) => a.current_price - b.current_price);
+                        top10PerChain.push(...sorted.slice(0, 10));
+                    });
+                    
+                    filtered = top10PerChain;
+                } else {
+                    // Apply filters and sorting as before
+                    filtered = applyFiltersAndSort(results);
+                }
                 
                 // Show top 5 as suggestions
                 setSuggestions(filtered.slice(0, 5));
                 
-                // Show all results (limited to 50)
-                setSearchResults(filtered.slice(0, 50));
+                // Show all results (limited to 100)
+                setSearchResults(filtered.slice(0, 100));
             } catch (error) {
                 console.error("Failed to search products", error);
             } finally {
@@ -365,11 +389,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                             return (
                                 <div
                                     key={product.id}
-                                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                                        isCheapest
-                                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-                                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent'
-                                    }`}
+                                    className={}
                                 >
                                     <div className="flex-1 min-w-0 mr-3">
                                         <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -382,14 +402,12 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                             <Badge
                                                 variant="outline"
-                                                className={`text-[10px] px-1.5 py-0 h-5 font-normal bg-white dark:bg-gray-900 ${
-                                                    isCheapest ? 'border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'
-                                                }`}
+                                                className={}
                                             >
                                                 {sourceName}
                                             </Badge>
                                             {product.current_price && (
-                                                <span className={`text-sm font-bold ${isCheapest ? 'text-green-700 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                                <span className={}>
                                                     ₪{product.current_price.toFixed(2)}
                                                 </span>
                                             )}
@@ -416,7 +434,7 @@ export default function EnhancedProductSearch({ onAddToCart }) {
                                     </div>
                                     <Button
                                         size="sm"
-                                        className={`flex-shrink-0 h-8 w-8 p-0 ${isCheapest ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                                        className={}
                                         onClick={() => handleAddProduct(product)}
                                     >
                                         <Plus className="w-4 h-4" />
