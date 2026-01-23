@@ -425,28 +425,60 @@ export default function SmartCart() {
 
 
 
-  const loadSavedCart = (savedCart) => {
+  const loadSavedCart = async (savedCart) => {
     setCartItems(savedCart.items.map((item) => ({ 
       gtin: item.gtin, 
       name: item.name, 
       quantity: item.quantity,
       fromSuggestion: item.fromSuggestion || false 
     })));
-    // Also load the stored chain prices
+    
+    // Load stored chain prices or fetch if not available
     const loadedPrices = {};
+    const gtinsNeedingPrices = [];
+    
     savedCart.items.forEach(item => {
-      if (item.chainPrices) {
+      if (item.chainPrices && Object.keys(item.chainPrices).length > 0) {
         loadedPrices[item.gtin] = item.chainPrices;
+      } else {
+        gtinsNeedingPrices.push(item.gtin);
       }
     });
+    
+    // Fetch prices for items that don't have stored chain prices
+    if (gtinsNeedingPrices.length > 0) {
+      try {
+        const allProducts = await base44.entities.Product.filter({
+          gtin: { $in: gtinsNeedingPrices }
+        }, '-updated_date', 500);
+        
+        allProducts.forEach(product => {
+          if (product.chain_id && product.current_price != null) {
+            if (!loadedPrices[product.gtin]) {
+              loadedPrices[product.gtin] = {};
+            }
+            if (!loadedPrices[product.gtin][product.chain_id] || 
+                product.current_price < loadedPrices[product.gtin][product.chain_id].price) {
+              loadedPrices[product.gtin][product.chain_id] = {
+                price: product.current_price,
+                chain_id: product.chain_id,
+                store_id: product.store_id
+              };
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Failed to fetch prices for cart items", error);
+      }
+    }
+    
     setCartItemPrices(loadedPrices);
     setShowHistory(false);
-    // Trigger save dialog to show comparison
     setCartName(savedCart.name + ' (copy)');
     setShowSaveDialog(true);
   };
 
-  const editSavedCart = (savedCart) => {
+  const editSavedCart = async (savedCart) => {
     // Load the cart items for editing including fromSuggestion flag
     setCartItems(savedCart.items.map((item) => ({ 
       gtin: item.gtin, 
@@ -454,18 +486,50 @@ export default function SmartCart() {
       quantity: item.quantity,
       fromSuggestion: item.fromSuggestion || false 
     })));
-    // Also load the stored chain prices
+    
+    // Load stored chain prices or fetch if not available
     const loadedPrices = {};
+    const gtinsNeedingPrices = [];
+    
     savedCart.items.forEach(item => {
-      if (item.chainPrices) {
+      if (item.chainPrices && Object.keys(item.chainPrices).length > 0) {
         loadedPrices[item.gtin] = item.chainPrices;
+      } else {
+        gtinsNeedingPrices.push(item.gtin);
       }
     });
+    
+    // Fetch prices for items that don't have stored chain prices
+    if (gtinsNeedingPrices.length > 0) {
+      try {
+        const allProducts = await base44.entities.Product.filter({
+          gtin: { $in: gtinsNeedingPrices }
+        }, '-updated_date', 500);
+        
+        allProducts.forEach(product => {
+          if (product.chain_id && product.current_price != null) {
+            if (!loadedPrices[product.gtin]) {
+              loadedPrices[product.gtin] = {};
+            }
+            if (!loadedPrices[product.gtin][product.chain_id] || 
+                product.current_price < loadedPrices[product.gtin][product.chain_id].price) {
+              loadedPrices[product.gtin][product.chain_id] = {
+                price: product.current_price,
+                chain_id: product.chain_id,
+                store_id: product.store_id
+              };
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Failed to fetch prices for cart items", error);
+      }
+    }
+    
     setCartItemPrices(loadedPrices);
     setEditingCartId(savedCart.id);
     setCartName(savedCart.name);
     setShowHistory(false);
-    // Show save dialog with comparison table
     setShowSaveDialog(true);
     toast.info("Editing cart - make changes and save");
   };
