@@ -662,9 +662,26 @@ export default function Recommendations() {
                                             {tip.message}
                                         </p>
                                         {tip.related_entity_name && (
-                                            <span className="inline-block mt-2 text-xs bg-white/80 px-2 py-1 rounded border shadow-sm">
-                                                Related: {tip.related_entity_name}
-                                            </span>
+                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                <span className="inline-block text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full font-medium border border-indigo-200 dark:border-indigo-700">
+                                                    🏷️ {tip.related_entity_name}
+                                                </span>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-xs gap-1 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400"
+                                                    onClick={() => {
+                                                        // Navigate to SmartCart with the product name to search
+                                                        const url = new URL(window.location.origin);
+                                                        url.pathname = '/smartcart';
+                                                        url.searchParams.set('search', tip.related_entity_name);
+                                                        window.location.href = url.toString();
+                                                    }}
+                                                >
+                                                    <ShoppingCart className="w-3 h-3" />
+                                                    Add to Cart
+                                                </Button>
+                                            </div>
                                         )}
                                     </div>
                                     <div className="flex flex-col gap-1 ml-auto shrink-0">
