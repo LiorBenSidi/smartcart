@@ -1,25 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 function cosineSimilarity(vecA, vecB) {
-    if (!vecA || !vecB) return 0;
-    let dot = 0;
+    const keys = new Set([...Object.keys(vecA), ...Object.keys(vecB)]);
+    let dotProduct = 0;
     let magA = 0;
     let magB = 0;
     
-    // Assuming normalized input would be better, but we calculate full cosine here
-    // If input is normalized, mag is 1.
-    // Let's assume input is normalized from buildUserVectors
-    
-    // Dot product
-    for (const key in vecA) {
-        if (vecB[key]) {
-            dot += vecA[key] * vecB[key];
-        }
+    for (const key of keys) {
+        const a = vecA[key] || 0;
+        const b = vecB[key] || 0;
+        dotProduct += a * b;
+        magA += a * a;
+        magB += b * b;
     }
     
-    // Since we normalized in build step, dot product is the cosine similarity
-    // But let's re-verify magnitude if needed. For now trust normalization.
-    return dot;
+    magA = Math.sqrt(magA);
+    magB = Math.sqrt(magB);
+    
+    if (magA === 0 || magB === 0) return 0;
+    return dotProduct / (magA * magB);
 }
 
 export default Deno.serve(async (req) => {
@@ -27,84 +26,129 @@ export default Deno.serve(async (req) => {
         const base44 = createClientFromRequest(req);
         const user = await base44.auth.me();
         
-        const payload = await req.json().catch(() => ({}));
-        const targetUserId = payload.userId || (user ? user.email : null);
-
-        if (!targetUserId) {
-            return Response.json({ error: "User ID required" }, { status: 400 });
+        if (!user || user.role !== 'admin') {
+            return Response.json({ error: "Admin access required" }, { status: 403 });
         }
-
-        // Fetch target user vectors
-        const mySnapshots = await base44.entities.UserVectorSnapshot.filter({ user_id: targetUserId }, '-computed_at', 10);
         
-        const myProfileVec = mySnapshots.find(s => s.vector_type === 'profile')?.vector_json || {};
-        const myBehaviorVec = mySnapshots.find(s => s.vector_type === 'behavior')?.vector_json || {};
+        const payload = await req.json().catch(() => ({}));
+        const batch = payload.batch || 0;
+        const limit = payload.limit || 5;
+        const skip = batch * limit;
         
-        // Determine Weights
-        const receiptCount = Object.keys(myBehaviorVec).length; // Crude proxy for history depth
-        const isColdStart = receiptCount < 3;
+        // Get all users
+        const allUsers = await base44.entities.User.list('', 500);
+        const usersToProcess = allUsers.slice(skip, skip + limit);
+        const hasMore = skip + limit < allUsers.length;
         
-        const profileWeight = isColdStart ? 1.0 : 0.4;
-        const behaviorWeight = isColdStart ? 0.0 : 0.6;
+        console.log(`[SimilarUsers] Batch ${batch}: Processing ${usersToProcess.length} users (skip=${skip})`);
         
-        // Fetch ALL other users' latest snapshots
-        // Warning: This scales poorly. For prototype with < 100 users it's fine.
-        // In real app, we'd use a vector DB or limit scan.
-        const allSnapshots = await base44.entities.UserVectorSnapshot.list('-computed_at', 500); 
-        
-        // Group by user
-        const userVectors = {};
-        allSnapshots.forEach(s => {
-            if (s.user_id === targetUserId) return;
-            if (!userVectors[s.user_id]) userVectors[s.user_id] = {};
-            // Take latest
-            if (!userVectors[s.user_id][s.vector_type]) {
-                userVectors[s.user_id][s.vector_type] = s.vector_json;
-            }
-        });
-
-        const scores = [];
-
-        for (const otherUserId in userVectors) {
-            const otherProfile = userVectors[otherUserId]['profile'] || {};
-            const otherBehavior = userVectors[otherUserId]['behavior'] || {};
-            
-            const profSim = cosineSimilarity(myProfileVec, otherProfile);
-            const behSim = cosineSimilarity(myBehaviorVec, otherBehavior);
-            
-            const hybridSim = (profSim * profileWeight) + (behSim * behaviorWeight);
-            
-            scores.push({
-                user_id: otherUserId,
-                similarity: hybridSim,
-                based_on: isColdStart ? 'profile' : 'hybrid'
+        if (usersToProcess.length === 0) {
+            return Response.json({
+                success: true,
+                hasMore: false,
+                results: [],
+                message: "No more users to process"
             });
         }
         
-        // Top K=30
-        scores.sort((a, b) => b.similarity - a.similarity);
-        const topK = scores.slice(0, 30);
+        // Load ALL user vectors once (for comparing against)
+        const allVectors = await base44.asServiceRole.entities.UserVectorSnapshot.filter({}, '-computed_at', 1000);
+        console.log(`[SimilarUsers] Loaded ${allVectors.length} vector snapshots`);
         
-        // Save Edges
-        // First delete old edges? base44 doesn't support bulk delete easily by query without id list.
-        // We'll just create new ones and filter by latest later.
+        // Group vectors by user_id, keeping most recent of each type
+        const vectorsByUser = {};
+        for (const vec of allVectors) {
+            if (!vectorsByUser[vec.user_id]) {
+                vectorsByUser[vec.user_id] = {};
+            }
+            // Keep most recent (already sorted by -computed_at)
+            if (!vectorsByUser[vec.user_id][vec.vector_type]) {
+                vectorsByUser[vec.user_id][vec.vector_type] = vec.vector_json;
+            }
+        }
         
-        // Bulk create not available in all SDK versions, loop create
-        const timestamp = new Date().toISOString();
-        const promises = topK.map(edge => 
-            base44.entities.SimilarUserEdge.create({
-                user_id: targetUserId,
-                neighbor_user_id: edge.user_id,
-                similarity: edge.similarity,
-                based_on: edge.based_on,
-                computed_at: timestamp
-            })
-        );
+        const results = [];
         
-        await Promise.all(promises);
-
-        return Response.json({ success: true, count: topK.length });
+        for (const targetUser of usersToProcess) {
+            const userId = targetUser.email;
+            const userVecs = vectorsByUser[userId];
+            
+            if (!userVecs || (!userVecs.profile && !userVecs.behavior)) {
+                console.log(`[SimilarUsers] Skipping ${userId} - no vectors`);
+                results.push({ userId, status: 'skipped', reason: 'no_vectors' });
+                continue;
+            }
+            
+            // Delete existing edges for this user
+            const existingEdges = await base44.asServiceRole.entities.SimilarUserEdge.filter({ user_id: userId });
+            for (const edge of existingEdges) {
+                await base44.asServiceRole.entities.SimilarUserEdge.delete(edge.id);
+            }
+            
+            // Compute similarity with all other users
+            const similarities = [];
+            
+            for (const [otherUserId, otherVecs] of Object.entries(vectorsByUser)) {
+                if (otherUserId === userId) continue;
+                if (!otherVecs.profile && !otherVecs.behavior) continue;
+                
+                // Compute weighted similarity (profile + behavior)
+                let totalSim = 0;
+                let weights = 0;
+                
+                if (userVecs.profile && otherVecs.profile) {
+                    totalSim += cosineSimilarity(userVecs.profile, otherVecs.profile) * 0.3;
+                    weights += 0.3;
+                }
+                if (userVecs.behavior && otherVecs.behavior) {
+                    totalSim += cosineSimilarity(userVecs.behavior, otherVecs.behavior) * 0.7;
+                    weights += 0.7;
+                }
+                
+                const similarity = weights > 0 ? totalSim / weights : 0;
+                
+                if (similarity >= 0.1) { // Minimum threshold
+                    similarities.push({ neighborId: otherUserId, similarity });
+                }
+            }
+            
+            // Sort and keep top 10
+            similarities.sort((a, b) => b.similarity - a.similarity);
+            const topSimilar = similarities.slice(0, 10);
+            
+            console.log(`[SimilarUsers] ${userId}: Found ${topSimilar.length} similar users`);
+            
+            // Create edges
+            for (const sim of topSimilar) {
+                await base44.asServiceRole.entities.SimilarUserEdge.create({
+                    user_id: userId,
+                    neighbor_user_id: sim.neighborId,
+                    similarity: sim.similarity,
+                    based_on: "hybrid",
+                    computed_at: new Date().toISOString()
+                });
+            }
+            
+            results.push({ 
+                userId, 
+                status: 'success', 
+                similarUsersFound: topSimilar.length,
+                topSimilarity: topSimilar[0]?.similarity || 0
+            });
+        }
+        
+        const progress = Math.min(100, Math.round(((skip + usersToProcess.length) / allUsers.length) * 100));
+        
+        return Response.json({
+            success: true,
+            hasMore,
+            progress,
+            results,
+            message: `Processed ${usersToProcess.length} users, found similarities`
+        });
+        
     } catch (error) {
+        console.error('[SimilarUsers] Error:', error);
         return Response.json({ error: error.message }, { status: 500 });
     }
 });
