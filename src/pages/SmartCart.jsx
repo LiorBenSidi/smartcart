@@ -202,12 +202,17 @@ export default function SmartCart() {
       item
       ));
     } else {
-      setCartItems([...cartItems, { gtin: product.gtin, name: product.canonical_name, quantity: 1 }]);
+      setCartItems([...cartItems, { 
+        gtin: product.gtin, 
+        name: product.canonical_name, 
+        quantity: 1, 
+        fromSuggestion: product.fromSuggestion || false 
+      }]);
     }
   };
   
   // Add to cart with all chain prices stored
-  const addToCartWithPrices = (product, pricesByChain) => {
+  const addToCartWithPrices = (product, pricesByChain, fromSuggestion = false) => {
     const existing = cartItems.find((item) => item.gtin === product.gtin);
     if (existing) {
       setCartItems(cartItems.map((item) =>
@@ -216,7 +221,12 @@ export default function SmartCart() {
         item
       ));
     } else {
-      setCartItems([...cartItems, { gtin: product.gtin, name: product.canonical_name, quantity: 1 }]);
+      setCartItems([...cartItems, { 
+        gtin: product.gtin, 
+        name: product.canonical_name, 
+        quantity: 1,
+        fromSuggestion 
+      }]);
     }
     
     // Store all chain prices for this gtin
@@ -371,7 +381,8 @@ export default function SmartCart() {
           const itemsWithPrices = cartItems.map((item) => ({
             ...item,
             price: bestChain ? (cartItemPrices[item.gtin]?.[bestChain.chain_id]?.price || 0) : 0,
-            chainPrices: cartItemPrices[item.gtin] || {} // Store all chain prices
+            chainPrices: cartItemPrices[item.gtin] || {}, // Store all chain prices
+            fromSuggestion: item.fromSuggestion || false // Preserve suggestion tag
           }));
 
           if (editingCartId) {
@@ -414,7 +425,12 @@ export default function SmartCart() {
 
 
   const loadSavedCart = (savedCart) => {
-    setCartItems(savedCart.items.map((item) => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
+    setCartItems(savedCart.items.map((item) => ({ 
+      gtin: item.gtin, 
+      name: item.name, 
+      quantity: item.quantity,
+      fromSuggestion: item.fromSuggestion || false 
+    })));
     // Also load the stored chain prices
     const loadedPrices = {};
     savedCart.items.forEach(item => {
@@ -427,8 +443,21 @@ export default function SmartCart() {
   };
 
   const editSavedCart = (savedCart) => {
-    // Load the cart items for editing
-    setCartItems(savedCart.items.map((item) => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
+    // Load the cart items for editing including fromSuggestion flag
+    setCartItems(savedCart.items.map((item) => ({ 
+      gtin: item.gtin, 
+      name: item.name, 
+      quantity: item.quantity,
+      fromSuggestion: item.fromSuggestion || false 
+    })));
+    // Also load the stored chain prices
+    const loadedPrices = {};
+    savedCart.items.forEach(item => {
+      if (item.chainPrices) {
+        loadedPrices[item.gtin] = item.chainPrices;
+      }
+    });
+    setCartItemPrices(loadedPrices);
     setEditingCartId(savedCart.id);
     setCartName(savedCart.name);
     setShowHistory(false);
@@ -735,9 +764,9 @@ export default function SmartCart() {
                           
                           // Use addToCartWithPrices if we have prices, otherwise regular addToCart
                           if (Object.keys(pricesByChain).length > 0) {
-                            addToCartWithPrices({ gtin: item.product_id, canonical_name: item.product_name }, pricesByChain);
+                            addToCartWithPrices({ gtin: item.product_id, canonical_name: item.product_name }, pricesByChain, true);
                           } else {
-                            addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                            addToCart({ gtin: item.product_id, canonical_name: item.product_name, fromSuggestion: true });
                           }
                           
                           setAddedItems(prev => new Set([...prev, item.product_id]));
@@ -1277,7 +1306,15 @@ export default function SmartCart() {
                           {item.quantity}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            {item.name}
+                            {item.fromSuggestion && (
+                              <Badge className="text-[9px] px-1.5 py-0 h-4 bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800">
+                                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                                Suggested
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">{item.gtin}</div>
                         </div>
                       </div>
