@@ -756,24 +756,23 @@ export default function SmartCart() {
                         }`}
                         onClick={async () => {
                           // Fetch all products with this GTIN to get prices from all chains
-                          const allVariants = await base44.entities.Product.filter({ gtin: item.product_id });
+                          const allVariants = await base44.entities.Product.filter({ gtin: item.product_id }, '-updated_date', 100);
                           const pricesByChain = {};
                           allVariants.forEach(variant => {
-                            if (variant.chain_id && variant.current_price) {
-                              pricesByChain[variant.chain_id] = {
-                                price: variant.current_price,
-                                chain_id: variant.chain_id,
-                                store_id: variant.store_id
-                              };
+                            if (variant.chain_id && variant.current_price != null) {
+                              // Only keep best (lowest) price per chain
+                              if (!pricesByChain[variant.chain_id] || variant.current_price < pricesByChain[variant.chain_id].price) {
+                                pricesByChain[variant.chain_id] = {
+                                  price: variant.current_price,
+                                  chain_id: variant.chain_id,
+                                  store_id: variant.store_id
+                                };
+                              }
                             }
                           });
                           
-                          // Use addToCartWithPrices if we have prices, otherwise regular addToCart
-                          if (Object.keys(pricesByChain).length > 0) {
-                            addToCartWithPrices({ gtin: item.product_id, canonical_name: item.product_name }, pricesByChain, true);
-                          } else {
-                            addToCart({ gtin: item.product_id, canonical_name: item.product_name, fromSuggestion: true });
-                          }
+                          // Always use addToCartWithPrices to ensure prices are stored
+                          addToCartWithPrices({ gtin: item.product_id, canonical_name: item.product_name }, pricesByChain, true);
                           
                           setAddedItems(prev => new Set([...prev, item.product_id]));
                           setTimeout(() => {
