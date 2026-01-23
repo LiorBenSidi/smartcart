@@ -502,6 +502,18 @@ export default function SmartCart() {
                   </div>
               </CardHeader>
               <CardContent>
+                  {loadingSuggestions ? (
+                      <div className="flex items-center justify-center py-8 text-gray-500">
+                          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                          <span>Generating suggestions...</span>
+                      </div>
+                  ) : !suggestions?.items?.length ? (
+                      <div className="text-center py-8 text-gray-500">
+                          <CalendarDays className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                          <p className="mb-2">No AI suggestions available yet</p>
+                          <p className="text-xs text-gray-400">Click refresh to generate personalized suggestions</p>
+                      </div>
+                  ) : (
                   <div className="space-y-3">
                       {suggestions.items.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) =>
                   <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
@@ -607,7 +619,7 @@ export default function SmartCart() {
                           </div>
                           )}
 
-                          {suggestions?.items?.length > 0 && (
+                  {suggestions?.items?.length > 0 && (
                           <div className="mt-4 flex gap-3">
                               <Button
                     className="flex-1 bg-indigo-600 hover:bg-indigo-700"
