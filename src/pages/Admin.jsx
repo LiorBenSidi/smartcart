@@ -254,6 +254,12 @@ export default function Admin() {
               return false; // Same chain code but different GTIN = don't merge
             }
 
+            // Check for same chain_id (same chain shouldn't have different GTINs for same product)
+            if (p.chain_id && referenceProduct.chain_id && 
+                p.chain_id === referenceProduct.chain_id) {
+              return false; // Same chain = don't merge
+            }
+
             // Check category match
             if ((p.category || '') !== (referenceProduct.category || '')) {
               return false;
