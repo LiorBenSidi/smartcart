@@ -1281,7 +1281,7 @@ export default function SmartCart() {
                           <TrendingDown className="w-3 h-3 text-green-600" /> Price Comparison:
                         </div>
                         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                          <div className="overflow-x-auto">
+                          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
