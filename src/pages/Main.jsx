@@ -232,6 +232,8 @@ export default function Main() {
   const [showSmartTips, setShowSmartTips] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [receipts, setReceipts] = useState([]);
+  const [focusMode, setFocusMode] = useState(false);
+  const [showMoreTips, setShowMoreTips] = useState(false);
 
   const fetchAIInsights = async () => {
     setLoadingAiInsights(true);
@@ -427,12 +429,12 @@ export default function Main() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      {/* Page Header - For You */}
-      <div className="space-y-2">
-        <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+    <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 animate-in fade-in duration-500">
+      {/* Page Header */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-start gap-4">
+            <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-100">
                     {(() => {
                         const hour = new Date().getHours();
                         if (hour < 12) return 'Good Morning';
@@ -442,8 +444,8 @@ export default function Main() {
                 </h1>
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-                            <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
+                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full hover:bg-gray-800">
+                            <HelpCircle className="h-4 w-4 text-gray-500 hover:text-indigo-400" />
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -545,144 +547,179 @@ export default function Main() {
                     </DialogContent>
                 </Dialog>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={refreshAll}
                   disabled={loadingAiInsights || tipsLoading}
-                  className="gap-2"
+                  className="gap-2 border-gray-700 bg-gray-800/50 hover:bg-gray-700 text-gray-300"
                 >
                   {(loadingAiInsights || tipsLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  Refresh All
+                  <span className="hidden sm:inline">Refresh</span>
                 </Button>
                 <RecommendationExplainer mode="general" />
             </div>
         </div>
-        <p className="text-gray-500 dark:text-gray-400">Here you will get analytics dashboard, AI-powered insights, smart tips, and personalized recommendations based on your shopping habits, preferences, and collaborative filtering.</p>
+        
+        {/* Focus Mode Toggle */}
+        <div className="flex items-center justify-between bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${focusMode ? 'bg-indigo-600/20 text-indigo-400' : 'bg-gray-700/50 text-gray-400'}`}>
+              {focusMode ? <Target className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-200">Focus Mode</p>
+              <p className="text-xs text-gray-500">{focusMode ? 'Showing biggest savings only' : 'Showing all insights'}</p>
+            </div>
+          </div>
+          <Switch 
+            checked={focusMode} 
+            onCheckedChange={setFocusMode}
+            className="data-[state=checked]:bg-indigo-600"
+          />
+        </div>
       </div>
 
       {/* Analytics Dashboard Toggle */}
-      <Button
-        variant="outline"
-        onClick={() => setShowAnalytics(!showAnalytics)}
-        className="w-full justify-between"
-      >
-        <span className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4" />
-          Analytics Dashboard
-        </span>
-        {showAnalytics ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </Button>
+      {!focusMode && (
+        <Button
+          variant="outline"
+          onClick={() => setShowAnalytics(!showAnalytics)}
+          className="w-full justify-between border-gray-700/50 bg-gray-800/30 hover:bg-gray-800/50 text-gray-300"
+        >
+          <span className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics Dashboard
+          </span>
+          {showAnalytics ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </Button>
+      )}
 
       {/* Analytics Dashboard Content */}
-      {showAnalytics && (
-        <AnalyticsDashboard receipts={receipts} dashboardData={dashboardData} />
+      {showAnalytics && !focusMode && (
+        <AnalyticsDashboard receipts={receipts} dashboardData={dashboardData} hideTrends={focusMode} />
       )}
 
       {/* AI Insights Toggle */}
-      <Button
-        variant="outline"
-        onClick={() => setShowAiInsights(!showAiInsights)}
-        className="w-full justify-between"
-      >
-        <span className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4" />
-          AI-Powered Insights
-          {loadingAiInsights && <Loader2 className="w-3 h-3 animate-spin" />}
-        </span>
-        {showAiInsights ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </Button>
+      {!focusMode && (
+        <Button
+          variant="outline"
+          onClick={() => setShowAiInsights(!showAiInsights)}
+          className="w-full justify-between border-gray-700/50 bg-gray-800/30 hover:bg-gray-800/50 text-gray-300"
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            AI-Powered Insights
+            {loadingAiInsights && <Loader2 className="w-3 h-3 animate-spin" />}
+          </span>
+          {showAiInsights ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </Button>
+      )}
 
       {/* AI Insights Content */}
-      {showAiInsights && (
+      {(showAiInsights || focusMode) && (
         <>
           {loadingAiInsights && (
-            <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
+            <Card className="border-indigo-800/50 bg-indigo-900/20">
               <CardContent className="p-6 flex items-center justify-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+                <span className="text-sm text-gray-300">AI is analyzing your shopping patterns...</span>
               </CardContent>
             </Card>
           )}
 
           {aiInsights && !loadingAiInsights && (
-            <AIInsightsPanel insights={aiInsights} />
+            <AIInsightsPanel insights={aiInsights} focusMode={focusMode} />
           )}
         </>
       )}
 
       {/* Smart Tips Toggle */}
-      <Button
-        variant="outline"
-        onClick={() => setShowSmartTips(!showSmartTips)}
-        className="w-full justify-between"
-      >
-        <span className="flex items-center gap-2">
-          <Lightbulb className="w-4 h-4" />
-          Smart Tips for You
-          {tipsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-        </span>
-        {showSmartTips ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </Button>
+      {!focusMode && (
+        <Button
+          variant="outline"
+          onClick={() => setShowSmartTips(!showSmartTips)}
+          className="w-full justify-between border-gray-700/50 bg-gray-800/30 hover:bg-gray-800/50 text-gray-300"
+        >
+          <span className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Smart Tips for You
+            {tipsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+          </span>
+          {showSmartTips ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </Button>
+      )}
 
       {/* Smart Tips Content */}
-      {showSmartTips && (
-          <section>
+      {(showSmartTips || focusMode) && (
+          <section className="space-y-3">
+              {/* Tips Header */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">
+                  Based on your latest receipts, here are the highest-impact tips.
+                </p>
+              </div>
+              
               {tipsLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-500 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
+                  <div className="flex items-center gap-2 text-sm text-gray-400 bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Generating personalized tips based on your budget and diet...
                   </div>
               ) : smartTips.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-3">
-                      {smartTips.map((tip, i) => {
+                  <div className="space-y-3">
+                      {/* Show first 2 tips always, rest conditionally */}
+                      {smartTips.slice(0, focusMode ? 2 : (showMoreTips ? smartTips.length : 2)).map((tip, i) => {
                           const isSaving = tip.type === 'money_saving';
                           const isHealth = tip.type === 'health_dietary';
                           
                           return (
-                            <Card key={i} className={`border-l-4 ${
-                                isSaving ? 'border-l-green-500 border-green-100 bg-green-50/20' : 
-                                isHealth ? 'border-l-emerald-500 border-emerald-100 bg-emerald-50/20' : 
-                                'border-l-indigo-500 border-indigo-100 bg-indigo-50/20'
+                            <Card key={i} className={`border-l-4 border-gray-700/50 bg-gray-800/30 hover:bg-gray-800/50 transition-colors ${
+                                isSaving ? 'border-l-green-500' : 
+                                isHealth ? 'border-l-emerald-500' : 
+                                'border-l-indigo-500'
                             }`}>
                                 <CardContent className="p-4 flex gap-4 items-start">
-                                    <div className={`p-2 rounded-full shrink-0 ${
-                                        isSaving ? 'bg-green-100 text-green-600' :
-                                        isHealth ? 'bg-emerald-100 text-emerald-600' :
-                                        'bg-indigo-100 text-indigo-600'
+                                    <div className={`p-2 rounded-lg shrink-0 ${
+                                        isSaving ? 'bg-green-900/30 text-green-400' :
+                                        isHealth ? 'bg-emerald-900/30 text-emerald-400' :
+                                        'bg-indigo-900/30 text-indigo-400'
                                     }`}>
                                         {isSaving ? <Tag className="w-5 h-5" /> : 
                                          isHealth ? <Leaf className="w-5 h-5" /> : 
                                          <Lightbulb className="w-5 h-5" />}
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide opacity-70">
+                                            <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ${
+                                                isSaving ? 'bg-green-900/30 text-green-400' :
+                                                isHealth ? 'bg-emerald-900/30 text-emerald-400' :
+                                                'bg-indigo-900/30 text-indigo-400'
+                                            }`}>
                                                 {tip.type.replace('_', ' ')}
-                                            </h3>
+                                            </span>
                                             {tip.inspired_by_liked_tips && tip.inspired_by_liked_tips.length > 0 && (
                                                 <Dialog>
                                                     <DialogTrigger asChild>
-                                                        <button className="p-1 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-full transition-colors" title="Why this tip?">
-                                                            <HelpCircle className="w-4 h-4" />
+                                                        <button className="p-1 text-gray-500 hover:text-indigo-400 hover:bg-gray-700 rounded-full transition-colors" title="Why this tip?">
+                                                            <HelpCircle className="w-3.5 h-3.5" />
                                                         </button>
                                                     </DialogTrigger>
                                                     <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle className="flex items-center gap-2">
-                                                                <Sparkles className="w-5 h-5 text-indigo-600" />
+                                                                <Sparkles className="w-5 h-5 text-indigo-400" />
                                                                 Why this tip?
                                                             </DialogTitle>
                                                         </DialogHeader>
                                                         <div className="space-y-3">
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            <p className="text-sm text-gray-400">
                                                                 This tip was generated based on {tip.inspired_by_liked_tips.length === 1 ? 'a tip' : 'tips'} you previously liked:
                                                             </p>
                                                             <div className="space-y-2">
                                                                 {tip.inspired_by_liked_tips.map((likedTip, idx) => (
-                                                                    <div key={idx} className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-100 dark:border-green-800">
-                                                                        <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{likedTip}"</p>
+                                                                    <div key={idx} className="bg-green-900/20 p-3 rounded-lg border border-green-800">
+                                                                        <p className="text-sm text-gray-300 italic">"{likedTip}"</p>
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -694,26 +731,26 @@ export default function Main() {
                                                 </Dialog>
                                             )}
                                         </div>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium leading-snug">
+                                        <p className="text-gray-200 font-medium leading-snug text-sm">
                                             {tip.message}
                                         </p>
                                         {tip.related_entity_name && (
-                                            <span className="inline-block mt-2 text-xs bg-white/80 px-2 py-1 rounded border shadow-sm">
+                                            <span className="inline-block mt-2 text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md border border-gray-600/50" dir="auto">
                                                 Related: {tip.related_entity_name}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex flex-col gap-1 ml-auto shrink-0">
+                                    <div className="flex gap-1 shrink-0">
                                         <button 
                                             onClick={() => handleTipFeedback(tip, 'like')}
-                                            className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                                            className="p-2 text-gray-500 hover:text-green-400 hover:bg-green-900/30 rounded-lg transition-colors"
                                             title="Helpful"
                                         >
                                             <ThumbsUp className="w-4 h-4" />
                                         </button>
                                         <button 
                                             onClick={() => handleTipFeedback(tip, 'dislike')}
-                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
                                             title="Not helpful"
                                         >
                                             <ThumbsDown className="w-4 h-4" />
@@ -723,6 +760,28 @@ export default function Main() {
                             </Card>
                           );
                       })}
+                      
+                      {/* Show more button */}
+                      {smartTips.length > 2 && !focusMode && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowMoreTips(!showMoreTips)}
+                          className="w-full text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                        >
+                          {showMoreTips ? (
+                            <>
+                              <ChevronUp className="w-4 h-4 mr-2" />
+                              Show fewer tips
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4 mr-2" />
+                              Show {smartTips.length - 2} more tips
+                            </>
+                          )}
+                        </Button>
+                      )}
                   </div>
               ) : (
                   <p className="text-sm text-gray-500 p-4">No tips available yet.</p>
