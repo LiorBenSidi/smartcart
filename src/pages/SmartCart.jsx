@@ -1193,6 +1193,15 @@ export default function SmartCart() {
                         <Button size="sm" variant="outline" onClick={() => loadSavedCart(cart)}>
                           Load
                         </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                          onClick={() => setShowPriceCompare(showPriceCompare === cart.id ? null : cart.id)}
+                        >
+                          <TrendingDown className="w-3 h-3 mr-1" />
+                          Compare
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => editSavedCart(cart)}>
                           ✏️
                         </Button>
@@ -1200,17 +1209,6 @@ export default function SmartCart() {
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
-                      {cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="text-xs text-indigo-600 hover:text-indigo-700 mt-1"
-                          onClick={() => setShowPriceCompare(showPriceCompare === cart.id ? null : cart.id)}
-                        >
-                          <TrendingDown className="w-3 h-3 mr-1" />
-                          {showPriceCompare === cart.id ? 'Hide' : 'Compare'}
-                        </Button>
-                      )}
                     </div>
                   </div>
 
