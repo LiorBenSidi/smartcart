@@ -143,7 +143,16 @@ export default Deno.serve(async (req) => {
             .sort((a, b) => b.confidence - a.confidence)
             .slice(0, 15);
         console.log(`[CF] Returning ${results.length} aggregated recommendations (filtered from ${Object.keys(aggregated).length})`);
-        return Response.json({ success: true, recommendations: results });
+        console.log(`[CF] Total collaborative suggestions before aggregation: ${collaborativeSuggestions.length}`);
+        return Response.json({ 
+            success: true, 
+            recommendations: results,
+            debug: {
+                user_purchased_count: userPurchasedProducts.size,
+                suggestions_before_filter: collaborativeSuggestions.length,
+                aggregated_count: Object.keys(aggregated).length
+            }
+        });
 
         } catch (error) {
             return Response.json({ error: error.message }, { status: 500 });
