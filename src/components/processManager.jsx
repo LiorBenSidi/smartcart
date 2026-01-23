@@ -29,8 +29,10 @@ class ProcessManager {
     return this.state;
   }
 
-  async startProcess(functionName, initialPayload = {}) {
+  async startProcess(functionName, initialPayload = {}, options = {}) {
     if (this.state.loading) return;
+
+    const { delayMs = 0 } = options;
 
     this.state = {
       loading: true,
@@ -49,6 +51,13 @@ class ProcessManager {
       const BATCH_SIZE = 5; // Conservative batch size for heavy LLM operations
 
       while (hasMore) {
+        // Add delay between batches to avoid rate limiting
+        if (batch > 0 && delayMs > 0) {
+          this.state.status = `Waiting ${delayMs}ms before batch ${batch + 1}...`;
+          this.notify();
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+
         this.state.status = `Processing batch ${batch + 1}...`;
         this.notify();
 
