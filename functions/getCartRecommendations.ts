@@ -36,22 +36,11 @@ Deno.serve(async (req) => {
 
     // Load all necessary data
     // Note: Product entity contains prices directly (current_price, chain_id, store_id)
-    // For products, we only need to fetch those matching the cart items
-    const cartGtins = cartItems.map(item => item.gtin);
-    
-    // Fetch products for the specific GTINs in the cart (can have multiple per gtin from different chains)
-    const productPromises = cartGtins.map(gtin => svc.entities.Product.filter({ gtin }));
-    
-    const [productResults, allStores, allChains] = await Promise.all([
-      Promise.all(productPromises),
+    const [allProducts, allStores, allChains] = await Promise.all([
+      svc.entities.Product.list(),
       svc.entities.Store.list(),
       svc.entities.Chain.list()
     ]);
-    
-    // Flatten product results
-    const allProducts = productResults.flat();
-    
-    console.log(`Found ${allProducts.length} product records for ${cartGtins.length} GTINs`);
 
     // Create lookup maps
     const productsByGtin = new Map();
@@ -75,26 +64,12 @@ Deno.serve(async (req) => {
             pricesByStore.set(product.store_id, new Map());
           }
           pricesByStore.get(product.store_id).set(product.gtin, product);
-        } 
-        
-        // Always add to chain prices if chain_id exists (not else-if)
-        if (product.chain_id) {
+        } else if (product.chain_id) {
           if (!pricesByChain.has(product.chain_id)) {
             pricesByChain.set(product.chain_id, new Map());
           }
           pricesByChain.get(product.chain_id).set(product.gtin, product);
         }
-      }
-    }
-    
-    console.log(`pricesByChain has ${pricesByChain.size} chains`);
-    
-    // Debug: show which chains have this product
-    for (const [chainId, chainPrices] of pricesByChain) {
-      const chain = chainsById.get(chainId);
-      console.log(`Chain ${chain?.name || chainId}: ${chainPrices.size} products`);
-      for (const [gtin, product] of chainPrices) {
-        console.log(`  - ${gtin}: ₪${product.current_price}`);
       }
     }
 
