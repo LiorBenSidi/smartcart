@@ -1176,6 +1176,40 @@ export default function SmartCart() {
                                 
 
                                 
+                                // For missing prices, search by exact name
+                                for (const item of cart.items) {
+                                  const itemPrices = pricesByGtin[item.gtin] || {};
+                                  const missingChains = [...allChainIds].filter(chainId => !itemPrices[chainId]);
+
+                                  if (missingChains.length > 0 && item.name) {
+                                    // Search by exact canonical_name
+                                    const exactMatches = await base44.entities.Product.filter({
+                                      canonical_name: item.name,
+                                      chain_id: { $in: missingChains },
+                                      gtin: { $ne: item.gtin }
+                                    }, 'current_price', 100);
+
+                                    exactMatches.forEach(alt => {
+                                      if (alt.chain_id && alt.current_price != null) {
+                                        if (!pricesByGtin[item.gtin]) {
+                                          pricesByGtin[item.gtin] = {};
+                                        }
+                                        if (!pricesByGtin[item.gtin][alt.chain_id] || 
+                                            alt.current_price < pricesByGtin[item.gtin][alt.chain_id].price) {
+                                          pricesByGtin[item.gtin][alt.chain_id] = {
+                                            price: alt.current_price,
+                                            chain_id: alt.chain_id,
+                                            store_id: alt.store_id,
+                                            isAlternative: true,
+                                            altName: alt.canonical_name,
+                                            altGtin: alt.gtin
+                                          };
+                                        }
+                                      }
+                                    });
+                                  }
+                                }
+
                                 // Update the cart in state with fetched prices
                                 const updatedItems = cart.items.map(item => ({
                                   ...item,
@@ -1264,19 +1298,15 @@ export default function SmartCart() {
                                               isMin ? 'bg-green-900/60 text-green-400' : 
                                               isMax ? 'bg-red-900/60 text-red-400' : 
                                               'text-gray-400'
-                                            } ${isAlternative ? 'border-2 border-dashed border-yellow-500' : ''} ${
-                                              price == null ? 'cursor-pointer hover:bg-gray-800' : ''
-                                            }`}
-                                            title={isAlternative ? `Alternative: ${priceData.altName}` : price == null ? 'Click to select alternative' : ''}
+                                            } ${isAlternative ? 'border-2 border-dashed border-yellow-500' : ''} cursor-pointer hover:bg-gray-800`}
+                                            title={isAlternative ? `Alternative: ${priceData.altName} - Click to change` : price == null ? 'Click to select alternative' : 'Click to change'}
                                             onClick={() => {
-                                              if (price == null) {
-                                                setAlternativeSelector({
-                                                  cartId: cart.id,
-                                                  itemGtin: item.gtin,
-                                                  itemName: item.name,
-                                                  chainId: chainId
-                                                });
-                                              }
+                                              setAlternativeSelector({
+                                                cartId: cart.id,
+                                                itemGtin: item.gtin,
+                                                itemName: item.name,
+                                                chainId: chainId
+                                              });
                                             }}
                                           >
                                             {price != null ? (
