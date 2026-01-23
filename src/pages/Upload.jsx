@@ -301,22 +301,6 @@ export default function Upload() {
                   </div>
                 </div>
               </div>
-              
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
-                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200 flex items-center gap-2">
-                  <Store className="w-4 h-4 text-green-600" />
-                  Automatic Savings Analysis
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                  After scanning, we compare your prices to market data and find savings.
-                </p>
-                <ul className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
-                  <li>💰 <strong>Price Check</strong> — See if you paid above market average</li>
-                  <li>🔄 <strong>Swap Suggestions</strong> — Cheaper alternatives in the same category</li>
-                  <li>📊 <strong>Trip Summary</strong> — Total potential savings per receipt</li>
-                  <li>📈 <strong>Habit Tracking</strong> — Builds your purchase history for smarter tips</li>
-                </ul>
-              </div>
             </div>
           </DialogContent>
         </Dialog>
