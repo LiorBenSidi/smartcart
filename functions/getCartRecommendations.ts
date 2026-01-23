@@ -169,26 +169,46 @@ Deno.serve(async (req) => {
       }
 
       if (passesConstraints) {
+          // Collect item prices for this chain
+          const itemPrices = [];
+          const chainPrices = pricesByChain.get(chainResult.chain.id) || new Map();
+          
+          for (const cartItem of cartItems) {
+            let itemPrice = null;
+            
+            // First try to find store-specific prices for stores in this chain
+            for (const store of allStores) {
+              if (store.chain_id === chainResult.chain.id) {
+                const storePrices = pricesByStore.get(store.id);
+                if (storePrices?.has(cartItem.gtin)) {
+                  const price = storePrices.get(cartItem.gtin);
+                  if (!itemPrice || price.current_price < itemPrice) {
+                    itemPrice = price.current_price;
+                  }
+                }
+              }
+            }
+            
+            // If no store-specific price, use chain-level price
+            if (!itemPrice && chainPrices.has(cartItem.gtin)) {
+              itemPrice = chainPrices.get(cartItem.gtin).current_price;
+            }
+            
+            if (itemPrice) {
+              itemPrices.push({ gtin: cartItem.gtin, price: itemPrice });
+            }
+          }
+          
           topStores.push({
             chain: chainResult.chain,
             store: nearestBranch,
             nearestBranch,
             totalCost: chainResult.totalCost,
             availableItems: chainResult.availableItems,
-            distance: minDistance !== Infinity ? minDistance : null
+            distance: minDistance !== Infinity ? minDistance : null,
+            itemPrices // Include item prices in response
           });
       }
-    }
-
-    // If we filtered out too many, we might want to fallback or show with warning. 
-    // For now, strict filtering.
-        chain: chainResult.chain,
-        store: nearestBranch,
-        nearestBranch,
-        totalCost: chainResult.totalCost,
-        availableItems: chainResult.availableItems,
-        distance: minDistance !== Infinity ? minDistance : null
-      });
     }
 
     // --- Smart Cart Optimization: Split Cart Strategy ---
