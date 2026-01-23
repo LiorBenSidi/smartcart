@@ -10,9 +10,52 @@ const CONFIG = {
     MIN_PURCHASE_COUNT_FOR_HABIT: 2,
     // Limits
     MAX_SUGGESTED_ITEMS_PER_DAY: 12,
-    MIN_RECEIPTS_FOR_SUGGESTIONS: 0, // Allow function to run even with 0 receipts
-    CF_ONLY_RECEIPT_THRESHOLD: 5 // Users with less than this many receipts will only get CF suggestions
+    // Tier Thresholds
+    TIER_1_MAX_RECEIPTS: 9,   // 0-9 receipts: New users (CF-only)
+    TIER_2_MAX_RECEIPTS: 19,  // 10-19 receipts: Developing users (balanced)
+    // 20+ receipts: Established users (pattern-focused)
 };
+
+// Get tier-specific configuration based on receipt count
+function getTierConfig(receiptCount) {
+    if (receiptCount <= CONFIG.TIER_1_MAX_RECEIPTS) {
+        // Tier 1: New users - CF only, skip patterns
+        return {
+            tier: 1,
+            tierName: "New User",
+            skipPatterns: true,
+            weeklyWeight: 0.0,
+            collaborativeWeight: 1.0,
+            minWeeklyConfidence: 0.55,
+            minHabitConfidence: 0.6,
+            minWeekdayOccurrences: 3
+        };
+    } else if (receiptCount <= CONFIG.TIER_2_MAX_RECEIPTS) {
+        // Tier 2: Developing users - balanced CF + early patterns
+        return {
+            tier: 2,
+            tierName: "Developing User",
+            skipPatterns: false,
+            weeklyWeight: 0.4,
+            collaborativeWeight: 0.6,
+            minWeeklyConfidence: 0.45,  // Relaxed threshold
+            minHabitConfidence: 0.5,    // Relaxed threshold
+            minWeekdayOccurrences: 2    // Relaxed threshold
+        };
+    } else {
+        // Tier 3: Established users - pattern-focused
+        return {
+            tier: 3,
+            tierName: "Established User",
+            skipPatterns: false,
+            weeklyWeight: 0.7,
+            collaborativeWeight: 0.3,
+            minWeeklyConfidence: 0.55,
+            minHabitConfidence: 0.6,
+            minWeekdayOccurrences: 3
+        };
+    }
+}
 
 function getMedian(values) {
     if (values.length === 0) return 0;
