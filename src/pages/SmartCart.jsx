@@ -203,6 +203,68 @@ export default function SmartCart() {
       setCartItems([...cartItems, { gtin: product.gtin, name: product.canonical_name, quantity: 1 }]);
     }
   };
+  
+  // Add to cart with all chain prices stored
+  const addToCartWithPrices = (product, pricesByChain) => {
+    const existing = cartItems.find((item) => item.gtin === product.gtin);
+    if (existing) {
+      setCartItems(cartItems.map((item) =>
+        item.gtin === product.gtin ?
+        { ...item, quantity: item.quantity + 1 } :
+        item
+      ));
+    } else {
+      setCartItems([...cartItems, { gtin: product.gtin, name: product.canonical_name, quantity: 1 }]);
+    }
+    
+    // Store all chain prices for this gtin
+    setCartItemPrices(prev => ({
+      ...prev,
+      [product.gtin]: pricesByChain
+    }));
+  };
+  
+  // Calculate best chains based on stored prices
+  const calculateBestChains = () => {
+    if (cartItems.length === 0 || Object.keys(cartItemPrices).length === 0) return [];
+    
+    // Get all unique chain IDs that have prices for any cart item
+    const chainTotals = {};
+    
+    cartItems.forEach(item => {
+      const itemPricesForGtin = cartItemPrices[item.gtin];
+      if (itemPricesForGtin) {
+        Object.entries(itemPricesForGtin).forEach(([chainId, priceData]) => {
+          if (!chainTotals[chainId]) {
+            chainTotals[chainId] = { total: 0, itemCount: 0, items: [] };
+          }
+          chainTotals[chainId].total += priceData.price * item.quantity;
+          chainTotals[chainId].itemCount++;
+          chainTotals[chainId].items.push({
+            gtin: item.gtin,
+            name: item.name,
+            price: priceData.price,
+            quantity: item.quantity
+          });
+        });
+      }
+    });
+    
+    // Sort chains by total cost and filter to only those with all items
+    return Object.entries(chainTotals)
+      .filter(([_, data]) => data.itemCount === cartItems.length) // Only chains with all items
+      .map(([chainId, data]) => ({
+        chain_id: chainId,
+        chain: chains.find(c => c.id === chainId),
+        totalCost: data.total,
+        itemCount: data.itemCount,
+        items: data.items
+      }))
+      .sort((a, b) => a.totalCost - b.totalCost)
+      .slice(0, 3);
+  };
+  
+  const bestChains = calculateBestChains();
 
   const removeFromCart = (gtin) => {
     setCartItems(cartItems.filter((item) => item.gtin !== gtin));
