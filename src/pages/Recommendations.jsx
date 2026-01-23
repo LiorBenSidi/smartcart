@@ -206,39 +206,7 @@ export default function Recommendations() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      {/* AI Insights Header with Unified Refresh */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-600" />
-          AI-Powered Insights
-        </h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={refreshAll}
-          disabled={loadingAiInsights || tipsLoading}
-          className="gap-2"
-        >
-          {(loadingAiInsights || tipsLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          Refresh All
-        </Button>
-      </div>
-      
-      {loadingAiInsights && (
-        <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800 mb-8">
-          <CardContent className="p-6 flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
-          </CardContent>
-        </Card>
-      )}
-
-      {aiInsights && !loadingAiInsights && (
-        <div className="mb-8">
-          <AIInsightsPanel insights={aiInsights} />
-        </div>
-      )}
-
+      {/* Page Header - For You */}
       <div className="space-y-2">
         <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
@@ -312,10 +280,45 @@ export default function Recommendations() {
                     </DialogContent>
                 </Dialog>
             </div>
-            <RecommendationExplainer mode="general" />
+            <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshAll}
+                  disabled={loadingAiInsights || tipsLoading}
+                  className="gap-2"
+                >
+                  {(loadingAiInsights || tipsLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  Refresh All
+                </Button>
+                <RecommendationExplainer mode="general" />
+            </div>
         </div>
         <p className="text-gray-500 dark:text-gray-400">Personalized picks based on people with similar taste.</p>
       </div>
+
+      {/* AI Insights Section */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-indigo-600" />
+          AI-Powered Insights
+        </h2>
+      </div>
+      
+      {loadingAiInsights && (
+        <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800 mb-8">
+          <CardContent className="p-6 flex items-center justify-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {aiInsights && !loadingAiInsights && (
+        <div className="mb-8">
+          <AIInsightsPanel insights={aiInsights} />
+        </div>
+      )}
 
       {/* Smart Tips (AI Generated) */}
       {(smartTips.length > 0 || tipsLoading) && (
