@@ -213,6 +213,16 @@ export default function Admin() {
         }
       });
       
+      // Helper function to compare allergen_tags arrays
+      const arraysEqual = (a, b) => {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
+        if (a.length !== b.length) return false;
+        const sortedA = [...a].sort();
+        const sortedB = [...b].sort();
+        return sortedA.every((val, idx) => val === sortedB[idx]);
+      };
+
       // Find duplicates (products with same name but different GTINs)
       const duplicates = [];
       for (const [name, products] of Object.entries(productsByName)) {
@@ -223,17 +233,50 @@ export default function Admin() {
           products.forEach(p => {
             gtinCounts[p.gtin] = (gtinCounts[p.gtin] || 0) + 1;
           });
-          
-          // Find the best GTIN
+
+          // Find the best GTIN (reference product)
           const sortedGtins = Object.entries(gtinCounts).sort((a, b) => {
             if (b[1] !== a[1]) return b[1] - a[1];
             if (b[0].length !== a[0].length) return b[0].length - a[0].length;
             return b[0].localeCompare(a[0], undefined, { numeric: true });
           });
-          
+
           const bestGtin = sortedGtins[0][0];
-          const productsToUpdate = products.filter(p => p.gtin !== bestGtin);
-          
+          const referenceProduct = products.find(p => p.gtin === bestGtin);
+
+          // Strict validation: Check if all products in the group are truly the same
+          const productsToUpdate = products.filter(p => {
+            if (p.gtin === bestGtin) return false; // Skip reference product
+
+            // Check for same chain_item_code with different GTIN (data conflict)
+            if (p.chain_item_code && referenceProduct.chain_item_code && 
+                p.chain_item_code === referenceProduct.chain_item_code) {
+              return false; // Same chain code but different GTIN = don't merge
+            }
+
+            // Check category match
+            if ((p.category || '') !== (referenceProduct.category || '')) {
+              return false;
+            }
+
+            // Check kosher_level match
+            if ((p.kosher_level || '') !== (referenceProduct.kosher_level || '')) {
+              return false;
+            }
+
+            // Check brand_name match
+            if ((p.brand_name || '') !== (referenceProduct.brand_name || '')) {
+              return false;
+            }
+
+            // Check allergen_tags match
+            if (!arraysEqual(p.allergen_tags, referenceProduct.allergen_tags)) {
+              return false;
+            }
+
+            return true; // All checks passed, safe to merge
+          });
+
           if (productsToUpdate.length > 0) {
             duplicates.push({ 
               name, 
