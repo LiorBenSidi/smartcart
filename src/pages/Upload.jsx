@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle, Plus, Download } from 'lucide-react';
+import { UploadCloud, ScanLine, Loader2, Store, Settings, MapPin, FileText, Check, ChevronsUpDown, HelpCircle, Plus, Download, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from "@/components/lib/utils";
 import { createPageUrl } from '@/utils';
@@ -31,6 +31,7 @@ export default function Upload() {
   const [receipts, setReceipts] = useState([]);
   const [filteredReceipts, setFilteredReceipts] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [showChainSelector, setShowChainSelector] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleDeleteReceipt = async (receiptId) => {
@@ -208,276 +209,88 @@ export default function Upload() {
 
   return (
     <div className="space-y-6 pb-20 max-w-2xl mx-auto">
-      <div className="text-center space-y-2 relative">
-        <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleExportAll} 
-            disabled={isExporting}
-            className="absolute top-0 left-0 h-8 px-2 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50"
-        >
-            <Download className="w-4 h-4 mr-1" />
-            Export
-        </Button>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Scan Receipt</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Upload a photo to analyze your groceries</p>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button 
-              size="icon" 
+      {/* Hero Header - Action First */}
+      <div className="text-center space-y-1 relative">
+        <div className="flex items-center justify-between absolute top-0 left-0 right-0">
+          <Button 
               variant="ghost" 
-              className="absolute top-0 right-0 h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <ScanLine className="w-5 h-5 text-indigo-600" />
-                How Receipt Scanning Works
-              </DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
-              Scanning receipts unlocks powerful insights — track spending, discover savings, and build smarter shopping habits automatically.
-            </p>
-            <div className="space-y-4 text-sm">
-              <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
-                <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
-                  <UploadCloud className="w-4 h-4 text-slate-600" />
-                  Quick & Easy Upload
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                  Just snap a photo or drag & drop — we handle the rest in seconds.
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
-                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>1. Upload</strong> — Photo, scan, or PDF</div>
-                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>2. Process</strong> — AI reads your receipt</div>
-                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>3. Review</strong> — Verify extracted data</div>
-                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>4. Insights</strong> — See savings opportunities</div>
-                </div>
-              </div>
-              
-              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800">
-                <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
-                  <ScanLine className="w-4 h-4 text-indigo-600" />
-                  Smart AI Extraction
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                  Our AI reads your receipt image and extracts every detail automatically.
-                </p>
-                <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
-                    <span><strong>Store Info</strong> — Name, address, date & time</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
-                    <span><strong>Every Item</strong> — Product names, quantities, prices & categories</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
-                    <span><strong>Total Verification</strong> — Cross-checks amounts for accuracy</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
-                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-amber-600" />
-                  Accuracy You Can Trust
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                  We flag uncertain data so you can verify — no guesswork, no errors.
-                </p>
-                <div className="space-y-2 text-xs">
-                  <div className="flex gap-2">
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">90%+ confident</span>
-                    <span className="text-gray-600 dark:text-gray-400">Auto-approved, no action needed</span>
+              size="sm" 
+              onClick={handleExportAll} 
+              disabled={isExporting}
+              className="h-8 px-2 text-xs text-gray-400 hover:text-indigo-400 hover:bg-gray-800/50"
+          >
+              <Download className="w-4 h-4 mr-1" />
+              Export
+          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-8 w-8 rounded-full hover:bg-gray-800/50"
+              >
+                <HelpCircle className="h-4 w-4 text-gray-500 hover:text-indigo-400" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-gray-100">
+                  <ScanLine className="w-5 h-5 text-indigo-400" />
+                  How It Works
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 text-sm">
+                {/* Trust Signals - Compact */}
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                    <ScanLine className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-gray-200 font-medium text-sm">AI extracts every item, price, and total</p>
+                      <p className="text-gray-500 text-xs mt-0.5">Store info, quantities, categories — automatically</p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded font-medium">Below 90%</span>
-                    <span className="text-gray-600 dark:text-gray-400">Flagged for your quick review</span>
+                  <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                    <Check className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-gray-200 font-medium text-sm">Totals are cross-checked automatically</p>
+                      <p className="text-gray-500 text-xs mt-0.5">Math errors caught before you review</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                    <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-gray-200 font-medium text-sm">Low-confidence data is flagged for review</p>
+                      <p className="text-gray-500 text-xs mt-0.5">High confidence → auto-approved • Needs review → quick confirmation</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
-                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200 flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-purple-600" />
-                  Filter & Organize
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                  Use powerful filters to quickly find any receipt in your history.
-                </p>
-                <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-500 mt-0.5">✓</span>
-                    <span><strong>Date Range</strong> — Filter by specific time periods</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-500 mt-0.5">✓</span>
-                    <span><strong>Store Filter</strong> — View receipts from specific chains</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-500 mt-0.5">✓</span>
-                    <span><strong>Amount Range</strong> — Find receipts by total spent</span>
-                  </li>
-                </ul>
+                {/* Filter Info */}
+                <div className="pt-2 border-t border-gray-700/50">
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider font-medium">Receipt History</p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="px-2 py-1 bg-gray-800 text-gray-400 rounded">Date Range</span>
+                    <span className="px-2 py-1 bg-gray-800 text-gray-400 rounded">Store Filter</span>
+                    <span className="px-2 py-1 bg-gray-800 text-gray-400 rounded">Amount Range</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <div className="pt-10">
+          <h2 className="text-2xl font-bold text-gray-100">Upload a receipt</h2>
+          <p className="text-gray-500 text-sm">Spending, categories, and savings — automatically.</p>
+        </div>
       </div>
 
-      {/* Chain & Store Selection */}
-      <Card className="shadow-sm">
-        <CardContent className="p-6 space-y-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <Store className="w-4 h-4" />
-              Select Chain
-            </label>
-            {loadingChains ? (
-              <div className="flex items-center gap-2 text-gray-500">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Loading chains...</span>
-              </div>
-            ) : chains.length === 0 ? (
-              <div className="text-sm bg-amber-50 border border-amber-200 p-4 rounded-lg space-y-2">
-                <p className="text-amber-800 font-medium">No chains available in the system.</p>
-                {isAdmin ? (
-                  <div className="flex items-center gap-2">
-                    <p className="text-amber-700 text-xs">Add chains through the catalog admin:</p>
-                    <Link to={createPageUrl('CatalogAdmin')}>
-                      <Button size="sm" variant="outline" className="h-7 text-xs border-amber-300 hover:bg-amber-100">
-                        <Settings className="w-3 h-3 mr-1" />
-                        Catalog Admin
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <p className="text-amber-700 text-xs">Please contact an administrator to add chains.</p>
-                )}
-              </div>
-            ) : (
-              <Select value={selectedChain?.id} onValueChange={async (id) => {
-                const chain = chains.find(c => c.id === id);
-                setSelectedChain(chain);
-                setSelectedStore(null);
-                setStores([]);
-                
-                if (chain) {
-                  setLoadingStores(true);
-                  try {
-                    const chainStores = await base44.entities.Store.filter({ chain_id: chain.id });
-                    setStores(chainStores);
-                  } catch (err) {
-                    console.error("Failed to load stores", err);
-                  } finally {
-                    setLoadingStores(false);
-                  }
-                }
-              }}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose chain" />
-                </SelectTrigger>
-                <SelectContent>
-                  {chains.map((chain) => (
-                    <SelectItem key={chain.id} value={chain.id}>
-                      {chain.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Store Selection */}
-          {selectedChain && (
-            <div className="animate-in fade-in slide-in-from-top-2">
-              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                Select Store (Optional)
-              </label>
-              {loadingStores ? (
-                <div className="flex items-center gap-2 text-gray-500 text-sm p-2">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Loading stores...</span>
-                </div>
-              ) : stores.length === 0 ? (
-                 <p className="text-xs text-gray-500 italic p-1">No stores found for this chain.</p>
-              ) : (
-                <Popover open={openStoreCombobox} onOpenChange={setOpenStoreCombobox}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openStoreCombobox}
-                      className="w-full justify-between font-normal"
-                    >
-                      {selectedStore
-                        ? `${selectedStore.name}${selectedStore.city ? ` - ${selectedStore.city}` : ''}`
-                        : "Select specific store..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search store by city or address..." />
-                      <CommandList>
-                        <CommandEmpty>No store found.</CommandEmpty>
-                        {Object.entries(
-                          stores.reduce((acc, store) => {
-                            const city = store.city || 'Other';
-                            if (!acc[city]) acc[city] = [];
-                            acc[city].push(store);
-                            return acc;
-                          }, {})
-                        ).sort((a, b) => a[0].localeCompare(b[0])).map(([city, cityStores]) => (
-                          <CommandGroup key={city} heading={city}>
-                            {cityStores.map((store) => (
-                              <CommandItem
-                                key={store.id}
-                                value={`${store.name} ${store.city || ''} ${store.address_line || ''}`}
-                                onSelect={() => {
-                                  setSelectedStore(store);
-                                  setOpenStoreCombobox(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedStore?.id === store.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex flex-col">
-                                  <span>{store.name}</span>
-                                  {store.address_line && (
-                                    <span className="text-xs text-gray-500">{store.address_line}</span>
-                                  )}
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        ))}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-          )}
-
-
-
-
-        </CardContent>
-      </Card>
-
-      {/* Upload / Preview Area */}
-      <Card className={`border-2 border-dashed bg-gray-50 overflow-hidden shadow-none transition-colors ${
-        isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'
+      {/* Upload / Preview Area - HERO */}
+      <Card className={`border-2 border-dashed overflow-hidden shadow-lg transition-all duration-200 ${
+        isDragging 
+          ? 'border-indigo-500 bg-indigo-900/20 shadow-indigo-500/20' 
+          : preview 
+            ? 'border-gray-700 bg-gray-800/50' 
+            : 'border-gray-600 bg-gray-800/30 hover:border-indigo-500/50 hover:bg-gray-800/50'
       }`}>
         <CardContent className="p-0">
           {!preview ? (
@@ -486,39 +299,41 @@ export default function Upload() {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`h-64 flex flex-col items-center justify-center cursor-pointer transition-colors p-6 ${
-                isDragging ? 'bg-indigo-100' : 'hover:bg-gray-100'
+              className={`min-h-[200px] flex flex-col items-center justify-center cursor-pointer transition-all p-8 ${
+                isDragging ? 'scale-[1.02]' : ''
               }`}
             >
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-                isDragging ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-600'
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all ${
+                isDragging 
+                  ? 'bg-indigo-500/30 text-indigo-300 scale-110' 
+                  : 'bg-indigo-600/20 text-indigo-400'
               }`}>
                 <UploadCloud className="w-8 h-8" />
               </div>
-              <p className="font-medium text-gray-900">{isDragging ? 'Drop receipt here' : 'Tap to upload receipt'}</p>
-              <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG, PDF</p>
+              <p className="font-semibold text-gray-200 text-lg">{isDragging ? 'Drop here' : 'Upload receipt'}</p>
+              <p className="text-xs text-gray-500 mt-2">JPG, PNG, or PDF</p>
             </div>
           ) : (
             <div className="relative">
               {file && file.type === 'application/pdf' ? (
-                <div className="h-80 flex flex-col items-center justify-center bg-gray-100 text-gray-500">
-                  <FileText className="w-16 h-16 mb-2 text-indigo-500" />
-                  <p className="font-medium text-gray-900">{file.name}</p>
-                  <p className="text-xs text-gray-400">PDF Document</p>
+                <div className="h-48 flex flex-col items-center justify-center bg-gray-800/50 text-gray-400">
+                  <FileText className="w-12 h-12 mb-2 text-indigo-400" />
+                  <p className="font-medium text-gray-200 text-sm">{file.name}</p>
+                  <p className="text-xs text-gray-500">PDF Document</p>
                 </div>
               ) : (
-                <img src={preview} alt="Receipt" className="w-full object-cover max-h-80 opacity-90" />
+                <img src={preview} alt="Receipt" className="w-full object-cover max-h-64 opacity-90" />
               )}
               <Button 
                 variant="secondary" 
                 size="sm" 
-                className="absolute top-4 right-4 bg-white/90 backdrop-blur shadow-sm hover:bg-white"
+                className="absolute top-3 right-3 bg-gray-900/80 backdrop-blur border border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
                 onClick={() => {
                     setPreview(null);
                     setFile(null);
                 }}
               >
-                Retake
+                Change
               </Button>
             </div>
           )}
@@ -532,34 +347,183 @@ export default function Upload() {
         </CardContent>
       </Card>
 
-      {/* Action Button */}
-      <div className="space-y-4">
-        {preview && !isUploading && (
-          <Button 
-            onClick={uploadAndProcess} 
-            disabled={!file}
-            className="w-full h-12 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-md disabled:opacity-50"
-          >
-            <ScanLine className="mr-2 w-5 h-5" /> Upload & Analyze
-          </Button>
-        )}
+      {/* Action Button - Prominent */}
+      {preview && !isUploading && (
+        <Button 
+          onClick={uploadAndProcess} 
+          disabled={!file}
+          className="w-full h-12 text-base font-semibold bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 disabled:opacity-50 transition-all"
+        >
+          <ScanLine className="mr-2 w-5 h-5" /> Analyze Receipt
+        </Button>
+      )}
 
-        {isUploading && (
-          <Button disabled className="w-full h-12 bg-white border border-gray-200 text-gray-900">
-            <Loader2 className="mr-2 w-5 h-5 animate-spin text-indigo-600" /> Uploading...
-          </Button>
-        )}
+      {isUploading && (
+        <Button disabled className="w-full h-12 bg-gray-800 border border-gray-700 text-gray-300">
+          <Loader2 className="mr-2 w-5 h-5 animate-spin text-indigo-400" /> Processing...
+        </Button>
+      )}
 
-        {preview && (
-          <p className="text-center text-xs text-gray-400">
-            You'll be redirected while we analyze your receipt in the background
-          </p>
+      {/* Chain & Store Selection - De-emphasized */}
+      <div className="space-y-3">
+        <button 
+          onClick={() => setShowChainSelector(!showChainSelector)}
+          className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-800/30 border border-gray-700/50 hover:bg-gray-800/50 transition-colors text-left"
+        >
+          <div className="flex items-center gap-3">
+            <Store className="w-4 h-4 text-gray-500" />
+            <div>
+              <p className="text-sm text-gray-300">
+                {selectedChain ? selectedChain.name : 'Select chain'}
+                {selectedStore && <span className="text-gray-500"> • {selectedStore.city || selectedStore.name}</span>}
+              </p>
+              <p className="text-[10px] text-gray-500">Optional — helps improve categorization</p>
+            </div>
+          </div>
+          <ChevronsUpDown className="w-4 h-4 text-gray-500" />
+        </button>
+
+        {showChainSelector && (
+          <Card className="border-gray-700/50 bg-gray-800/50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <CardContent className="p-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-gray-400 mb-2 block">Chain</label>
+                {loadingChains ? (
+                  <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : chains.length === 0 ? (
+                  <div className="text-sm bg-amber-900/20 border border-amber-800/50 p-3 rounded-lg">
+                    <p className="text-amber-300 text-xs">No chains available.</p>
+                    {isAdmin && (
+                      <Link to={createPageUrl('CatalogAdmin')}>
+                        <Button size="sm" variant="outline" className="h-7 text-xs mt-2 border-amber-700 text-amber-300 hover:bg-amber-900/30">
+                          <Settings className="w-3 h-3 mr-1" />
+                          Add Chains
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <Select value={selectedChain?.id} onValueChange={async (id) => {
+                    const chain = chains.find(c => c.id === id);
+                    setSelectedChain(chain);
+                    setSelectedStore(null);
+                    setStores([]);
+                    
+                    if (chain) {
+                      setLoadingStores(true);
+                      try {
+                        const chainStores = await base44.entities.Store.filter({ chain_id: chain.id });
+                        setStores(chainStores);
+                      } catch (err) {
+                        console.error("Failed to load stores", err);
+                      } finally {
+                        setLoadingStores(false);
+                      }
+                    }
+                  }}>
+                    <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200">
+                      <SelectValue placeholder="Choose chain" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {chains.map((chain) => (
+                        <SelectItem key={chain.id} value={chain.id}>
+                          {chain.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {selectedChain && (
+                <div className="animate-in fade-in">
+                  <label className="text-xs font-medium text-gray-400 mb-2 block">
+                    Store <span className="text-gray-600">(optional)</span>
+                  </label>
+                  {loadingStores ? (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm p-2">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Loading stores...</span>
+                    </div>
+                  ) : stores.length === 0 ? (
+                     <p className="text-xs text-gray-500 italic">No stores found for this chain.</p>
+                  ) : (
+                    <Popover open={openStoreCombobox} onOpenChange={setOpenStoreCombobox}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openStoreCombobox}
+                          className="w-full justify-between font-normal bg-gray-900/50 border-gray-700 text-gray-300 hover:bg-gray-800"
+                        >
+                          {selectedStore
+                            ? `${selectedStore.name}${selectedStore.city ? ` - ${selectedStore.city}` : ''}`
+                            : "Select store..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search by city or address..." />
+                          <CommandList>
+                            <CommandEmpty>No store found.</CommandEmpty>
+                            {Object.entries(
+                              stores.reduce((acc, store) => {
+                                const city = store.city || 'Other';
+                                if (!acc[city]) acc[city] = [];
+                                acc[city].push(store);
+                                return acc;
+                              }, {})
+                            ).sort((a, b) => a[0].localeCompare(b[0])).map(([city, cityStores]) => (
+                              <CommandGroup key={city} heading={city}>
+                                {cityStores.map((store) => (
+                                  <CommandItem
+                                    key={store.id}
+                                    value={`${store.name} ${store.city || ''} ${store.address_line || ''}`}
+                                    onSelect={() => {
+                                      setSelectedStore(store);
+                                      setOpenStoreCombobox(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        selectedStore?.id === store.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span>{store.name}</span>
+                                      {store.address_line && (
+                                        <span className="text-xs text-gray-500">{store.address_line}</span>
+                                      )}
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            ))}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
 
-      {/* Receipt History (Folder View) */}
-      <section className="space-y-4 pt-8 border-t border-gray-100 dark:border-gray-700">
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg">Receipt History</h3>
+
+
+      {/* Receipt History */}
+      <section className="space-y-4 pt-6 border-t border-gray-700/50">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-200 text-base">Receipt History</h3>
+            <span className="text-xs text-gray-500">{receipts.length} total</span>
+          </div>
 
           <ReceiptFilters 
             receipts={receipts} 
