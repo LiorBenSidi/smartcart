@@ -81,7 +81,7 @@ export default function Layout({ children, currentPageName }) {
           <header className="px-6 py-4 flex justify-between items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
             <div className="flex flex-col">
               <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                {currentPageName === 'Home' ? 'Dashboard' : currentPageName}
+                {currentPageName === 'Main' ? 'Main' : currentPageName}
               </h1>
               {storeState.loading && (
                 <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 mt-1">

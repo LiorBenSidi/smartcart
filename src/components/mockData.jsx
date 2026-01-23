@@ -80,9 +80,8 @@ export const generateMockReceipt = () => {
 };
 
 export const NAV_ITEMS = [
-  { label: "Home", path: "/", icon: Home },
+  { label: "Main", path: "/", icon: Home },
   { label: "Scan", path: "/upload", icon: PlusCircle },
   { label: "Cart", path: "/smartcart", icon: ShoppingCart },
   { label: "Stores", path: "/nearbystores", icon: MapPin },
-  { label: "Tips", path: "/recommendations", icon: Sparkles },
 ];
