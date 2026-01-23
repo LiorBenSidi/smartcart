@@ -909,14 +909,38 @@ export default function SmartCart() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Saved Cart Lists</CardTitle>
-            <p className="text-xs text-amber-600 mt-1">⚠️ Prices and availability shown are from the time each list was created</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {savedCarts.length === 0 ?
             <p className="text-center text-gray-400 py-6">No saved carts yet</p> :
 
-            savedCarts.map((cart) =>
-            <div key={cart.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            savedCarts.map((cart) => {
+              // Calculate best chains from saved cart data
+              const savedChainTotals = {};
+              cart.items?.forEach(item => {
+                const itemChainPrices = item.chainPrices || {};
+                Object.entries(itemChainPrices).forEach(([chainId, data]) => {
+                  if (!savedChainTotals[chainId]) {
+                    savedChainTotals[chainId] = { total: 0, itemCount: 0 };
+                  }
+                  savedChainTotals[chainId].total += data.price * item.quantity;
+                  savedChainTotals[chainId].itemCount++;
+                });
+              });
+
+              const savedBestChains = Object.entries(savedChainTotals)
+                .filter(([_, data]) => data.itemCount === cart.items?.length)
+                .map(([chainId, data]) => ({
+                  chain_id: chainId,
+                  chain: chains.find(c => c.id === chainId),
+                  totalCost: data.total,
+                  itemCount: data.itemCount
+                }))
+                .sort((a, b) => a.totalCost - b.totalCost)
+                .slice(0, 3);
+
+              return (
+                <div key={cart.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 dark:text-gray-100">{cart.name}</div>
@@ -938,51 +962,32 @@ export default function SmartCart() {
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Price comparison for this saved cart */}
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    {!savedCartComparisons[cart.id] ? (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="w-full text-xs"
-                        onClick={() => fetchSavedCartComparison(cart)}
-                        disabled={loadingCartComparison === cart.id}
-                      >
-                        {loadingCartComparison === cart.id ? (
-                          <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Comparing prices...</>
-                        ) : (
-                          <><TrendingDown className="w-3 h-3 mr-1" /> Compare Prices</>
-                        )}
-                      </Button>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                          <TrendingDown className="w-3 h-3 text-green-600" /> Best Prices Today:
-                        </div>
-                        {savedCartComparisons[cart.id].slice(0, 3).map((comparison, idx) => (
-                          <div 
-                            key={idx} 
-                            className={`flex items-center justify-between p-2 rounded-lg text-xs ${
-                              idx === 0 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-700'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              {idx === 0 && <Badge className="bg-green-600 text-white text-[10px] px-1">Best</Badge>}
-                              <span className="font-medium">{comparison.chain?.name || comparison.store?.name}</span>
-                            </div>
-                            <span className={`font-bold ${idx === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                              ₪{comparison.totalCost?.toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                        {savedCartComparisons[cart.id].length === 0 && (
-                          <div className="text-xs text-gray-400 text-center py-2">No price data available</div>
-                        )}
+
+                  {/* Price comparison from stored data */}
+                  {savedBestChains.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                        <TrendingDown className="w-3 h-3 text-green-600" /> Best Chains:
                       </div>
-                    )}
-                  </div>
-                  
+                      {savedBestChains.map((chainData, idx) => (
+                        <div 
+                          key={chainData.chain_id} 
+                          className={`flex items-center justify-between p-2 rounded-lg text-xs ${
+                            idx === 0 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {idx === 0 && <Badge className="bg-green-600 text-white text-[10px] px-1">Best</Badge>}
+                            <span className="font-medium">{chainData.chain?.name || 'Unknown'}</span>
+                          </div>
+                          <span className={`font-bold ${idx === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            ₪{chainData.totalCost?.toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Show items preview */}
                   <div className="text-xs text-gray-500 mt-3 flex flex-wrap gap-1">
                     {cart.items?.slice(0, 5).map((item, i) => (
@@ -997,7 +1002,8 @@ export default function SmartCart() {
                     )}
                   </div>
                 </div>
-            )
+              );
+            })
             }
           </CardContent>
         </Card>
