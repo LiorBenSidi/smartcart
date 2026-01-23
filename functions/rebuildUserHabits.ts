@@ -39,8 +39,8 @@ export default Deno.serve(async (req) => {
         const batch = payload.batch || 0;
         const skip = batch * limit;
 
-        // 1. Fetch Users
-        const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
+        // 1. Fetch Users (with retry)
+        const users = await withRetry(() => svc.entities.User.list('created_date', 1000));
         // Manual pagination since list params might vary
         const batchUsers = users.slice(skip, skip + limit);
         
