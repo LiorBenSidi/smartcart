@@ -40,6 +40,7 @@ export default function SmartCart() {
   const [weeklyWeight, setWeeklyWeight] = useState(0.5);
   const [collaborativeWeight, setCollaborativeWeight] = useState(0.5);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
