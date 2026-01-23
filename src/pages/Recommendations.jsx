@@ -219,17 +219,27 @@ export default function Recommendations() {
   const [runId, setRunId] = useState(null);
   const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
   const [insights, setInsights] = useState([]);
-  const [smartTips, setSmartTips] = useState([]); // New Smart Tips
+  const [smartTips, setSmartTips] = useState(() => {
+    const saved = localStorage.getItem('smartTips');
+    return saved ? JSON.parse(saved) : [];
+  }); // New Smart Tips
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
-  const [aiInsights, setAiInsights] = useState(null);
+  const [aiInsights, setAiInsights] = useState(() => {
+    const saved = localStorage.getItem('aiInsights');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showAiInsights, setShowAiInsights] = useState(false);
   const [showSmartTips, setShowSmartTips] = useState(false);
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState(() => {
+    const saved = localStorage.getItem('dashboardData');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [receipts, setReceipts] = useState([]);
+  const [smartTipsLoaded, setSmartTipsLoaded] = useState(false);
 
   const fetchAIInsights = async () => {
     setLoadingAiInsights(true);
@@ -238,6 +248,8 @@ export default function Recommendations() {
       if (response.data.success) {
         setAiInsights(response.data.aiInsights);
         setDashboardData(response.data.rawData);
+        localStorage.setItem('aiInsights', JSON.stringify(response.data.aiInsights));
+        localStorage.setItem('dashboardData', JSON.stringify(response.data.rawData));
       }
     } catch (error) {
       console.error("Error fetching AI insights", error);
@@ -266,12 +278,14 @@ export default function Recommendations() {
           const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
           if (tipRes.data && tipRes.data.tips) {
               setSmartTips(tipRes.data.tips);
+              localStorage.setItem('smartTips', JSON.stringify(tipRes.data.tips));
           }
       } catch (e) {
           console.error("Smart tips failed", e);
           toast.error("Failed to refresh tips");
       } finally {
-          setTipsLoading(false);
+          setTipsLoading(true);
+          setSmartTipsLoaded(true);
       }
   };
 
@@ -347,12 +361,19 @@ export default function Recommendations() {
             };
             setCandidates(newCandidates);
 
-            // Generate Smart Tips
-            refreshTips(newCandidates);
+            // Generate Smart Tips only if not already loaded from localStorage
+            const savedTips = localStorage.getItem('smartTips');
+            if (!savedTips || JSON.parse(savedTips).length === 0) {
+                refreshTips(newCandidates);
+            } else {
+                setSmartTipsLoaded(true);
+            }
         }
 
-        // Fetch AI Insights
-        fetchAIInsights();
+        // Fetch AI Insights only if not already cached
+        if (!aiInsights) {
+            fetchAIInsights();
+        }
 
         // Fetch receipts for analytics
         const isAdmin = currentUser.role === 'admin';

@@ -18,7 +18,10 @@ import { processManager } from "@/components/processManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function SmartCart() {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    const saved = localStorage.getItem('smartCartItems');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [storeComparisons, setStoreComparisons] = useState([]);
   const [optimizedCart, setOptimizedCart] = useState(null);
   const [loadingComparisons, setLoadingComparisons] = useState(false);
@@ -29,7 +32,10 @@ export default function SmartCart() {
   const [showHistory, setShowHistory] = useState(false);
   const [editingCartId, setEditingCartId] = useState(null); // For editing saved carts
   const [itemPrices, setItemPrices] = useState({}); // Store prices per item by gtin
-  const [cartItemPrices, setCartItemPrices] = useState({}); // Store all chain prices per gtin: { gtin: { chain_id: { price, chain_id, store_id } } }
+  const [cartItemPrices, setCartItemPrices] = useState(() => {
+    const saved = localStorage.getItem('smartCartPrices');
+    return saved ? JSON.parse(saved) : {};
+  }); // Store all chain prices per gtin: { gtin: { chain_id: { price, chain_id, store_id } } }
   const [chains, setChains] = useState([]); // All chains for display
   const [userLocation, setUserLocation] = useState(null);
   const [suggestions, setSuggestions] = useState(null);
@@ -42,6 +48,15 @@ export default function SmartCart() {
   const [collaborativeWeight, setCollaborativeWeight] = useState(0.5);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+
+  // Persist cart items and prices to localStorage
+  useEffect(() => {
+    localStorage.setItem('smartCartItems', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  useEffect(() => {
+    localStorage.setItem('smartCartPrices', JSON.stringify(cartItemPrices));
+  }, [cartItemPrices]);
   const [addedItems, setAddedItems] = useState(new Set());
   const [showPriceCompare, setShowPriceCompare] = useState(null); // cart id to show price comparison
   const [alternativeSelector, setAlternativeSelector] = useState(null); // { cartId, itemGtin, chainId }
