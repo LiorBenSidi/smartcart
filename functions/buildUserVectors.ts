@@ -124,6 +124,81 @@ export default Deno.serve(async (req) => {
             }
         }
 
+        // 3. Compute Similar Users (only after all vectors are built, i.e., last batch)
+        if (!hasMore && targetUsers.length > 0) {
+            console.log("Computing similar user edges...");
+            
+            // Get all user vectors
+            const allVectors = await base44.asServiceRole.entities.UserVectorSnapshot.filter(
+                { vector_type: "behavior" },
+                '-computed_at',
+                500
+            );
+            
+            // Group by user_id, keep only latest
+            const userVectorMap = {};
+            allVectors.forEach(v => {
+                if (!userVectorMap[v.user_id] || new Date(v.computed_at) > new Date(userVectorMap[v.user_id].computed_at)) {
+                    userVectorMap[v.user_id] = v;
+                }
+            });
+            
+            const userIds = Object.keys(userVectorMap);
+            console.log(`Found ${userIds.length} users with behavior vectors`);
+            
+            // Clear existing edges for processed users
+            for (const targetUser of targetUsers) {
+                const existingEdges = await base44.asServiceRole.entities.SimilarUserEdge.filter(
+                    { user_id: targetUser.email }
+                );
+                for (const edge of existingEdges) {
+                    await base44.asServiceRole.entities.SimilarUserEdge.delete(edge.id);
+                }
+            }
+            
+            // Compute similarities for each processed user
+            const edgesToCreate = [];
+            for (const targetUser of targetUsers) {
+                const userId = targetUser.email;
+                const userVec = userVectorMap[userId]?.vector_json;
+                if (!userVec || Object.keys(userVec).length === 0) continue;
+                
+                const similarities = [];
+                for (const otherId of userIds) {
+                    if (otherId === userId) continue;
+                    const otherVec = userVectorMap[otherId]?.vector_json;
+                    if (!otherVec || Object.keys(otherVec).length === 0) continue;
+                    
+                    const sim = cosineSimilarity(userVec, otherVec);
+                    if (sim >= 0.1) { // Minimum threshold
+                        similarities.push({ neighborId: otherId, similarity: sim });
+                    }
+                }
+                
+                // Sort and keep top 10
+                similarities.sort((a, b) => b.similarity - a.similarity);
+                const topSimilar = similarities.slice(0, 10);
+                
+                for (const s of topSimilar) {
+                    edgesToCreate.push({
+                        user_id: userId,
+                        neighbor_user_id: s.neighborId,
+                        similarity: s.similarity,
+                        based_on: "behavior",
+                        computed_at: new Date().toISOString()
+                    });
+                }
+                
+                console.log(`User ${userId}: Found ${topSimilar.length} similar users`);
+            }
+            
+            // Bulk create edges
+            if (edgesToCreate.length > 0) {
+                await base44.asServiceRole.entities.SimilarUserEdge.bulkCreate(edgesToCreate);
+                console.log(`Created ${edgesToCreate.length} similarity edges`);
+            }
+        }
+
         return Response.json({
             success: true,
             hasMore: hasMore,
