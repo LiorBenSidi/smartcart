@@ -130,7 +130,7 @@ export default Deno.serve(async (req) => {
                      if (!habitsMap.has(productId)) {
                          // New Habit
                          habitsMap.set(productId, {
-                             user_id: targetUser.email, // Use email for consistency with other entities
+                             user_id: targetUser.id,
                              product_id: productId,
                              product_name: item.name,
                              purchase_count: 1,
