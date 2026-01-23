@@ -121,18 +121,7 @@ export default function Landing() {
           <p className="text-xs text-gray-400 mt-6">Lior Ben Sidi & Yarin Katan</p>
         </motion.div>
 
-        <div className="mt-16 grid grid-cols-2 gap-4 w-full">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 text-left">
-                <TrendingUp className="w-6 h-6 text-green-500 mb-2" />
-                <h3 className="font-bold text-gray-900 dark:text-gray-100">Track Costs</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Monthly analytics</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 text-left">
-                <Leaf className="w-6 h-6 text-emerald-500 mb-2" />
-                <h3 className="font-bold text-gray-900 dark:text-gray-100">Eat Better</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Health insights</p>
-            </div>
-        </div>
+
       </div>
     </div>);
 
