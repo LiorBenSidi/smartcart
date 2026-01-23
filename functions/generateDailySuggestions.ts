@@ -245,16 +245,17 @@ export default Deno.serve(async (req) => {
                 processing_status: 'processed' 
             }, '-purchased_at', 100);
             const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            const tierConfig = getTierConfig(validReceipts.length);
             
-            // For CF-only users, skip restock patterns and proceed to collaborative filtering
-            if (isCFOnlyUser) {
+            // For Tier 1 users, skip restock patterns entirely
+            if (tierConfig.skipPatterns) {
                 return Response.json({ 
                     hasMore: true, 
                     progress: 50, 
-                    message: "Skipping restock patterns (CF-only user)...",
+                    message: `Skipping restock patterns (${tierConfig.tierName})...`,
                     skipped: true,
-                    isCFOnlyUser: true
+                    tier: tierConfig.tier,
+                    tierName: tierConfig.tierName
                 });
             }
             
@@ -287,7 +288,8 @@ export default Deno.serve(async (req) => {
                 let confidence = 1 / (1 + cv);
                 if (confidence > 1) confidence = 1;
 
-                if (confidence >= CONFIG.MIN_HABIT_CONFIDENCE) {
+                // Use tier-specific threshold
+                if (confidence >= tierConfig.minHabitConfidence) {
                     const daysSinceLast = Math.floor((today - lastPurchase) / (1000 * 60 * 60 * 24));
                     const dueScore = daysSinceLast / (avgCadence || 1);
 
@@ -318,7 +320,9 @@ export default Deno.serve(async (req) => {
             return Response.json({ 
                 hasMore: true, 
                 progress: 50, 
-                message: "Checking restock needs..." 
+                message: "Checking restock needs...",
+                tier: tierConfig.tier,
+                tierName: tierConfig.tierName
             });
         }
 
