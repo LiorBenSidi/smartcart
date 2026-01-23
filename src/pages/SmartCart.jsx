@@ -1182,21 +1182,27 @@ export default function SmartCart() {
                                     const nameWords = item.name.split(' ').slice(0, 3).join(' ');
                                     const alternatives = await base44.entities.Product.filter({
                                       canonical_name: { $regex: nameWords, $options: 'i' },
-                                      chain_id: { $in: missingChains }
-                                    }, '-updated_date', 100);
+                                      chain_id: { $in: missingChains },
+                                      gtin: { $ne: item.gtin }
+                                    }, 'current_price', 200);
                                     
+                                    // Group by chain and pick cheapest for each missing chain
                                     alternatives.forEach(alt => {
-                                      if (alt.chain_id && alt.current_price != null) {
+                                      if (alt.chain_id && alt.current_price != null && alt.gtin !== item.gtin) {
                                         if (!pricesByGtin[item.gtin]) {
                                           pricesByGtin[item.gtin] = {};
                                         }
-                                        if (!pricesByGtin[item.gtin][alt.chain_id]) {
+                                        // Only add if no price yet for this chain, or if this one is cheaper
+                                        if (!pricesByGtin[item.gtin][alt.chain_id] || 
+                                            (pricesByGtin[item.gtin][alt.chain_id].isAlternative && 
+                                             alt.current_price < pricesByGtin[item.gtin][alt.chain_id].price)) {
                                           pricesByGtin[item.gtin][alt.chain_id] = {
                                             price: alt.current_price,
                                             chain_id: alt.chain_id,
                                             store_id: alt.store_id,
                                             isAlternative: true,
-                                            altName: alt.canonical_name
+                                            altName: alt.canonical_name,
+                                            altGtin: alt.gtin
                                           };
                                         }
                                       }
