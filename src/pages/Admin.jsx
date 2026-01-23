@@ -23,6 +23,7 @@ export default function Admin() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [processState, setProcessState] = useState(processManager.getState());
+  const [batchDelay, setBatchDelay] = useState(1000); // Default 1 second delay
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
