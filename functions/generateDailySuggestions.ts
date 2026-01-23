@@ -10,9 +10,24 @@ const CONFIG = {
     MIN_PURCHASE_COUNT_FOR_HABIT: 2,
     // Limits
     MAX_SUGGESTED_ITEMS_PER_DAY: 12,
-    MIN_RECEIPTS_FOR_SUGGESTIONS: 0, // Allow function to run even with 0 receipts
-    CF_ONLY_RECEIPT_THRESHOLD: 5 // Users with less than this many receipts will only get CF suggestions
+    // Tier thresholds
+    TIER_1_MAX_RECEIPTS: 9,   // 0-9 receipts: New users (CF-heavy)
+    TIER_2_MAX_RECEIPTS: 19,  // 10-19 receipts: Developing users (balanced)
+    // 20+ receipts: Established users (pattern-heavy)
 };
+
+// Tier configuration: { weeklyWeight, collaborativeWeight, minWeeklyConfidence, minHabitConfidence }
+const TIER_CONFIG = {
+    1: { weeklyWeight: 0.1, collaborativeWeight: 0.9, minWeeklyConfidence: 0.7, minHabitConfidence: 0.8, skipPatterns: true },
+    2: { weeklyWeight: 0.5, collaborativeWeight: 0.5, minWeeklyConfidence: 0.5, minHabitConfidence: 0.55, skipPatterns: false },
+    3: { weeklyWeight: 0.8, collaborativeWeight: 0.2, minWeeklyConfidence: 0.45, minHabitConfidence: 0.5, skipPatterns: false }
+};
+
+function getUserTier(receiptCount) {
+    if (receiptCount <= CONFIG.TIER_1_MAX_RECEIPTS) return 1;
+    if (receiptCount <= CONFIG.TIER_2_MAX_RECEIPTS) return 2;
+    return 3;
+}
 
 function getMedian(values) {
     if (values.length === 0) return 0;
