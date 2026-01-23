@@ -148,11 +148,20 @@ export default Deno.serve(async (req) => {
 
             console.log(`[rebuildUserHabits] Creating ${habitsToCreate.length} habits for ${targetUser.email}`);
             if (habitsToCreate.length > 0) {
-                // Bulk create in chunks of 50
-                for (let i = 0; i < habitsToCreate.length; i += 50) {
-                    const chunk = habitsToCreate.slice(i, i + 50);
-                    console.log(`[rebuildUserHabits] Creating chunk ${Math.floor(i/50) + 1}: ${chunk.length} habits`);
+                // Bulk create in chunks of 25 with delays to avoid rate limits
+                const CREATE_BATCH_SIZE = 25;
+                const CREATE_DELAY_MS = 500;
+                
+                for (let i = 0; i < habitsToCreate.length; i += CREATE_BATCH_SIZE) {
+                    const chunk = habitsToCreate.slice(i, i + CREATE_BATCH_SIZE);
+                    console.log(`[rebuildUserHabits] Creating chunk ${Math.floor(i/CREATE_BATCH_SIZE) + 1}: ${chunk.length} habits`);
                     await svc.entities.UserProductHabit.bulkCreate(chunk);
+                    
+                    // Add delay between batches if more to come
+                    if (i + CREATE_BATCH_SIZE < habitsToCreate.length) {
+                        console.log(`[rebuildUserHabits] Waiting ${CREATE_DELAY_MS}ms before next create batch...`);
+                        await new Promise(resolve => setTimeout(resolve, CREATE_DELAY_MS));
+                    }
                 }
             }
             console.log(`[rebuildUserHabits] Done processing ${targetUser.email}`);
