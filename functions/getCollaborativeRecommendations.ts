@@ -98,7 +98,7 @@ export default Deno.serve(async (req) => {
         console.log(`[CF] Returning ${results.length} aggregated recommendations`);
         return Response.json({ success: true, recommendations: results });
 
-    } catch (error) {
-        return Response.json({ error: error.message }, { status: 500 });
-    }
+        } catch (error) {
+            return Response.json({ error: error.message }, { status: 500 });
+        }
 });
