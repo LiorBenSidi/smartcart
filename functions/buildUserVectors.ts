@@ -85,6 +85,17 @@ export default Deno.serve(async (req) => {
                     if (profile.allergies && Array.isArray(profile.allergies)) {
                         profile.allergies.forEach(a => profileVec[`allergy_${a}`] = 1.0);
                     }
+                    if (profile.dietary_restrictions && Array.isArray(profile.dietary_restrictions)) {
+                        profile.dietary_restrictions.forEach(r => profileVec[`dietRestrict_${r}`] = 1.0);
+                    }
+                    if (profile.health_preferences && Array.isArray(profile.health_preferences)) {
+                        profile.health_preferences.forEach(h => profileVec[`healthPref_${h}`] = 0.8);
+                    }
+                    if (profile.preferred_store_chains && Array.isArray(profile.preferred_store_chains)) {
+                        profile.preferred_store_chains.forEach(c => profileVec[`prefChain_${c}`] = 0.7);
+                    }
+                    if (profile.age_range) profileVec[`age_${profile.age_range}`] = 0.5;
+                    if (profile.user_role) profileVec[`role_${profile.user_role}`] = 0.5;
                 }
                 profileVec = normalizeVector(profileVec);
 
