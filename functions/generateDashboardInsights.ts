@@ -93,6 +93,8 @@ Deno.serve(async (req) => {
         // Generate AI insights
         const prompt = `You are a personal finance and grocery shopping advisor. Analyze this user's shopping data and provide actionable insights.
 
+IMPORTANT: All monetary values are in Israeli Shekels (ILS/NIS). Always use the ₪ symbol when displaying currency amounts (e.g., ₪100.00, not $100.00).
+
 USER DATA:
 ${JSON.stringify(contextData, null, 2)}
 
@@ -103,7 +105,7 @@ Generate insights focusing on:
 4. Frequently purchased items analysis
 5. Behavioral patterns and anomalies
 
-Be specific, actionable, and data-driven. Reference actual numbers from the data.`;
+Be specific, actionable, and data-driven. Reference actual numbers from the data. Remember to use ₪ for all currency values.`;
 
         const aiResponse = await base44.integrations.Core.InvokeLLM({
             prompt,
