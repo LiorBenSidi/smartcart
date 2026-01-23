@@ -11,19 +11,37 @@ export default Deno.serve(async (req) => {
 
         const collaborativeSuggestions = [];
         
-        // Check for user vectors (mock check as we might not have real vector data in this env)
-        // In a real scenario, this would rely on the UserVectorSnapshot entity.
+        // Check for user vectors
         const userVectors = await base44.entities.UserVectorSnapshot.filter({ created_by: user.email }, '-computed_at', 1).catch(() => []);
+        console.log(`[CF] User ${user.email}: Found ${userVectors.length} vector snapshots`);
 
-        if (userVectors.length > 0) {
-            // Get similar users
-            const similarUsers = await base44.entities.SimilarUserEdge.filter(
-                { user_id: user.email },
-                '-similarity',
-                10
-            ).catch(() => []);
+        if (userVectors.length === 0) {
+            console.log(`[CF] No user vectors found - run "Rebuild User Vectors" first`);
+            return Response.json({ 
+                success: true, 
+                recommendations: [],
+                debug: { reason: "no_user_vectors", message: "Run 'Rebuild User Vectors' from Admin panel first" }
+            });
+        }
 
-            if (similarUsers.length > 0) {
+        // Get similar users
+        const similarUsers = await base44.entities.SimilarUserEdge.filter(
+            { user_id: user.email },
+            '-similarity',
+            10
+        ).catch(() => []);
+        console.log(`[CF] Found ${similarUsers.length} similar users for ${user.email}`);
+
+        if (similarUsers.length === 0) {
+            console.log(`[CF] No similar users found - need more users with vectors`);
+            return Response.json({ 
+                success: true, 
+                recommendations: [],
+                debug: { reason: "no_similar_users", message: "No similar users found. Need more users with purchase history." }
+            });
+        }
+
+        {
                 const neighborIds = similarUsers.map(su => su.neighbor_user_id);
 
                 // Get top products purchased by similar users
