@@ -23,8 +23,8 @@ export default function Admin() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [processState, setProcessState] = useState(processManager.getState());
-  const [batchDelay, setBatchDelay] = useState(1000); // Default 1 second delay
-  const [maxHabitsPerBatch, setMaxHabitsPerBatch] = useState(50); // Max habits created per frontend call
+  const [batchDelay, setBatchDelay] = useState(15000); // seconds delay betweem batches
+  const [maxHabitsPerBatch, setMaxHabitsPerBatch] = useState(30); // Max habits created per frontend call
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
