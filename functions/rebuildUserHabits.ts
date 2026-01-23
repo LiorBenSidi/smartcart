@@ -50,19 +50,15 @@ export default Deno.serve(async (req) => {
                 const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
                 console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
                 
-                // If there are many habits to delete, just return early and let frontend call again
-                // This ensures rate limits are respected (entity_delete: 100/30s)
                 if (existingHabits.length > 0) {
-                    // Delete in batches of 50 to stay well under rate limit
                     const DELETE_BATCH_SIZE = 50;
                     const deleteChunk = existingHabits.slice(0, DELETE_BATCH_SIZE);
                     
                     for (const h of deleteChunk) {
                         await svc.entities.UserProductHabit.delete(h.id);
                     }
-                    console.log(`[rebuildUserHabits] Deleted ${deleteChunk.length} of ${existingHabits.length} habits for ${targetUser.email}`);
+                    console.log(`[rebuildUserHabits] Deleted ${deleteChunk.length} of ${existingHabits.length} habits`);
                     
-                    // If more to delete, return hasMore and stay on same batch with special deleteOffset
                     if (existingHabits.length > DELETE_BATCH_SIZE) {
                         return Response.json({
                             success: true,
@@ -70,11 +66,12 @@ export default Deno.serve(async (req) => {
                             results: [{ email: targetUser.email, status: 'deleting', deleted: deleteChunk.length, remaining: existingHabits.length - deleteChunk.length }],
                             hasMore: true,
                             nextBatch: batch,
-                            nextHabitOffset: -1, // Special flag: -1 means "still deleting"
+                            nextHabitOffset: -1,
                             deleteInProgress: true
                         });
                     }
                 }
+                // No habits or all deleted - proceed to creation
             } else if (habitOffset === -1) {
                 // Continue deleting
                 console.log(`[rebuildUserHabits] Continuing delete for ${targetUser.email}...`);
@@ -101,15 +98,7 @@ export default Deno.serve(async (req) => {
                         });
                     }
                 }
-                // Done deleting, now start creating (reset habitOffset to 0)
-                console.log(`[rebuildUserHabits] Finished deleting, now creating habits...`);
-            } else {
-                console.log(`[rebuildUserHabits] Skipping delete (continuing habit creation from offset ${habitOffset})`);
-            }
-            
-            // Skip habit creation if we're still in delete mode
-            if (habitOffset === -1) {
-                // After delete completes, we need to recalculate - set offset to 0 for next call
+                // Done deleting, now start creating (reset habitOffset to 0 for next call)
                 return Response.json({
                     success: true,
                     message: `Finished deleting habits for ${targetUser.email}, ready to create.`,
@@ -118,6 +107,8 @@ export default Deno.serve(async (req) => {
                     nextBatch: batch,
                     nextHabitOffset: 0
                 });
+            } else {
+                console.log(`[rebuildUserHabits] Skipping delete (continuing habit creation from offset ${habitOffset})`);
             }
 
             // 4. Re-calculate habits
