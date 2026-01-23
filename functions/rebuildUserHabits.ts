@@ -16,6 +16,7 @@ export default Deno.serve(async (req) => {
         const batch = payload.batch || 0;
         const skip = batch * limit;
         const internalDelayMs = payload.internalDelayMs || 5000; // Delay between internal operations
+        const createBatchSize = payload.createBatchSize || 25; // Habits per bulk create batch
 
         // 1. Fetch Users
         const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
@@ -149,8 +150,8 @@ export default Deno.serve(async (req) => {
 
             console.log(`[rebuildUserHabits] Creating ${habitsToCreate.length} habits for ${targetUser.email}`);
             if (habitsToCreate.length > 0) {
-                // Bulk create in chunks of 25 with delays to avoid rate limits
-                const CREATE_BATCH_SIZE = 25;
+                // Bulk create in chunks with delays to avoid rate limits
+                const CREATE_BATCH_SIZE = createBatchSize;
                 const CREATE_DELAY_MS = internalDelayMs;
                 
                 for (let i = 0; i < habitsToCreate.length; i += CREATE_BATCH_SIZE) {

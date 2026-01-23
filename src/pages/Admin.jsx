@@ -25,6 +25,7 @@ export default function Admin() {
   const [processState, setProcessState] = useState(processManager.getState());
   const [batchDelay, setBatchDelay] = useState(1000); // Default 1 second delay
   const [internalDelay, setInternalDelay] = useState(5000); // Default 5 seconds for internal operations
+  const [createBatchSize, setCreateBatchSize] = useState(25); // Default 25 habits per batch
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -172,7 +173,7 @@ export default function Admin() {
 
   const handleRebuildUserHabits = async () => {
     try {
-        await processManager.startProcess('rebuildUserHabits', { limit: 1, internalDelayMs: internalDelay }, { delayMs: batchDelay });
+        await processManager.startProcess('rebuildUserHabits', { limit: 1, internalDelayMs: internalDelay, createBatchSize }, { delayMs: batchDelay });
     } catch (err) {
         console.error('Rebuild failed:', err);
     }
@@ -280,7 +281,28 @@ export default function Admin() {
                     </div>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-                    Delay inside function (e.g., between deletes/creates). Increase to 5000+ to avoid rate limits.
+                    Delay inside function (e.g., between deletes/creates).
+                </p>
+                <div className="border-l border-gray-200 dark:border-gray-700 pl-4 ml-4">
+                    <div className="flex-1">
+                        <Label htmlFor="createBatchSize" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Create batch size
+                        </Label>
+                        <Input
+                            id="createBatchSize"
+                            type="number"
+                            min="1"
+                            max="100"
+                            step="5"
+                            value={createBatchSize}
+                            onChange={(e) => setCreateBatchSize(Number(e.target.value))}
+                            className="w-32 mt-1"
+                            disabled={processState.loading}
+                        />
+                    </div>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
+                    Habits created per batch. Lower = slower but safer.
                 </p>
             </CardContent>
         </Card>
