@@ -153,11 +153,11 @@ export default Deno.serve(async (req) => {
 
             if (habitsToCreate.length > 0) {
                 // Bulk create in smaller chunks with delays and retries to avoid rate limiting
-                for (let i = 0; i < habitsToCreate.length; i += 10) {
-                    const chunk = habitsToCreate.slice(i, i + 10);
+                for (let i = 0; i < habitsToCreate.length; i += 5) {
+                    const chunk = habitsToCreate.slice(i, i + 5);
                     await withRetry(() => svc.entities.UserProductHabit.bulkCreate(chunk));
-                    // Add delay between chunks to avoid rate limits
-                    await delay(300);
+                    // Add longer delay between chunks to avoid rate limits
+                    await delay(500);
                 }
             }
 
