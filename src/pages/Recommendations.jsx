@@ -50,7 +50,6 @@ export default function Recommendations() {
           const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
           if (tipRes.data && tipRes.data.tips) {
               setSmartTips(tipRes.data.tips);
-              toast.success("Tips refreshed!");
           }
       } catch (e) {
           console.error("Smart tips failed", e);
@@ -58,6 +57,15 @@ export default function Recommendations() {
       } finally {
           setTipsLoading(false);
       }
+  };
+
+  const refreshAll = async () => {
+      toast.info("Refreshing insights...");
+      await Promise.all([
+          fetchAIInsights(),
+          refreshTips()
+      ]);
+      toast.success("Insights refreshed!");
   };
 
   const handleTipFeedback = async (tip, action) => {
@@ -198,7 +206,7 @@ export default function Recommendations() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      {/* AI Insights Panel */}
+      {/* AI Insights Header with Unified Refresh */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-indigo-600" />
@@ -207,12 +215,12 @@ export default function Recommendations() {
         <Button
           variant="outline"
           size="sm"
-          onClick={fetchAIInsights}
-          disabled={loadingAiInsights}
+          onClick={refreshAll}
+          disabled={loadingAiInsights || tipsLoading}
           className="gap-2"
         >
-          {loadingAiInsights ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          Refresh
+          {(loadingAiInsights || tipsLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          Refresh All
         </Button>
       </div>
       
@@ -316,16 +324,6 @@ export default function Recommendations() {
                   <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200">
                       <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
                   </h2>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => refreshTips()}
-                    disabled={tipsLoading}
-                    className="text-gray-500 hover:text-indigo-600"
-                  >
-                      <RotateCcw className={`w-4 h-4 mr-2 ${tipsLoading ? 'animate-spin' : ''}`} />
-                      Refresh
-                  </Button>
               </div>
               
               {tipsLoading ? (
