@@ -25,11 +25,12 @@ export default Deno.serve(async (req) => {
         
         const results = [];
 
+        const habitOffset = payload.habitOffset || 0;
+        
         for (const targetUser of batchUsers) {
-            console.log(`[rebuildUserHabits] Processing user: ${targetUser.email}`);
+            console.log(`[rebuildUserHabits] Processing user: ${targetUser.email}, habitOffset: ${habitOffset}`);
             
             // 2. Fetch all receipts for this user, sorted by date
-            // We use 'created_by' because receipts are owned by the user
             console.log(`[rebuildUserHabits] Fetching receipts for ${targetUser.email}...`);
             const receipts = await svc.entities.Receipt.filter(
                 { created_by: targetUser.email }, 
@@ -43,23 +44,20 @@ export default Deno.serve(async (req) => {
                 continue;
             }
 
-            // 3. Wipe existing habits for this user to ensure clean rebuild
-            // We need to find them first.
-            // Note: If habits table is huge, this might be slow.
-            // Using filter by user_id if possible, or created_by
-            console.log(`[rebuildUserHabits] Fetching existing habits for ${targetUser.email}...`);
-            const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
-            console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
-            
-            // Only delete on first chunk for this user (habitOffset === 0)
-            if ((payload.habitOffset || 0) === 0 && existingHabits.length > 0) {
-                // Delete sequentially - rate limit is 100/30s, so this should be fine for most users
-                for (const h of existingHabits) {
-                    await svc.entities.UserProductHabit.delete(h.id);
+            // 3. Only delete existing habits on FIRST call for this user (habitOffset === 0)
+            if (habitOffset === 0) {
+                console.log(`[rebuildUserHabits] Fetching existing habits for ${targetUser.email}...`);
+                const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
+                console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
+                
+                if (existingHabits.length > 0) {
+                    for (const h of existingHabits) {
+                        await svc.entities.UserProductHabit.delete(h.id);
+                    }
+                    console.log(`[rebuildUserHabits] Deleted ${existingHabits.length} existing habits for ${targetUser.email}`);
                 }
-                console.log(`[rebuildUserHabits] Deleted ${existingHabits.length} existing habits for ${targetUser.email}`);
-            } else if ((payload.habitOffset || 0) > 0) {
-                console.log(`[rebuildUserHabits] Skipping delete (continuing habit creation from offset ${payload.habitOffset})`);
+            } else {
+                console.log(`[rebuildUserHabits] Skipping delete (continuing habit creation from offset ${habitOffset})`);
             }
 
             // 4. Re-calculate habits
@@ -143,7 +141,6 @@ export default Deno.serve(async (req) => {
             console.log(`[rebuildUserHabits] Creating ${habitsToCreate.length} habits for ${targetUser.email}`);
             
             // Create habits in chunks, return hasMore if more chunks needed
-            const habitOffset = payload.habitOffset || 0;
             const habitsChunk = habitsToCreate.slice(habitOffset, habitOffset + maxHabitsPerBatch);
             
             if (habitsChunk.length > 0) {
