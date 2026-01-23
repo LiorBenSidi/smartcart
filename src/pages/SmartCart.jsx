@@ -1176,36 +1176,42 @@ export default function SmartCart() {
                                 
 
                                 
-                                // For missing prices, search by exact name
+                                // For missing prices, search by exact name and pick cheapest per chain
                                 for (const item of cart.items) {
                                   const itemPrices = pricesByGtin[item.gtin] || {};
                                   const missingChains = [...allChainIds].filter(chainId => !itemPrices[chainId]);
 
                                   if (missingChains.length > 0 && item.name) {
-                                    // Search by exact canonical_name
+                                    // Search by exact canonical_name, sorted by price ascending
                                     const exactMatches = await base44.entities.Product.filter({
                                       canonical_name: item.name,
                                       chain_id: { $in: missingChains },
                                       gtin: { $ne: item.gtin }
-                                    }, 'current_price', 100);
+                                    }, 'current_price', 200);
 
+                                    // Group by chain and keep only the cheapest for each
+                                    const cheapestByChain = {};
                                     exactMatches.forEach(alt => {
                                       if (alt.chain_id && alt.current_price != null) {
-                                        if (!pricesByGtin[item.gtin]) {
-                                          pricesByGtin[item.gtin] = {};
-                                        }
-                                        if (!pricesByGtin[item.gtin][alt.chain_id] || 
-                                            alt.current_price < pricesByGtin[item.gtin][alt.chain_id].price) {
-                                          pricesByGtin[item.gtin][alt.chain_id] = {
-                                            price: alt.current_price,
-                                            chain_id: alt.chain_id,
-                                            store_id: alt.store_id,
-                                            isAlternative: true,
-                                            altName: alt.canonical_name,
-                                            altGtin: alt.gtin
-                                          };
+                                        if (!cheapestByChain[alt.chain_id] || alt.current_price < cheapestByChain[alt.chain_id].current_price) {
+                                          cheapestByChain[alt.chain_id] = alt;
                                         }
                                       }
+                                    });
+
+                                    // Add cheapest alternatives to pricesByGtin
+                                    Object.values(cheapestByChain).forEach(alt => {
+                                      if (!pricesByGtin[item.gtin]) {
+                                        pricesByGtin[item.gtin] = {};
+                                      }
+                                      pricesByGtin[item.gtin][alt.chain_id] = {
+                                        price: alt.current_price,
+                                        chain_id: alt.chain_id,
+                                        store_id: alt.store_id,
+                                        isAlternative: true,
+                                        altName: alt.canonical_name,
+                                        altGtin: alt.gtin
+                                      };
                                     });
                                   }
                                 }
