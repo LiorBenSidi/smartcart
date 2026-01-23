@@ -36,29 +36,11 @@ Deno.serve(async (req) => {
 
     // Load all necessary data
     // Note: Product entity contains prices directly (current_price, chain_id, store_id)
-    // Get all cart GTINs for filtering
-    const cartGtins = cartItems.map(item => item.gtin);
-    
-    // For products, we only need those matching cart items - but across all chains
-    // We need to search for products by GTIN that exist in ANY chain
-    const productPromises = cartGtins.map(gtin => 
-      svc.entities.Product.filter({ gtin }, null, 100)
-    );
-    
-    const [productResults, allStores, allChains] = await Promise.all([
-      Promise.all(productPromises),
-      svc.entities.Store.list('-created_date', 1000),
-      svc.entities.Chain.list('-created_date', 100)
+    const [allProducts, allStores, allChains] = await Promise.all([
+      svc.entities.Product.list(),
+      svc.entities.Store.list(),
+      svc.entities.Chain.list()
     ]);
-    
-    // Flatten products array
-    const allProducts = productResults.flat();
-    
-    console.log(`[DEBUG] Found ${allProducts.length} products for ${cartGtins.length} cart items`);
-    console.log(`[DEBUG] Chains: ${allChains.length}, Stores: ${allStores.length}`);
-    if (allProducts.length > 0) {
-      console.log(`[DEBUG] Sample product:`, JSON.stringify(allProducts[0]));
-    }
 
     // Create lookup maps
     const productsByGtin = new Map();
