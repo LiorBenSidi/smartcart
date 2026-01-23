@@ -1232,8 +1232,8 @@ export default function SmartCart() {
                                   const maxPrice = validPrices.length > 0 ? Math.max(...validPrices) : null;
 
                                   return (
-                                    <tr key={item.gtin} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
-                                      <td className="p-1.5 font-medium text-gray-900 dark:text-gray-100 sticky left-0 bg-inherit max-w-[120px] truncate" title={item.name}>
+                                    <tr key={item.gtin} className="bg-gray-900">
+                                      <td className="p-1.5 font-medium text-gray-100 sticky left-0 bg-gray-900 max-w-[120px] truncate" title={item.name}>
                                         {item.name}
                                         {item.quantity > 1 && <span className="text-gray-500 text-[10px] ml-1">×{item.quantity}</span>}
                                       </td>
@@ -1259,8 +1259,8 @@ export default function SmartCart() {
                                   );
                                 })}
                                 {/* Total Row */}
-                                <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 font-bold">
-                                  <td className="p-1.5 text-gray-900 dark:text-gray-100 sticky left-0 bg-gray-100 dark:bg-gray-700">Total</td>
+                                <tr className="border-t-2 border-gray-600 bg-gray-900 font-bold">
+                                  <td className="p-1.5 text-gray-100 sticky left-0 bg-gray-900">Total</td>
                                   {chainIds.map(chainId => {
                                     let total = 0;
                                     let hasAllItems = true;
