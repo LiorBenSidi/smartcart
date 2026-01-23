@@ -10,24 +10,9 @@ const CONFIG = {
     MIN_PURCHASE_COUNT_FOR_HABIT: 2,
     // Limits
     MAX_SUGGESTED_ITEMS_PER_DAY: 12,
-    // Tier thresholds
-    TIER_1_MAX_RECEIPTS: 9,   // 0-9 receipts: New users (CF-heavy)
-    TIER_2_MAX_RECEIPTS: 19,  // 10-19 receipts: Developing users (balanced)
-    // 20+ receipts: Established users (pattern-heavy)
+    MIN_RECEIPTS_FOR_SUGGESTIONS: 0, // Allow function to run even with 0 receipts
+    CF_ONLY_RECEIPT_THRESHOLD: 5 // Users with less than this many receipts will only get CF suggestions
 };
-
-// Tier configuration: { weeklyWeight, collaborativeWeight, minWeeklyConfidence, minHabitConfidence }
-const TIER_CONFIG = {
-    1: { weeklyWeight: 0.1, collaborativeWeight: 0.9, minWeeklyConfidence: 0.7, minHabitConfidence: 0.8, skipPatterns: true },
-    2: { weeklyWeight: 0.5, collaborativeWeight: 0.5, minWeeklyConfidence: 0.5, minHabitConfidence: 0.55, skipPatterns: false },
-    3: { weeklyWeight: 0.8, collaborativeWeight: 0.2, minWeeklyConfidence: 0.45, minHabitConfidence: 0.5, skipPatterns: false }
-};
-
-function getUserTier(receiptCount) {
-    if (receiptCount <= CONFIG.TIER_1_MAX_RECEIPTS) return 1;
-    if (receiptCount <= CONFIG.TIER_2_MAX_RECEIPTS) return 2;
-    return 3;
-}
 
 function getMedian(values) {
     if (values.length === 0) return 0;
@@ -77,28 +62,14 @@ export default Deno.serve(async (req) => {
         const body = await req.json().catch(() => ({}));
         const { 
             batch = 0, 
-            currentCartItems = []
+            currentCartItems = [], 
+            weeklyWeight = 0.5, 
+            collaborativeWeight = 0.5 
         } = body;
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         const currentWeekday = today.getDay(); // 0 = Sunday
-
-        // Fetch receipts once to determine user tier
-        const allReceipts = await base44.entities.Receipt.filter({ 
-            created_by: user.email, 
-            processing_status: 'processed' 
-        }, '-purchased_at', 200);
-        const validReceipts = allReceipts.filter(r => r.purchased_at || r.date);
-        const receiptCount = validReceipts.length;
-
-        // Determine user tier and get config
-        const userTier = getUserTier(receiptCount);
-        const tierConfig = TIER_CONFIG[userTier];
-        const weeklyWeight = tierConfig.weeklyWeight;
-        const collaborativeWeight = tierConfig.collaborativeWeight;
-
-        console.log(`User tier: ${userTier} (${receiptCount} receipts), weights: weekly=${weeklyWeight}, collab=${collaborativeWeight}`);
 
         // Get or Create Draft
         let draft;
@@ -130,15 +101,24 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 0: WEEKLY PATTERNS ---
         if (batch === 0) {
-            // For Tier 1 users, skip weekly patterns entirely
-            if (tierConfig.skipPatterns) {
+            // Fetch Receipts
+            const receipts = await base44.entities.Receipt.filter({ 
+                created_by: user.email, 
+                processing_status: 'processed' 
+            }, '-purchased_at', 100);
+
+            // 0) MINIMUM DATA GATING
+            const validReceipts = receipts.filter(r => r.purchased_at || r.date);
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            
+            // For CF-only users, skip weekly patterns and proceed to collaborative filtering
+            if (isCFOnlyUser) {
                 return Response.json({ 
                     hasMore: true, 
                     progress: 25, 
-                    message: `Tier ${userTier}: Skipping weekly patterns...`,
+                    message: "Skipping weekly patterns (CF-only user)...",
                     skipped: true,
-                    userTier,
-                    receiptCount
+                    isCFOnlyUser: true
                 });
             }
 
@@ -165,7 +145,7 @@ export default Deno.serve(async (req) => {
 
             for (const [pid, purchases] of Object.entries(productPurchases)) {
                 purchases.sort((a, b) => b.date - a.date);
-
+                
                 let weekdayMatches = 0;
                 const quantitiesOnWeekday = [];
                 const datesOnWeekday = [];
@@ -180,7 +160,7 @@ export default Deno.serve(async (req) => {
 
                 if (total_weeks > 0 && weekdayMatches >= CONFIG.MIN_WEEKDAY_OCCURRENCES_K) {
                     const confidence = weekdayMatches / total_weeks;
-                    if (confidence >= tierConfig.minWeeklyConfidence) {
+                    if (confidence >= CONFIG.MIN_WEEKLY_CONFIDENCE) {
                         weeklySuggestions.push({
                             product_id: pid,
                             product_name: productInfo[pid].name,
@@ -213,18 +193,24 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 1: RESTOCK PATTERNS ---
         if (batch === 1) {
-            // For Tier 1 users, skip restock patterns entirely
-            if (tierConfig.skipPatterns) {
+            const receipts = await base44.entities.Receipt.filter({ 
+                created_by: user.email, 
+                processing_status: 'processed' 
+            }, '-purchased_at', 100);
+            const validReceipts = receipts.filter(r => r.purchased_at || r.date);
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            
+            // For CF-only users, skip restock patterns and proceed to collaborative filtering
+            if (isCFOnlyUser) {
                 return Response.json({ 
                     hasMore: true, 
                     progress: 50, 
-                    message: `Tier ${userTier}: Skipping restock patterns...`,
+                    message: "Skipping restock patterns (CF-only user)...",
                     skipped: true,
-                    userTier,
-                    receiptCount
+                    isCFOnlyUser: true
                 });
             }
-
+            
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
             
             const restockSuggestions = [];
@@ -254,7 +240,7 @@ export default Deno.serve(async (req) => {
                 let confidence = 1 / (1 + cv);
                 if (confidence > 1) confidence = 1;
 
-                if (confidence >= tierConfig.minHabitConfidence) {
+                if (confidence >= CONFIG.MIN_HABIT_CONFIDENCE) {
                     const daysSinceLast = Math.floor((today - lastPurchase) / (1000 * 60 * 60 * 24));
                     const dueScore = daysSinceLast / (avgCadence || 1);
 
@@ -320,6 +306,14 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 3: FINALIZE ---
         if (batch === 3) {
+            // Check if CF-only user
+            const receipts = await base44.entities.Receipt.filter({ 
+                created_by: user.email, 
+                processing_status: 'processed' 
+            }, '-purchased_at', 100);
+            const validReceipts = receipts.filter(r => r.purchased_at || r.date);
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            
             // Need user preferences to filter
             const userPreferences = await base44.entities.UserProductPreference.filter({ 
                 created_by: user.email,
@@ -331,12 +325,12 @@ export default Deno.serve(async (req) => {
             const cartItemSet = new Set(currentCartItems);
 
             let allSuggestions = draft.items || [];
-
-            // For Tier 1 users, ensure only collaborative suggestions are kept
-            if (tierConfig.skipPatterns) {
+            
+            // For CF-only users, ensure only collaborative suggestions are kept
+            if (isCFOnlyUser) {
                 allSuggestions = allSuggestions.filter(s => s.reason_type === "Collaborative");
             }
-
+            
             const suggestionMap = new Map();
 
             // Merge Logic
