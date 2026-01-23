@@ -740,21 +740,37 @@ export default function SmartCart() {
               <div>
                 <div className="font-bold text-gray-900 dark:text-gray-100">Items in Cart</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">{cartItems.length} unique products</div>
+                {editingCartId && (
+                  <div className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                    <span>✏️ Editing: {cartName}</span>
+                    <button onClick={() => { setEditingCartId(null); setCartName(''); }} className="text-red-500 hover:underline ml-2">Cancel</button>
+                  </div>
+                )}
               </div>
             </div>
-            {cartItems.length > 0 &&
-              <Button variant="outline" size="sm" onClick={fetchComparisons} disabled={loadingComparisons}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${loadingComparisons ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
+            <div className="flex flex-col items-end gap-1">
+              {storeComparisons.length > 0 && (
+                <div className="text-right">
+                  <div className="text-lg font-bold text-green-700 dark:text-green-400">
+                    ₪{storeComparisons[0].totalCost?.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-gray-500">{storeComparisons[0].chain?.name || storeComparisons[0].store?.name}</div>
+                </div>
+              )}
+              {cartItems.length > 0 &&
+                <Button variant="outline" size="sm" onClick={fetchComparisons} disabled={loadingComparisons}>
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loadingComparisons ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
               }
+            </div>
           </div>
           <div className="flex gap-2">
             {cartItems.length > 0 &&
               <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => setShowSaveDialog(true)}>
-                Save Cart
+                {editingCartId ? 'Update Cart' : 'Save Cart'}
               </Button>
-              }
+            }
             <Button variant="outline" className="flex-1" onClick={() => setShowHistory(!showHistory)}>
               {showHistory ? 'Hide' : 'Show'} History
             </Button>
