@@ -3,7 +3,8 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Target, Eye, EyeOff } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -23,7 +24,7 @@ import FrequentItemsCard from '../components/dashboard/FrequentItemsCard';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
-function AnalyticsDashboard({ receipts, dashboardData }) {
+function AnalyticsDashboard({ receipts, dashboardData, hideTrends = false }) {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -110,76 +111,77 @@ function AnalyticsDashboard({ receipts, dashboardData }) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Overview Cards */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
-          <CardContent className="p-5">
-            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
-            <h2 className="text-2xl font-bold mt-1">₪{thisMonthTotal.toFixed(2)}</h2>
-            {showTrend ? (
-              <div className="flex items-center mt-2 text-indigo-200 text-xs">
+      {/* Hero Metric Card */}
+      <Card className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 text-white border-none shadow-xl shadow-indigo-500/20 overflow-hidden relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 to-transparent"></div>
+        <CardContent className="p-6 relative">
+          <p className="text-indigo-200 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
+          <h2 className="text-4xl font-bold mt-2 tracking-tight">₪{thisMonthTotal.toFixed(2)}</h2>
+          {showTrend && (
+            <div className="flex items-center mt-3 gap-2">
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${percentChange < 0 ? 'bg-green-500/20 text-green-200' : 'bg-amber-500/20 text-amber-200'}`}>
                 <ArrowUpRight className={`w-3 h-3 mr-1 ${percentChange < 0 ? 'rotate-180' : ''}`} />
-                <span>{percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month</span>
-              </div>
-            ) : (
-              <div className="h-6"></div>
-            )}
-          </CardContent>
-        </Card>
+                {percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month
+              </span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
-          <CardContent className="p-5">
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total Receipts</p>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{receipts.length}</h2>
-            <div className="flex items-center mt-2 text-gray-400 text-xs">
-              <Plus className="w-3 h-3 mr-1" />
-              <span>{thisMonthReceipts.length} new this month</span>
+      {/* Secondary Metrics Grid */}
+      <section className="grid grid-cols-3 gap-3">
+        <Card className="bg-gray-800/50 dark:bg-gray-800/80 border-gray-700/50 shadow-sm hover:bg-gray-800/70 transition-colors">
+          <CardContent className="p-4">
+            <p className="text-gray-400 text-[10px] font-medium uppercase tracking-wider">Receipts</p>
+            <h2 className="text-xl font-bold text-gray-100 mt-1">{receipts.length}</h2>
+            <div className="flex items-center mt-1.5 text-gray-500 text-[10px]">
+              <Plus className="w-2.5 h-2.5 mr-1" />
+              <span>{thisMonthReceipts.length} this month</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
-          <CardContent className="p-5">
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Avg Receipt</p>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-              ₪{dashboardData?.avgReceiptValue || (receipts.length > 0 ? (totalSpent / receipts.length).toFixed(2) : '0.00')}
+        <Card className="bg-gray-800/50 dark:bg-gray-800/80 border-gray-700/50 shadow-sm hover:bg-gray-800/70 transition-colors">
+          <CardContent className="p-4">
+            <p className="text-gray-400 text-[10px] font-medium uppercase tracking-wider">Avg Trip</p>
+            <h2 className="text-xl font-bold text-gray-100 mt-1">
+              ₪{dashboardData?.avgReceiptValue || (receipts.length > 0 ? (totalSpent / receipts.length).toFixed(0) : '0')}
             </h2>
-            <div className="flex items-center mt-2 text-gray-400 text-xs">
-              <ShoppingBag className="w-3 h-3 mr-1" />
-              <span>Per shopping trip</span>
+            <div className="flex items-center mt-1.5 text-gray-500 text-[10px]">
+              <ShoppingBag className="w-2.5 h-2.5 mr-1" />
+              <span>Per visit</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
-          <CardContent className="p-5">
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Last 30 Days</p>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-              ₪{dashboardData?.last30DaysTotal || '0.00'}
+        <Card className="bg-gray-800/50 dark:bg-gray-800/80 border-gray-700/50 shadow-sm hover:bg-gray-800/70 transition-colors">
+          <CardContent className="p-4">
+            <p className="text-gray-400 text-[10px] font-medium uppercase tracking-wider">30 Days</p>
+            <h2 className="text-xl font-bold text-gray-100 mt-1">
+              ₪{dashboardData?.last30DaysTotal || '0'}
             </h2>
-            <div className="flex items-center mt-2 text-gray-400 text-xs">
-              <Calendar className="w-3 h-3 mr-1" />
-              <span>Recent spending</span>
+            <div className="flex items-center mt-1.5 text-gray-500 text-[10px]">
+              <Calendar className="w-2.5 h-2.5 mr-1" />
+              <span>Recent</span>
             </div>
           </CardContent>
         </Card>
-
-
       </section>
 
       {/* Category Trends Line Chart - Full Width */}
-      {categoryTrendData.length > 0 && (
-        <Card className="border-none shadow-sm">
+      {categoryTrendData.length > 0 && !hideTrends && (
+        <Card className="border-gray-700/50 bg-gray-800/30 shadow-sm">
           <CardContent className="p-5">
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-3">Category Trends (%)</p>
-            <div className="h-[200px]">
+            <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-3">Category Trends (%)</p>
+            <div className="h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={categoryTrendData}>
-                  <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} width={35} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} width={35} />
                   <Tooltip 
                     formatter={(value) => `${value}%`}
-                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px'}}
+                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', fontSize: '12px', backgroundColor: '#1f2937'}}
+                    labelStyle={{color: '#e5e7eb'}}
                   />
                   {topCategories.map((cat, idx) => (
                     <Line 
@@ -196,7 +198,7 @@ function AnalyticsDashboard({ receipts, dashboardData }) {
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
               {topCategories.map((cat, idx) => (
-                <span key={idx} className="text-xs flex items-center gap-1.5">
+                <span key={idx} className="text-xs flex items-center gap-1.5 text-gray-400">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
                   {cat}
                 </span>
@@ -207,7 +209,7 @@ function AnalyticsDashboard({ receipts, dashboardData }) {
       )}
 
       {/* Frequent Items */}
-      {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
+      {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && !hideTrends && (
         <FrequentItemsCard items={dashboardData.frequentItems} />
       )}
     </div>
