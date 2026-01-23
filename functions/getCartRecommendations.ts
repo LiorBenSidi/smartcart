@@ -53,6 +53,12 @@ Deno.serve(async (req) => {
     
     // Flatten products array
     const allProducts = productResults.flat();
+    
+    console.log(`[DEBUG] Found ${allProducts.length} products for ${cartGtins.length} cart items`);
+    console.log(`[DEBUG] Chains: ${allChains.length}, Stores: ${allStores.length}`);
+    if (allProducts.length > 0) {
+      console.log(`[DEBUG] Sample product:`, JSON.stringify(allProducts[0]));
+    }
 
     // Create lookup maps
     const productsByGtin = new Map();
