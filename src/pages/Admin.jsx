@@ -28,6 +28,8 @@ export default function Admin() {
   const [maxHabitsPerBatch, setMaxHabitsPerBatch] = useState(25); // Max habits created per frontend call
   const [isMergingGtins, setIsMergingGtins] = useState(false);
   const [gtinMergeResults, setGtinMergeResults] = useState(null);
+  const [gtinDuplicates, setGtinDuplicates] = useState(null);
+  const [processingMerge, setProcessingMerge] = useState(null);
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -182,9 +184,10 @@ export default function Admin() {
     }
   };
 
-  const handleMergeGtinDuplicates = async () => {
+  const handleScanGtinDuplicates = async () => {
     setIsMergingGtins(true);
     setGtinMergeResults(null);
+    setGtinDuplicates(null);
     try {
       // Fetch all products
       const allProducts = await base44.entities.Product.list('-updated_date', 10000);
@@ -206,67 +209,85 @@ export default function Admin() {
       for (const [name, products] of Object.entries(productsByName)) {
         const uniqueGtins = [...new Set(products.map(p => p.gtin))];
         if (uniqueGtins.length > 1) {
-          duplicates.push({ name, products, gtins: uniqueGtins });
+          // Count occurrences of each GTIN
+          const gtinCounts = {};
+          products.forEach(p => {
+            gtinCounts[p.gtin] = (gtinCounts[p.gtin] || 0) + 1;
+          });
+          
+          // Find the best GTIN
+          const sortedGtins = Object.entries(gtinCounts).sort((a, b) => {
+            if (b[1] !== a[1]) return b[1] - a[1];
+            if (b[0].length !== a[0].length) return b[0].length - a[0].length;
+            return b[0].localeCompare(a[0], undefined, { numeric: true });
+          });
+          
+          const bestGtin = sortedGtins[0][0];
+          const productsToUpdate = products.filter(p => p.gtin !== bestGtin);
+          
+          if (productsToUpdate.length > 0) {
+            duplicates.push({ 
+              name, 
+              displayName: products[0].canonical_name,
+              products, 
+              gtins: uniqueGtins,
+              bestGtin,
+              productsToUpdate,
+              gtinCounts
+            });
+          }
         }
       }
       
       if (duplicates.length === 0) {
         setGtinMergeResults({ message: "No duplicates found!", updated: 0 });
-        return;
+      } else {
+        setGtinDuplicates(duplicates);
       }
-      
-      // Process each duplicate group
-      let totalUpdated = 0;
-      const details = [];
-      
-      for (const group of duplicates) {
-        // Count occurrences of each GTIN
-        const gtinCounts = {};
-        group.products.forEach(p => {
-          gtinCounts[p.gtin] = (gtinCounts[p.gtin] || 0) + 1;
-        });
-        
-        // Find the best GTIN
-        const sortedGtins = Object.entries(gtinCounts).sort((a, b) => {
-          // First by count (most common)
-          if (b[1] !== a[1]) return b[1] - a[1];
-          // If tie, by length (more digits)
-          if (b[0].length !== a[0].length) return b[0].length - a[0].length;
-          // If same length, by value (higher number)
-          return b[0].localeCompare(a[0], undefined, { numeric: true });
-        });
-        
-        const bestGtin = sortedGtins[0][0];
-        
-        // Update products with wrong GTINs
-        const productsToUpdate = group.products.filter(p => p.gtin !== bestGtin);
-        
-        for (const product of productsToUpdate) {
-          await base44.entities.Product.update(product.id, { gtin: bestGtin });
-          totalUpdated++;
-        }
-        
-        if (productsToUpdate.length > 0) {
-          details.push({
-            name: group.name,
-            oldGtins: group.gtins.filter(g => g !== bestGtin),
-            newGtin: bestGtin,
-            updatedCount: productsToUpdate.length
-          });
-        }
-      }
-      
-      setGtinMergeResults({
-        message: `Updated ${totalUpdated} products across ${details.length} product groups`,
-        updated: totalUpdated,
-        details
-      });
       
     } catch (error) {
-      console.error('Failed to merge GTINs', error);
+      console.error('Failed to scan GTINs', error);
       setGtinMergeResults({ message: "Error: " + error.message, updated: 0 });
     } finally {
       setIsMergingGtins(false);
+    }
+  };
+
+  const handleApproveMerge = async (duplicate) => {
+    setProcessingMerge(duplicate.name);
+    try {
+      for (const product of duplicate.productsToUpdate) {
+        await base44.entities.Product.update(product.id, { gtin: duplicate.bestGtin });
+      }
+      
+      // Remove from pending list
+      setGtinDuplicates(prev => prev.filter(d => d.name !== duplicate.name));
+      
+      // Update results
+      setGtinMergeResults(prev => ({
+        message: `Merged ${(prev?.updated || 0) + duplicate.productsToUpdate.length} products`,
+        updated: (prev?.updated || 0) + duplicate.productsToUpdate.length,
+        details: [...(prev?.details || []), {
+          name: duplicate.displayName,
+          oldGtins: duplicate.gtins.filter(g => g !== duplicate.bestGtin),
+          newGtin: duplicate.bestGtin,
+          updatedCount: duplicate.productsToUpdate.length
+        }]
+      }));
+    } catch (error) {
+      console.error('Failed to merge', error);
+    } finally {
+      setProcessingMerge(null);
+    }
+  };
+
+  const handleSkipMerge = (duplicate) => {
+    setGtinDuplicates(prev => prev.filter(d => d.name !== duplicate.name));
+  };
+
+  const handleApproveAll = async () => {
+    for (const duplicate of gtinDuplicates) {
+      await handleApproveMerge(duplicate);
     }
   };
 
@@ -600,12 +621,12 @@ export default function Admin() {
 
             <div className="relative">
                 <Button 
-                    onClick={handleMergeGtinDuplicates}
+                    onClick={handleScanGtinDuplicates}
                     disabled={isMergingGtins || processState.loading}
                     className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-50"
                 >
                     <GitMerge className="w-4 h-4 mr-2" />
-                    {isMergingGtins ? 'Merging...' : 'Merge GTIN Duplicates'}
+                    {isMergingGtins ? 'Scanning...' : 'Scan GTIN Duplicates'}
                 </Button>
                 <Dialog>
                     <DialogTrigger asChild>
@@ -751,6 +772,92 @@ export default function Admin() {
                 </Dialog>
             </div>
         </div>
+
+        {/* GTIN Duplicates - Approval UI */}
+        {gtinDuplicates && gtinDuplicates.length > 0 && (
+            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                            <GitMerge className="w-4 h-4" />
+                            Found {gtinDuplicates.length} Duplicate Groups
+                        </h3>
+                        <div className="flex gap-2">
+                            <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setGtinDuplicates(null)}
+                            >
+                                Cancel All
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={handleApproveAll}
+                                disabled={processingMerge}
+                            >
+                                Approve All
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {gtinDuplicates.map((dup, idx) => (
+                            <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-amber-200 dark:border-amber-700">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{dup.displayName}</p>
+                                        <div className="mt-2 space-y-1 text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-500">Current GTINs:</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {Object.entries(dup.gtinCounts).map(([gtin, count]) => (
+                                                        <span 
+                                                            key={gtin} 
+                                                            className={`px-1.5 py-0.5 rounded font-mono ${
+                                                                gtin === dup.bestGtin 
+                                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' 
+                                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                                                            }`}
+                                                        >
+                                                            {gtin} ({count})
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-500">Will merge to:</span>
+                                                <span className="px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 font-mono font-semibold">
+                                                    {dup.bestGtin}
+                                                </span>
+                                                <span className="text-gray-400">({dup.productsToUpdate.length} products to update)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            onClick={() => handleSkipMerge(dup)}
+                                            disabled={processingMerge === dup.name}
+                                        >
+                                            Skip
+                                        </Button>
+                                        <Button 
+                                            size="sm" 
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={() => handleApproveMerge(dup)}
+                                            disabled={processingMerge === dup.name}
+                                        >
+                                            {processingMerge === dup.name ? 'Merging...' : 'Approve'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        )}
 
         {/* GTIN Merge Results */}
         {gtinMergeResults && (
