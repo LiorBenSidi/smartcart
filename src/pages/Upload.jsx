@@ -227,52 +227,104 @@ export default function Upload() {
               <Button 
                 size="icon" 
                 variant="ghost" 
-                className="h-8 w-8 rounded-full hover:bg-gray-800/50"
+                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <HelpCircle className="h-4 w-4 text-gray-500 hover:text-indigo-400" />
+                <HelpCircle className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-gray-100">
-                  <ScanLine className="w-5 h-5 text-indigo-400" />
-                  How It Works
+                <DialogTitle className="flex items-center gap-2">
+                  <ScanLine className="w-5 h-5 text-indigo-600" />
+                  How Receipt Scanning Works
                 </DialogTitle>
               </DialogHeader>
+              <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
+                Scanning receipts unlocks powerful insights — track spending, discover savings, and build smarter shopping habits automatically.
+              </p>
               <div className="space-y-4 text-sm">
-                {/* Trust Signals - Compact */}
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                    <ScanLine className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-gray-200 font-medium text-sm">AI extracts every item, price, and total</p>
-                      <p className="text-gray-500 text-xs mt-0.5">Store info, quantities, categories — automatically</p>
-                    </div>
+                <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                    <UploadCloud className="w-4 h-4 text-slate-600" />
+                    Quick & Easy Upload
+                  </h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    Just snap a photo or drag & drop — we handle the rest in seconds.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>1. Upload</strong> — Photo, scan, or PDF</div>
+                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>2. Process</strong> — AI reads your receipt</div>
+                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>3. Review</strong> — Verify extracted data</div>
+                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>4. Insights</strong> — See savings opportunities</div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                    <Check className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-gray-200 font-medium text-sm">Totals are cross-checked automatically</p>
-                      <p className="text-gray-500 text-xs mt-0.5">Math errors caught before you review</p>
+                </div>
+                
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                  <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+                    <ScanLine className="w-4 h-4 text-indigo-600" />
+                    Smart AI Extraction
+                  </h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    Our AI reads your receipt image and extracts every detail automatically.
+                  </p>
+                  <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span><strong>Store Info</strong> — Name, address, date & time</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span><strong>Every Item</strong> — Product names, quantities, prices & categories</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span><strong>Total Verification</strong> — Cross-checks amounts for accuracy</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                  <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-amber-600" />
+                    Accuracy You Can Trust
+                  </h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    We flag uncertain data so you can verify — no guesswork, no errors.
+                  </p>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex gap-2">
+                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">90%+ confident</span>
+                      <span className="text-gray-600 dark:text-gray-400">Auto-approved, no action needed</span>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                    <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-gray-200 font-medium text-sm">Low-confidence data is flagged for review</p>
-                      <p className="text-gray-500 text-xs mt-0.5">High confidence → auto-approved • Needs review → quick confirmation</p>
+                    <div className="flex gap-2">
+                      <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded font-medium">Below 90%</span>
+                      <span className="text-gray-600 dark:text-gray-400">Flagged for your quick review</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Filter Info */}
-                <div className="pt-2 border-t border-gray-700/50">
-                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider font-medium">Receipt History</p>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="px-2 py-1 bg-gray-800 text-gray-400 rounded">Date Range</span>
-                    <span className="px-2 py-1 bg-gray-800 text-gray-400 rounded">Store Filter</span>
-                    <span className="px-2 py-1 bg-gray-800 text-gray-400 rounded">Amount Range</span>
-                  </div>
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                  <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-purple-600" />
+                    Filter & Organize
+                  </h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    Use powerful filters to quickly find any receipt in your history.
+                  </p>
+                  <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-0.5">✓</span>
+                      <span><strong>Date Range</strong> — Filter by specific time periods</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-0.5">✓</span>
+                      <span><strong>Store Filter</strong> — View receipts from specific chains</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-0.5">✓</span>
+                      <span><strong>Amount Range</strong> — Find receipts by total spent</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </DialogContent>
