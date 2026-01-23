@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, AlertCircle, CheckCircle, Info, TrendingUp } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle, CheckCircle, Info, TrendingUp } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
 export default function AIInsightsPanel({ insights }) {
@@ -69,25 +69,25 @@ export default function AIInsightsPanel({ insights }) {
                     </h3>
                     <Card className="border-none shadow-sm">
                         <CardContent className="pt-6 space-y-3">
-                        {insights.topRecommendations.map((rec, idx) => (
-                            <div key={idx} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1">
-                                        <h5 className="font-bold text-gray-900 dark:text-gray-100 mb-1">
-                                            {rec.title}
-                                        </h5>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                                            {rec.description}
-                                        </p>
+                            {insights.topRecommendations.map((rec, idx) => (
+                                <div key={idx} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1">
+                                            <h5 className="font-bold text-gray-900 dark:text-gray-100 mb-1">
+                                                {rec.title}
+                                            </h5>
+                                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                                                {rec.description}
+                                            </p>
+                                        </div>
+                                        {rec.potentialSavings > 0 && (
+                                            <Badge className="bg-green-600 text-white whitespace-nowrap">
+                                                Save ₪{rec.potentialSavings.toFixed(0)}
+                                            </Badge>
+                                        )}
                                     </div>
-                                    {rec.potentialSavings > 0 && (
-                                        <Badge className="bg-green-600 text-white whitespace-nowrap">
-                                            Save ₪{rec.potentialSavings.toFixed(0)}
-                                        </Badge>
-                                    )}
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                         </CardContent>
                     </Card>
                 </div>
