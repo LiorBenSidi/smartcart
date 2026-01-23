@@ -96,18 +96,44 @@ export default Deno.serve(async (req) => {
                     computed_at: new Date().toISOString()
                 });
 
-                // 2. Build Behavior Vector
-                // Using service role to access receipt items of any user
-                const items = await base44.asServiceRole.entities.ReceiptItem.filter({ created_by: userId }, '-purchased_at', 200);
+                // 2. Build Behavior Vector from Receipts and UserProductHabit
+                const receipts = await base44.asServiceRole.entities.Receipt.filter({ created_by: userId }, '-purchased_at', 100);
+                const habits = await base44.asServiceRole.entities.UserProductHabit.filter({ created_by: userId }, '-purchase_count', 200);
                 
                 let behaviorVec = {};
-                items.forEach(item => {
-                    const daysAgo = (new Date() - new Date(item.purchased_at || new Date())) / (1000 * 60 * 60 * 24);
-                    const weight = Math.exp(-daysAgo / 14);
-                    if (item.category) behaviorVec[`cat_${item.category}`] = (behaviorVec[`cat_${item.category}`] || 0) + weight;
-                    if (item.product_id) behaviorVec[`prod_${item.product_id}`] = (behaviorVec[`prod_${item.product_id}`] || 0) + weight;
-                    if (item.store_chain_id) behaviorVec[`chain_${item.store_chain_id}`] = (behaviorVec[`chain_${item.store_chain_id}`] || 0) + weight;
+                
+                // From receipts - store preferences and spending patterns
+                receipts.forEach(receipt => {
+                    const daysAgo = (new Date() - new Date(receipt.purchased_at || new Date())) / (1000 * 60 * 60 * 24);
+                    const weight = Math.exp(-daysAgo / 30);
+                    if (receipt.store_id) behaviorVec[`store_${receipt.store_id}`] = (behaviorVec[`store_${receipt.store_id}`] || 0) + weight;
+                    if (receipt.storeName) behaviorVec[`storeName_${receipt.storeName}`] = (behaviorVec[`storeName_${receipt.storeName}`] || 0) + weight;
+                    // Embed items from receipt
+                    if (receipt.items && Array.isArray(receipt.items)) {
+                        receipt.items.forEach(item => {
+                            if (item.category) behaviorVec[`cat_${item.category}`] = (behaviorVec[`cat_${item.category}`] || 0) + weight;
+                            if (item.code) behaviorVec[`prod_${item.code}`] = (behaviorVec[`prod_${item.code}`] || 0) + weight;
+                            if (item.name) {
+                                // Extract brand/product type from name (first word)
+                                const brand = item.name.split(' ')[0];
+                                if (brand && brand.length > 2) behaviorVec[`brand_${brand}`] = (behaviorVec[`brand_${brand}`] || 0) + weight * 0.5;
+                            }
+                        });
+                    }
                 });
+                
+                // From habits - product preferences with stronger signal
+                habits.forEach(habit => {
+                    const purchaseWeight = Math.min(habit.purchase_count || 1, 20) / 20; // Normalize to 0-1
+                    const confidenceWeight = habit.confidence_score || 0.5;
+                    const weight = purchaseWeight * confidenceWeight;
+                    if (habit.product_id) behaviorVec[`prod_${habit.product_id}`] = (behaviorVec[`prod_${habit.product_id}`] || 0) + weight * 2;
+                    if (habit.product_name) {
+                        const brand = habit.product_name.split(' ')[0];
+                        if (brand && brand.length > 2) behaviorVec[`brand_${brand}`] = (behaviorVec[`brand_${brand}`] || 0) + weight;
+                    }
+                });
+                
                 behaviorVec = normalizeVector(behaviorVec);
 
                 await base44.asServiceRole.entities.UserVectorSnapshot.create({
