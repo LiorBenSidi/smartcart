@@ -790,22 +790,22 @@ export default function Main() {
       )}
 
       {/* Legacy Insights (Keep if needed, or remove if redundant) */}
-      {insights.length > 0 && (
+      {insights.length > 0 && !focusMode && (
           <section>
-              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  <Lightbulb className="w-5 h-5 text-yellow-500" /> Additional Insights
+              <h2 className="flex items-center gap-2 text-sm font-semibold mb-3 text-gray-300 uppercase tracking-wider">
+                  <Lightbulb className="w-4 h-4 text-yellow-400" /> Additional Insights
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {insights.map((insight, i) => (
-                       <Card key={i} className="border-yellow-100 bg-yellow-50/30 dark:bg-yellow-900/10 dark:border-yellow-900/30">
-                           <CardContent className="p-4">
+                       <Card key={i} className="border-gray-700/50 bg-gray-800/30">
+                           <CardContent className="p-3">
                                <div className="flex gap-3">
-                                   <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg h-fit">
-                                       <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                   <div className="p-2 bg-yellow-900/30 rounded-lg h-fit shrink-0">
+                                       <Lightbulb className="w-4 h-4 text-yellow-400" />
                                    </div>
-                                   <div>
-                                       <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1">{insight.title}</h3>
-                                       <p className="text-sm text-gray-600 dark:text-gray-300">{insight.message}</p>
+                                   <div className="min-w-0">
+                                       <h3 className="font-semibold text-gray-100 text-sm mb-0.5">{insight.title}</h3>
+                                       <p className="text-xs text-gray-400">{insight.message}</p>
                                    </div>
                                </div>
                            </CardContent>
@@ -815,21 +815,21 @@ export default function Main() {
           </section>
       )}
 
-      <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />
+      {!focusMode && <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />}
 
 
 
       {/* Empty State */}
       {!loading && candidates.products.length === 0 && candidates.categories.length === 0 && smartTips.length === 0 && !tipsLoading && (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-800/30 rounded-xl border-2 border-dashed border-gray-700">
+              <div className="bg-gray-800 p-4 rounded-full mb-4">
+                  <Search className="w-8 h-8 text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No recommendations yet</h3>
+              <h3 className="text-lg font-semibold text-gray-100">No recommendations yet</h3>
               <p className="text-sm text-gray-500 max-w-sm mt-2 mb-6">
                   We need a bit more data to personalize your feed. Try searching for products or scanning some receipts!
               </p>
-              <Button onClick={() => window.location.reload()} variant="outline">
+              <Button onClick={() => window.location.reload()} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
                   Refresh Page
               </Button>
           </div>
