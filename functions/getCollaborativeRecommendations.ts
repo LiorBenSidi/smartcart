@@ -42,38 +42,63 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        const neighborIds = similarUsers.map(su => su.neighbor_user_id);
+        // Build a map of neighbor similarity scores
+        const neighborSimilarityMap = {};
+        similarUsers.forEach(su => {
+            neighborSimilarityMap[su.neighbor_user_id] = su.similarity;
+        });
+        const neighborIds = Object.keys(neighborSimilarityMap);
         console.log(`[CF] Processing ${neighborIds.length} neighbors: ${neighborIds.join(', ')}`);
+
+        // Get current user's purchased products to exclude them from recommendations
+        const userHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
+            { created_by: user.email },
+            '-purchase_count',
+            200
+        ).catch(() => []);
+        const userPurchasedProducts = new Set(userHabits.map(h => h.product_id));
+        console.log(`[CF] User has purchased ${userPurchasedProducts.size} unique products`);
 
         // Get top products purchased by similar users (habits are created by individual users)
         for (const neighborId of neighborIds) {
+            const similarity = neighborSimilarityMap[neighborId];
+            
             // UserProductHabit is created by users, use service role to access other users' habits
-            const neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
+            let neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
                 { created_by: neighborId },
                 '-purchase_count',
-                10
+                20
             ).catch(() => []);
             
             // If no habits via created_by, also try user_id field
             if (neighborHabits.length === 0) {
-                const habitsByUserId = await base44.asServiceRole.entities.UserProductHabit.filter(
+                neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
                     { user_id: neighborId },
                     '-purchase_count',
-                    10
+                    20
                 ).catch(() => []);
-                neighborHabits.push(...habitsByUserId);
             }
-            console.log(`[CF] Neighbor ${neighborId}: Found ${neighborHabits.length} habits`);
+            console.log(`[CF] Neighbor ${neighborId} (similarity: ${similarity.toFixed(3)}): Found ${neighborHabits.length} habits`);
 
             neighborHabits.forEach(habit => {
+                // Skip products the user has already purchased
+                if (userPurchasedProducts.has(habit.product_id)) return;
+                
+                // Confidence = neighbor_similarity * habit_confidence * purchase_frequency_factor
+                const purchaseFrequencyFactor = Math.min(1, (habit.purchase_count || 1) / 5); // Normalize by 5 purchases
+                const habitConfidence = habit.confidence_score || 0.5;
+                const confidence = similarity * habitConfidence * (0.5 + 0.5 * purchaseFrequencyFactor);
+                
                 collaborativeSuggestions.push({
                     product_id: habit.product_id,
                     product_name: habit.product_name,
                     suggested_qty: Math.round(habit.avg_quantity) || 1,
                     reason_type: "Collaborative",
-                    confidence: 0.5 * (habit.confidence_score || 0.5), 
+                    confidence: confidence,
                     evidence: {
                         similar_users_count: 1,
+                        neighbor_similarity: similarity,
+                        neighbor_purchase_count: habit.purchase_count || 1,
                         source: "similar_neighbors"
                     }
                 });
@@ -84,18 +109,27 @@ export default Deno.serve(async (req) => {
         const aggregated = {};
         collaborativeSuggestions.forEach(item => {
             if (!aggregated[item.product_id]) {
-                aggregated[item.product_id] = item;
+                aggregated[item.product_id] = { ...item };
             } else {
-                // Boost confidence if recommended by multiple neighbors
-                // Cap at 0.9
-                const newConfidence = Math.min(0.9, aggregated[item.product_id].confidence + 0.1);
-                aggregated[item.product_id].confidence = newConfidence;
-                aggregated[item.product_id].evidence.similar_users_count = (aggregated[item.product_id].evidence.similar_users_count || 1) + 1;
+                // Boost confidence based on additional neighbors recommending the same product
+                // Use weighted average based on similarity scores
+                const existing = aggregated[item.product_id];
+                const totalSimilarity = existing.evidence.neighbor_similarity + item.evidence.neighbor_similarity;
+                existing.confidence = Math.min(0.95, existing.confidence + item.confidence * 0.5);
+                existing.evidence.similar_users_count += 1;
+                existing.evidence.neighbor_similarity = totalSimilarity / existing.evidence.similar_users_count;
+                existing.evidence.neighbor_purchase_count = Math.max(
+                    existing.evidence.neighbor_purchase_count, 
+                    item.evidence.neighbor_purchase_count
+                );
             }
         });
 
-        const results = Object.values(aggregated);
-        console.log(`[CF] Returning ${results.length} aggregated recommendations`);
+        // Sort by confidence and return top recommendations
+        const results = Object.values(aggregated)
+            .sort((a, b) => b.confidence - a.confidence)
+            .slice(0, 15);
+        console.log(`[CF] Returning ${results.length} aggregated recommendations (filtered from ${Object.keys(aggregated).length})`);
         return Response.json({ success: true, recommendations: results });
 
         } catch (error) {
