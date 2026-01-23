@@ -69,7 +69,7 @@ export default function AIInsightsPanel({ insights }) {
                     </h3>
                     <Card className="border-none shadow-sm">
                         <CardContent className="pt-6 space-y-3">
-                            {insights.topRecommendations.map((rec, idx) => (
+                            {insights.topRecommendations.slice(0, 3).map((rec, idx) => (
                                 <div key={idx} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1">
