@@ -111,7 +111,7 @@ function AnalyticsDashboard({ receipts, dashboardData }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Overview Cards */}
-      <section className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
           <CardContent className="p-5">
             <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
