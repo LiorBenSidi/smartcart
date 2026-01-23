@@ -130,24 +130,15 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 0: WEEKLY PATTERNS ---
         if (batch === 0) {
-            // Fetch Receipts
-            const receipts = await base44.entities.Receipt.filter({ 
-                created_by: user.email, 
-                processing_status: 'processed' 
-            }, '-purchased_at', 100);
-
-            // 0) MINIMUM DATA GATING
-            const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
-            
-            // For CF-only users, skip weekly patterns and proceed to collaborative filtering
-            if (isCFOnlyUser) {
+            // For Tier 1 users, skip weekly patterns entirely
+            if (tierConfig.skipPatterns) {
                 return Response.json({ 
                     hasMore: true, 
                     progress: 25, 
-                    message: "Skipping weekly patterns (CF-only user)...",
+                    message: `Tier ${userTier}: Skipping weekly patterns...`,
                     skipped: true,
-                    isCFOnlyUser: true
+                    userTier,
+                    receiptCount
                 });
             }
 
