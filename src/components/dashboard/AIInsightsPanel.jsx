@@ -62,14 +62,13 @@ export default function AIInsightsPanel({ insights }) {
             </Card>
 
             {insights.topRecommendations && insights.topRecommendations.length > 0 && (
-                <Card className="border-none shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-green-600" />
-                            Optimization Opportunities
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
+                <div>
+                    <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                        <TrendingUp className="w-5 h-5 text-green-600" />
+                        Optimization Opportunities
+                    </h3>
+                    <Card className="border-none shadow-sm">
+                        <CardContent className="pt-6 space-y-3">
                         {insights.topRecommendations.map((rec, idx) => (
                             <div key={idx} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                                 <div className="flex items-start justify-between gap-3">
