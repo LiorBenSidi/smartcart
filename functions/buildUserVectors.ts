@@ -10,6 +10,25 @@ function normalizeVector(vec) {
     return normalized;
 }
 
+function cosineSimilarity(vecA, vecB) {
+    const allKeys = new Set([...Object.keys(vecA), ...Object.keys(vecB)]);
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    
+    for (const key of allKeys) {
+        const a = vecA[key] || 0;
+        const b = vecB[key] || 0;
+        dotProduct += a * b;
+        normA += a * a;
+        normB += b * b;
+    }
+    
+    const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
+    if (magnitude === 0) return 0;
+    return dotProduct / magnitude;
+}
+
 export default Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
