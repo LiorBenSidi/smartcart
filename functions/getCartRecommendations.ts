@@ -50,6 +50,8 @@ Deno.serve(async (req) => {
     
     // Flatten product results
     const allProducts = productResults.flat();
+    
+    console.log(`Found ${allProducts.length} product records for ${cartGtins.length} GTINs`);
 
     // Create lookup maps
     const productsByGtin = new Map();
@@ -73,7 +75,10 @@ Deno.serve(async (req) => {
             pricesByStore.set(product.store_id, new Map());
           }
           pricesByStore.get(product.store_id).set(product.gtin, product);
-        } else if (product.chain_id) {
+        } 
+        
+        // Always add to chain prices if chain_id exists (not else-if)
+        if (product.chain_id) {
           if (!pricesByChain.has(product.chain_id)) {
             pricesByChain.set(product.chain_id, new Map());
           }
@@ -81,6 +86,8 @@ Deno.serve(async (req) => {
         }
       }
     }
+    
+    console.log(`pricesByChain has ${pricesByChain.size} chains`);
 
     // Calculate cart total for each chain
     const chainResults = new Map();
