@@ -64,7 +64,7 @@ export default function SmartCart() {
             weeklyWeight,
             collaborativeWeight
           });
-          
+
           // Fetch the newly created draft
           const newDrafts = await base44.entities.SuggestedCartDraft.filter({
             created_by: user.email,
@@ -99,7 +99,7 @@ export default function SmartCart() {
         created_by: user.email,
         generated_date: today
       });
-      
+
       if (drafts.length > 0) {
         setSuggestions(drafts[0]);
         toast.success("Suggestions refreshed!");
@@ -330,8 +330,8 @@ export default function SmartCart() {
       <div className="space-y-6">
 
       {/* Suggested for Today */}
-      {(loadingSuggestions || (suggestions && suggestions.status === 'draft')) &&
-          <TooltipProvider>
+      {(loadingSuggestions || suggestions && suggestions.status === 'draft') &&
+        <TooltipProvider>
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -448,15 +448,15 @@ export default function SmartCart() {
                                                   <span className="text-sm text-gray-500">{(weeklyWeight * 100).toFixed(0)}%</span>
                                               </div>
                                               <Slider
-                                                  value={[weeklyWeight]}
-                                                  onValueChange={([val]) => {
-                                                      setWeeklyWeight(val);
-                                                      setCollaborativeWeight(parseFloat((1 - val).toFixed(1)));
-                                                  }}
-                                                  min={0}
-                                                  max={1}
-                                                  step={0.1}
-                                              />
+                              value={[weeklyWeight]}
+                              onValueChange={([val]) => {
+                                setWeeklyWeight(val);
+                                setCollaborativeWeight(parseFloat((1 - val).toFixed(1)));
+                              }}
+                              min={0}
+                              max={1}
+                              step={0.1} />
+
                                           </div>
                                           <div>
                                               <div className="flex justify-between items-center mb-2">
@@ -464,70 +464,70 @@ export default function SmartCart() {
                                                   <span className="text-sm text-gray-500">{(collaborativeWeight * 100).toFixed(0)}%</span>
                                               </div>
                                               <Slider
-                                                  value={[collaborativeWeight]}
-                                                  onValueChange={([val]) => {
-                                                      setCollaborativeWeight(val);
-                                                      setWeeklyWeight(parseFloat((1 - val).toFixed(1)));
-                                                  }}
-                                                  min={0}
-                                                  max={1}
-                                                  step={0.1}
-                                              />
+                              value={[collaborativeWeight]}
+                              onValueChange={([val]) => {
+                                setCollaborativeWeight(val);
+                                setWeeklyWeight(parseFloat((1 - val).toFixed(1)));
+                              }}
+                              min={0}
+                              max={1}
+                              step={0.1} />
+
                                           </div>
-                                          <Button onClick={() => { 
-                                              refreshSuggestions(); 
-                                              setShowPreferencesDialog(false);
-                                          }} className="w-full">
+                                          <Button onClick={() => {
+                            refreshSuggestions();
+                            setShowPreferencesDialog(false);
+                          }} className="w-full">
                                               Apply & Refresh
                                           </Button>
                                       </div>
                                   </DialogContent>
                               </Dialog>
                               <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={refreshSuggestions}
-                                  disabled={refreshingSuggestions}
-                                  className="h-8 text-xs">
+                      size="sm"
+                      variant="outline"
+                      onClick={refreshSuggestions}
+                      disabled={refreshingSuggestions}
+                      className="h-8 text-xs">
                                   <RefreshCw className={`w-3 h-3 mr-1 ${refreshingSuggestions ? 'animate-spin' : ''}`} />
                                   Refresh
                               </Button>
                           </div>
-                          {suggestions?.items?.length > 0 && (
-                          <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+                          {suggestions?.items?.length > 0 &&
+                  <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
                               {suggestions.items.length} items
                           </Badge>
-                      )}
+                  }
                       </div>
                   </div>
               </CardHeader>
               <CardContent>
-                  {loadingSuggestions ? (
-                      <div className="flex items-center justify-center py-8 text-gray-500">
+                  {loadingSuggestions ?
+              <div className="flex items-center justify-center py-8 text-gray-500">
                           <Loader2 className="w-6 h-6 animate-spin mr-2" />
                           <span>Generating suggestions...</span>
-                      </div>
-                  ) : !suggestions?.items?.length ? (
-                      <div className="text-center py-8 text-gray-500">
+                      </div> :
+              !suggestions?.items?.length ?
+              <div className="text-center py-8 text-gray-500">
                           <CalendarDays className="w-10 h-10 mx-auto mb-3 text-gray-300" />
                           <p className="mb-2">No AI suggestions available yet</p>
                           <p className="text-xs text-gray-400">Click refresh to generate personalized suggestions</p>
-                      </div>
-                  ) : (
-                  <div className="space-y-3">
+                      </div> :
+
+              <div className="space-y-3">
                       {suggestions.items.slice(0, showAllSuggestions ? undefined : 6).map((item, idx) =>
-                  <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
+                <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
                               <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
                                            <span className="font-semibold text-gray-900 dark:text-gray-100">{item.product_name}</span>
                                            <Badge className={`text-[10px] px-1.5 py-0 h-5 flex items-center gap-1 border ${
-                          item.reason_type === 'Weekly+Restock' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800' :
-                          item.reason_type === 'Collaborative' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
-                          item.reason_type === 'Hybrid' ? 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
-                          item.reason_type === 'Restock' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' :
-                          'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
-                        }`}>
+                        item.reason_type === 'Weekly+Restock' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800' :
+                        item.reason_type === 'Collaborative' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
+                        item.reason_type === 'Hybrid' ? 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
+                        item.reason_type === 'Restock' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' :
+                        'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'}`
+                        }>
                                                {item.reason_type}
                                            </Badge>
                                        </div>
@@ -540,74 +540,74 @@ export default function SmartCart() {
                                       
                                       {/* Why Expander */}
                                       <button
-                          onClick={() => setExpandedSuggestion(expandedSuggestion === idx ? null : idx)}
-                          className="text-[10px] text-indigo-500 flex items-center gap-1 mt-2 hover:underline">
+                        onClick={() => setExpandedSuggestion(expandedSuggestion === idx ? null : idx)}
+                        className="text-[10px] text-indigo-500 flex items-center gap-1 mt-2 hover:underline">
 
                                           Why? {expandedSuggestion === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                       </button>
                                       {expandedSuggestion === idx &&
-                        <div className="mt-2 text-xs text-gray-600 bg-gray-50 dark:bg-gray-700 p-3 rounded space-y-2">
+                      <div className="mt-2 text-xs text-gray-600 bg-gray-50 dark:bg-gray-700 p-3 rounded space-y-2">
                                               {item.reason_type.includes('Weekly') &&
-                          <p className="text-gray-700 dark:text-gray-300">You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
-                          }
+                        <p className="text-gray-700 dark:text-gray-300">You bought this <span className="font-semibold">{item.evidence.occurrences} times</span> on this weekday in the last <span className="font-semibold">{item.evidence.n_weeks} weeks</span>.</p>
+                        }
                                               {item.reason_type.includes('Restock') &&
-                          <>
+                        <>
                                                       <p className="font-semibold text-gray-800 dark:text-gray-200">Restock Recommendation</p>
                                                       <p className="text-gray-700 dark:text-gray-300">Based on your buying patterns:</p>
                                                       <p className="text-gray-600 dark:text-gray-300">• Average purchase every <span className="font-semibold">{Number(item.evidence?.avg_cadence_days || 0).toFixed(0)} days</span></p>
                                                       <p className="text-gray-600 dark:text-gray-300">• Last purchased <span className="font-semibold">{Number(item.evidence?.days_since_last_purchase || 0)} days ago</span></p>
                                                       <p className="text-amber-600 dark:text-amber-400 font-semibold mt-1">You're {item.evidence?.avg_cadence_days ? (Number(item.evidence.days_since_last_purchase || 0) / Number(item.evidence.avg_cadence_days)).toFixed(1) : '?'}x through your cycle - time to restock!</p>
                                                   </>
-                          }
+                        }
                                               {item.reason_type.includes('Collaborative') &&
-                          <>
+                        <>
                                                       <p className="font-semibold text-gray-800 dark:text-gray-200">Community Favorite</p>
                                                       <p className="text-gray-700 dark:text-gray-300">
                                                           Popular among <span className="font-semibold">{item.evidence?.similar_users_count || 1} users</span> with similar shopping habits to yours.
                                                       </p>
                                                   </>
-                          }
+                        }
                                               {item.reason_type.includes('Hybrid') &&
-                          <>
+                        <>
                                                       <p className="font-semibold text-gray-800 dark:text-gray-200">Hybrid Recommendation</p>
                                                       <p className="text-gray-700 dark:text-gray-300">
                                                           Combined insights from your weekly habits and community trends.
                                                       </p>
                                                       {item.evidence?.collaborative_evidence &&
-                                                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 mt-1">
                                                               Also popular with {item.evidence.collaborative_evidence.similar_users_count} similar shoppers.
                                                           </p>
-                                                      }
-                                                  </>
                           }
-                                          </div>
+                                                  </>
                         }
+                                          </div>
+                      }
                                   </div>
                                   <div className="flex flex-col gap-2 items-center">
                                       <Button
-                          size="sm"
-                          className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 mb-1"
-                          onClick={() => {
-                            addToCart({ gtin: item.product_id, canonical_name: item.product_name });
-                          }}>
+                        size="sm"
+                        className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 mb-1"
+                        onClick={() => {
+                          addToCart({ gtin: item.product_id, canonical_name: item.product_name });
+                        }}>
 
                                           <Plus className="w-4 h-4" />
                                       </Button>
                                       <div className="flex gap-1">
                                           <Button
-                            size="sm"
-                            variant="ghost"
-                            className={`h-6 w-6 p-0 ${likedItems.has(item.product_id) ? 'bg-green-100 hover:bg-green-200' : 'hover:bg-green-50'}`}
-                            onClick={() => handlePreference(item, 'like')}>
+                          size="sm"
+                          variant="ghost"
+                          className={`h-6 w-6 p-0 ${likedItems.has(item.product_id) ? 'bg-green-100 hover:bg-green-200' : 'hover:bg-green-50'}`}
+                          onClick={() => handlePreference(item, 'like')}>
 
                                               <ThumbsUp className={`w-3 h-3 ${likedItems.has(item.product_id) ? 'text-green-700 fill-current' : 'text-green-600'}`} />
                                           </Button>
                                           <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 hover:bg-red-50"
-                            onClick={() => handlePreference(item, 'dislike')}
-                            disabled={likedItems.has(item.product_id)}>
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-red-50"
+                          onClick={() => handlePreference(item, 'dislike')}
+                          disabled={likedItems.has(item.product_id)}>
 
                                               <ThumbsDown className={`w-3 h-3 ${likedItems.has(item.product_id) ? 'text-gray-300' : 'text-red-600'}`} />
                                           </Button>
@@ -615,63 +615,63 @@ export default function SmartCart() {
                                   </div>
                               </div>
                           </div>
-                          )}
+                )}
                           </div>
-                          )}
+              }
 
-                  {suggestions?.items?.length > 0 && (
-                    <>
+                  {suggestions?.items?.length > 0 &&
+              <>
                       <div className="mt-4 flex gap-3">
                           <Button
-                            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                            onClick={() => {
-                              suggestions.items.forEach((item) => {
-                                const existing = cartItems.find((i) => i.gtin === item.product_id);
-                                if (existing) {
-                                  setCartItems(cartItems.map((i) =>
-                                  i.gtin === item.product_id ?
-                                  { ...i, quantity: i.quantity + item.suggested_qty } :
-                                  i
-                                  ));
-                                } else {
-                                  setCartItems((prev) => [...prev, {
-                                    gtin: item.product_id,
-                                    name: item.product_name,
-                                    quantity: item.suggested_qty || 1
-                                  }]);
-                                }
-                              });
-                              toast.success(`Added ${suggestions.items.length} items to cart`);
-                            }}>
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                    onClick={() => {
+                      suggestions.items.forEach((item) => {
+                        const existing = cartItems.find((i) => i.gtin === item.product_id);
+                        if (existing) {
+                          setCartItems(cartItems.map((i) =>
+                          i.gtin === item.product_id ?
+                          { ...i, quantity: i.quantity + item.suggested_qty } :
+                          i
+                          ));
+                        } else {
+                          setCartItems((prev) => [...prev, {
+                            gtin: item.product_id,
+                            name: item.product_name,
+                            quantity: item.suggested_qty || 1
+                          }]);
+                        }
+                      });
+                      toast.success(`Added ${suggestions.items.length} items to cart`);
+                    }}>
                               Add All to Cart
                           </Button>
                           <Button
-                            variant="outline"
-                            className="text-gray-500"
-                            onClick={async () => {
-                              try {
-                                await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
-                                setSuggestions(null);
-                              } catch (e) {console.error(e);}
-                            }}>
+                    variant="outline"
+                    className="text-gray-500"
+                    onClick={async () => {
+                      try {
+                        await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
+                        setSuggestions(null);
+                      } catch (e) {console.error(e);}
+                    }}>
                               Dismiss
                           </Button>
                       </div>
-                      {suggestions.items.length > 6 && (
-                        <div className="text-center mt-2">
+                      {suggestions.items.length > 6 &&
+                <div className="text-center mt-2">
                             <button
-                              className="text-xs text-gray-500 hover:text-indigo-600"
-                              onClick={() => setShowAllSuggestions(!showAllSuggestions)}>
+                    className="text-xs text-gray-500 hover:text-indigo-600"
+                    onClick={() => setShowAllSuggestions(!showAllSuggestions)}>
                                 {showAllSuggestions ? 'Show Less' : `Show ${suggestions.items.length - 6} More`}
                             </button>
                         </div>
-                      )}
+                }
                     </>
-                  )}
+              }
               </CardContent>
               </Card>
               </TooltipProvider>
-          }
+        }
 
               {/* Enhanced Product Search */}
               <Card>
@@ -697,18 +697,18 @@ export default function SmartCart() {
               </div>
             </div>
             {cartItems.length > 0 &&
-                <Button variant="outline" size="sm" onClick={fetchComparisons} disabled={loadingComparisons}>
+              <Button variant="outline" size="sm" onClick={fetchComparisons} disabled={loadingComparisons}>
                 <RefreshCw className={`w-4 h-4 mr-2 ${loadingComparisons ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-                }
+              }
           </div>
           <div className="flex gap-2">
             {cartItems.length > 0 &&
-                <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => setShowSaveDialog(true)}>
+              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => setShowSaveDialog(true)}>
                 Save Cart
               </Button>
-                }
+              }
             <Button variant="outline" className="flex-1" onClick={() => setShowHistory(!showHistory)}>
               {showHistory ? 'Hide' : 'Show'} History
             </Button>
@@ -718,17 +718,17 @@ export default function SmartCart() {
 
       {/* Save Dialog */}
       {showSaveDialog &&
-          <Card className="border-green-200 bg-green-50">
+        <Card className="border-green-200 bg-green-50">
           <CardHeader>
-            <CardTitle className="text-lg">Save Cart List</CardTitle>
+            <CardTitle className="text-slate-950 text-lg font-semibold tracking-tight">Save Cart List</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <input
-                type="text"
-                placeholder="Enter cart name (e.g., Weekly Groceries)"
-                value={cartName}
-                onChange={(e) => setCartName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+              type="text"
+              placeholder="Enter cart name (e.g., Weekly Groceries)"
+              value={cartName}
+              onChange={(e) => setCartName(e.target.value)} className="text-slate-950 px-4 py-2 rounded-lg w-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500" />
+
 
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowSaveDialog(false)}>
@@ -740,21 +740,21 @@ export default function SmartCart() {
             </div>
           </CardContent>
         </Card>
-          }
+        }
 
       {/* Saved Carts History */}
       {showHistory &&
-          <Card>
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">Saved Cart Lists</CardTitle>
             <p className="text-xs text-amber-600 mt-1">⚠️ Prices and availability shown are from the time each list was created</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {savedCarts.length === 0 ?
-              <p className="text-center text-gray-400 py-6">No saved carts yet</p> :
+            <p className="text-center text-gray-400 py-6">No saved carts yet</p> :
 
-              savedCarts.map((cart) =>
-              <div key={cart.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            savedCarts.map((cart) =>
+            <div key={cart.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 dark:text-gray-100">{cart.name}</div>
@@ -778,22 +778,22 @@ export default function SmartCart() {
                     📅 Historical pricing from {new Date(cart.created_date).toLocaleDateString()}
                   </div>
                 </div>
-              )
-              }
+            )
+            }
           </CardContent>
         </Card>
-          }
+        }
 
       {/* Cart Items List */}
       {cartItems.length === 0 ?
-          <Card>
+        <Card>
           <CardContent className="p-10 text-center text-gray-400">
             <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p>Your cart is empty. Add products to compare prices!</p>
           </CardContent>
         </Card> :
 
-          <>
+        <>
           {/* Cart Items */}
           <Card>
             <CardHeader>
@@ -801,7 +801,7 @@ export default function SmartCart() {
             </CardHeader>
             <CardContent className="space-y-3">
               {cartItems.map((item) =>
-                <div key={item.gtin} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div key={item.gtin} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="flex items-center gap-3 flex-1">
                     <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
                       {item.quantity}
@@ -818,27 +818,27 @@ export default function SmartCart() {
                     <Trash2 className="w-4 h-4 text-red-500" />
                   </Button>
                   <DataCorrectionDialog
-                      entityType="product"
-                      entityId={item.gtin}
-                      entityName={item.name}
-                      defaultIssueType="price" />
+                    entityType="product"
+                    entityId={item.gtin}
+                    entityName={item.name}
+                    defaultIssueType="price" />
 
                   </div>
                   </div>
-                )}
+              )}
             </CardContent>
           </Card>
 
           {/* Store Comparisons */}
           {loadingComparisons ?
-            <Card>
+          <Card>
               <CardContent className="p-10 text-center text-gray-500">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-3"></div>
                 <p className="text-sm">Comparing prices across supermarkets...</p>
               </CardContent>
             </Card> :
-            storeComparisons.length > 0 ?
-            <div className="space-y-4">
+          storeComparisons.length > 0 ?
+          <div className="space-y-4">
               <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                     <TrendingDown className="w-6 h-6 text-green-600" />
@@ -910,7 +910,7 @@ export default function SmartCart() {
                   </Dialog>
               </div>
               {storeComparisons.map((comparison, idx) =>
-              <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : idx === 1 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'}`}>
+            <Card key={idx} className={`border-2 ${idx === 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : idx === 1 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'}`}>
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
@@ -921,53 +921,53 @@ export default function SmartCart() {
                         </div>
                         <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">{comparison.chain?.name || comparison.store?.name}</h4>
                         {comparison.nearestBranch &&
-                      <div className="mt-2 space-y-1">
+                    <div className="mt-2 space-y-1">
                             <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                               <StoreIcon className="w-4 h-4" />
                               {comparison.nearestBranch.city || comparison.nearestBranch.address_line}
                               {!comparison.drivingInfo && comparison.distance &&
-                          <span className="text-gray-500 ml-2">• {comparison.distance.toFixed(1)} km (linear)</span>
-                          }
+                        <span className="text-gray-500 ml-2">• {comparison.distance.toFixed(1)} km (linear)</span>
+                        }
                             </div>
                             
                             {comparison.drivingInfo &&
-                        <div className="text-xs text-gray-600 flex items-center gap-3">
+                      <div className="text-xs text-gray-600 flex items-center gap-3">
                                     <div className="flex items-center gap-1" title="Driving">
                                         <Car className="w-3 h-3 text-indigo-600" />
                                         <span>{comparison.drivingInfo.duration} ({comparison.drivingInfo.distance})</span>
                                     </div>
                                     {comparison.transitInfo &&
-                          <div className="flex items-center gap-1" title="Public Transport">
+                        <div className="flex items-center gap-1" title="Public Transport">
                                             <Bus className="w-3 h-3 text-indigo-600" />
                                             <span>{comparison.transitInfo.duration}</span>
                                         </div>
-                          }
-                                </div>
                         }
-                          </div>
+                                </div>
                       }
+                          </div>
+                    }
                         {comparison.availableItems !== cartItems.length &&
-                      <div className="text-xs text-amber-600 mt-2">
+                    <div className="text-xs text-amber-600 mt-2">
                             ⚠️ Only {comparison.availableItems} of {cartItems.length} items available
                           </div>
-                      }
+                    }
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">₪{comparison.totalCost.toFixed(2)}</div>
                         {idx > 0 && storeComparisons[0] &&
-                      <div className="text-sm text-red-600 dark:text-red-400 mt-1">
+                    <div className="text-sm text-red-600 dark:text-red-400 mt-1">
                             +₪{(comparison.totalCost - storeComparisons[0].totalCost).toFixed(2)} more
                           </div>
-                      }
+                    }
                       </div>
                     </div>
                   </CardContent>
                   </Card>
-              )}
+            )}
 
                   {/* Optimization Suggestion */}
                   {optimizedCart &&
-              <div className="mt-8">
+            <div className="mt-8">
                   <div className="bg-gradient-to-br from-violet-600 to-indigo-700 text-white p-1 rounded-2xl shadow-xl">
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
                         <div className="flex items-center gap-3 mb-6">
@@ -1002,7 +1002,7 @@ export default function SmartCart() {
                            <h4 className="font-semibold text-gray-900 text-sm">Split Strategy:</h4>
                            <div className="grid gap-2">
                              {Array.from(new Set(optimizedCart.items.map((i) => i.store?.name))).map((storeName) =>
-                        <div key={storeName} className="flex items-center justify-between text-sm p-3 rounded-lg border border-gray-100 bg-gray-50">
+                      <div key={storeName} className="flex items-center justify-between text-sm p-3 rounded-lg border border-gray-100 bg-gray-50">
                                     <div className="flex items-center gap-2">
                                         <StoreIcon className="w-4 h-4 text-gray-400" />
                                         <span className="font-medium text-gray-700">{storeName}</span>
@@ -1011,32 +1011,32 @@ export default function SmartCart() {
                                         {optimizedCart.items.filter((i) => i.store?.name === storeName).length} items
                                     </Badge>
                                 </div>
-                        )}
+                      )}
                            </div>
                         </div>
 
                         <Button
-                      className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-200 h-12 text-base"
-                      onClick={applyOptimizedCart}>
+                    className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-200 h-12 text-base"
+                    onClick={applyOptimizedCart}>
 
                             <Sparkles className="w-5 h-5 mr-2" /> Apply Optimized Cart
                         </Button>
                       </div>
                   </div>
                   </div>
-              }
+            }
 
                   </div> :
 
-            <Card>
+          <Card>
               <CardContent className="p-10 text-center text-gray-400">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>No price data available for comparison</p>
               </CardContent>
             </Card>
-            }
-        </>
           }
+        </>
+        }
       </div>
     </div>);
 
