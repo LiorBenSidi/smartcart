@@ -235,75 +235,87 @@ export default function Upload() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <ScanLine className="w-5 h-5 text-indigo-600" />
-                Receipt Scanning - Technical Details
+                How Receipt Scanning Works
               </DialogTitle>
             </DialogHeader>
+            <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
+              Scanning receipts unlocks powerful insights — track spending, discover savings, and build smarter shopping habits automatically.
+            </p>
             <div className="space-y-4 text-sm">
-              <div>
-                <h4 className="font-semibold mb-2">Process Overview:</h4>
-                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                  <li>Upload receipt image/PDF to cloud storage</li>
-                  <li>Create pending Receipt entity record</li>
-                  <li>Redirect to Receipt page for processing</li>
-                  <li>AI extraction runs in background</li>
-                  <li>Post-processing analysis generates insights</li>
-                </ol>
+              <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
+                <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                  <UploadCloud className="w-4 h-4 text-slate-600" />
+                  Quick & Easy Upload
+                </h4>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                  Just snap a photo or drag & drop — we handle the rest in seconds.
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>1. Upload</strong> — Photo, scan, or PDF</div>
+                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>2. Process</strong> — AI reads your receipt</div>
+                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>3. Review</strong> — Verify extracted data</div>
+                  <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>4. Insights</strong> — See savings opportunities</div>
+                </div>
               </div>
               
-              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded">
-                <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200">AI Data Extraction (processReceipt):</h4>
-                <p className="mb-2 text-gray-700 dark:text-gray-300">LLM analyzes receipt image with vision capabilities:</p>
-                <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono space-y-2">
-                  <p className="font-semibold">Prompt Instructions:</p>
-                  <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
-                    <li>Extract store metadata (name, date, time, address, total)</li>
-                    <li>Parse each line item (name, code, quantity, price)</li>
-                    <li>Infer product category for each item</li>
-                    <li>Assign confidence scores (0-1) to every field</li>
-                    <li>Default currency to ILS if not visible</li>
-                    <li>Return null for missing data (no hallucination)</li>
-                  </ul>
-                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <p className="font-semibold mb-1">Returns JSON with:</p>
-                    <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
-                      <li>storeName, date, time, address, totalAmount</li>
-                      <li>Confidence scores for each metadata field</li>
-                      <li>items[] with raw_text, code, name, category, quantity, price</li>
-                      <li>Per-item confidence_score</li>
-                    </ul>
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+                  <ScanLine className="w-4 h-4 text-indigo-600" />
+                  Smart AI Extraction
+                </h4>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                  Our AI reads your receipt image and extracts every detail automatically.
+                </p>
+                <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span><strong>Store Info</strong> — Name, address, date & time</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span><strong>Every Item</strong> — Product names, quantities, prices & categories</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span><strong>Total Verification</strong> — Cross-checks amounts for accuracy</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-amber-600" />
+                  Accuracy You Can Trust
+                </h4>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                  We flag uncertain data so you can verify — no guesswork, no errors.
+                </p>
+                <div className="space-y-2 text-xs">
+                  <div className="flex gap-2">
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">90%+ confident</span>
+                    <span className="text-gray-600 dark:text-gray-400">Auto-approved, no action needed</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded font-medium">Below 90%</span>
+                    <span className="text-gray-600 dark:text-gray-400">Flagged for your quick review</span>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
-                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Validation & Review Flags:</h4>
-                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                  <p><strong>Metadata Validation:</strong></p>
-                  <ul className="list-disc list-inside ml-4 text-xs">
-                    <li>Threshold: 0.9 confidence required</li>
-                    <li>Checks storeName, totalAmount, date confidence</li>
-                    <li>Sets needs_metadata_review flag if below threshold</li>
-                  </ul>
-                  <p className="mt-2"><strong>Item Validation:</strong></p>
-                  <ul className="list-disc list-inside ml-4 text-xs">
-                    <li>Threshold: 0.85 confidence per item</li>
-                    <li>Marks individual items with needs_review flag</li>
-                    <li>Sets global needs_review if any item flagged</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-2">Post-Processing (analyzeReceiptEconomics):</h4>
-                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                  <p className="text-xs">After extraction, generates insights:</p>
-                  <ul className="list-disc list-inside ml-4 text-xs">
-                    <li><strong>Price Benchmarking:</strong> Compares each item price to market minimum/average</li>
-                    <li><strong>Chain Comparison:</strong> Finds cheaper chains for entire cart</li>
-                    <li><strong>AI Summary:</strong> LLM generates concise receipt summary</li>
-                    <li><strong>Overpayment Detection:</strong> Creates ReceiptInsight records for items/receipts exceeding benchmarks</li>
-                  </ul>
-                </div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
+                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200 flex items-center gap-2">
+                  <Store className="w-4 h-4 text-green-600" />
+                  Automatic Savings Analysis
+                </h4>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                  After scanning, we compare your prices to market data and find savings.
+                </p>
+                <ul className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
+                  <li>💰 <strong>Price Check</strong> — See if you paid above market average</li>
+                  <li>🔄 <strong>Swap Suggestions</strong> — Cheaper alternatives in the same category</li>
+                  <li>📊 <strong>Trip Summary</strong> — Total potential savings per receipt</li>
+                  <li>📈 <strong>Habit Tracking</strong> — Builds your purchase history for smarter tips</li>
+                </ul>
               </div>
             </div>
           </DialogContent>
