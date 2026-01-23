@@ -15,8 +15,7 @@ export default Deno.serve(async (req) => {
         const limit = payload.limit || 1; // Process 1 user per batch by default to avoid timeouts
         const batch = payload.batch || 0;
         const skip = batch * limit;
-        const internalDelayMs = payload.internalDelayMs || 5000; // Delay between internal operations
-        const createBatchSize = payload.createBatchSize || 25; // Habits per bulk create batch
+
 
         // 1. Fetch Users
         const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
@@ -150,21 +149,7 @@ export default Deno.serve(async (req) => {
 
             console.log(`[rebuildUserHabits] Creating ${habitsToCreate.length} habits for ${targetUser.email}`);
             if (habitsToCreate.length > 0) {
-                // Bulk create in chunks with delays to avoid rate limits
-                const CREATE_BATCH_SIZE = createBatchSize;
-                const CREATE_DELAY_MS = internalDelayMs;
-                
-                for (let i = 0; i < habitsToCreate.length; i += CREATE_BATCH_SIZE) {
-                    const chunk = habitsToCreate.slice(i, i + CREATE_BATCH_SIZE);
-                    console.log(`[rebuildUserHabits] Creating chunk ${Math.floor(i/CREATE_BATCH_SIZE) + 1}: ${chunk.length} habits`);
-                    await svc.entities.UserProductHabit.bulkCreate(chunk);
-                    
-                    // Add delay between batches if more to come
-                    if (i + CREATE_BATCH_SIZE < habitsToCreate.length) {
-                        console.log(`[rebuildUserHabits] Waiting ${CREATE_DELAY_MS}ms before next create batch...`);
-                        await new Promise(resolve => setTimeout(resolve, CREATE_DELAY_MS));
-                    }
-                }
+                await svc.entities.UserProductHabit.bulkCreate(habitsToCreate);
             }
             console.log(`[rebuildUserHabits] Done processing ${targetUser.email}`);
 
