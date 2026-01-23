@@ -429,6 +429,35 @@ export default Deno.serve(async (req) => {
 
             let finalSuggestions = Array.from(suggestionMap.values());
 
+            // Enrich suggestions with chain count (products available in more chains rank higher)
+            const productGtins = finalSuggestions.map(s => s.product_id).filter(Boolean);
+            const chainCountMap = {};
+            
+            if (productGtins.length > 0) {
+                try {
+                    // Fetch products for these GTINs to count unique chains
+                    const products = await base44.asServiceRole.entities.Product.filter({
+                        gtin: { $in: productGtins }
+                    }, undefined, 500);
+                    
+                    // Count unique chains per GTIN
+                    products.forEach(p => {
+                        if (!p.gtin || !p.chain_id) return;
+                        if (!chainCountMap[p.gtin]) {
+                            chainCountMap[p.gtin] = new Set();
+                        }
+                        chainCountMap[p.gtin].add(p.chain_id);
+                    });
+                } catch (e) {
+                    console.error("Failed to fetch chain counts:", e);
+                }
+            }
+            
+            // Add chainCount to each suggestion
+            finalSuggestions.forEach(s => {
+                s.chainCount = chainCountMap[s.product_id]?.size || 0;
+            });
+
             // Tier-adjusted sorting priorities
             const getSortPriority = (reasonType, tier) => {
                 if (tier === 1) {
@@ -443,12 +472,17 @@ export default Deno.serve(async (req) => {
                 }
             };
 
-            // Sorting with tier-aware priorities
+            // Sorting with tier-aware priorities + chain count as tie-breaker
             finalSuggestions.sort((a, b) => {
+                // Primary: Chain count (products in more chains rank higher)
+                if (a.chainCount !== b.chainCount) return b.chainCount - a.chainCount;
+                // Secondary: Reason type priority
                 const pA = getSortPriority(a.reason_type, tierConfig.tier);
                 const pB = getSortPriority(b.reason_type, tierConfig.tier);
                 if (pA !== pB) return pB - pA;
+                // Tertiary: Confidence
                 if (Math.abs(a.confidence - b.confidence) > 0.05) return b.confidence - a.confidence;
+                // Quaternary: Due score
                 return (b.evidence?.due_score || 0) - (a.evidence?.due_score || 0);
             });
 
