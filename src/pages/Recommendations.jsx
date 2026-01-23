@@ -226,6 +226,8 @@ export default function Recommendations() {
   const [aiInsights, setAiInsights] = useState(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAiInsights, setShowAiInsights] = useState(false);
+  const [showSmartTips, setShowSmartTips] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [receipts, setReceipts] = useState([]);
 
@@ -542,44 +544,61 @@ export default function Recommendations() {
         <AnalyticsDashboard receipts={receipts} dashboardData={dashboardData} />
       )}
 
-      {/* AI Insights Section */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-600" />
+      {/* AI Insights Toggle */}
+      <Button
+        variant="outline"
+        onClick={() => setShowAiInsights(!showAiInsights)}
+        className="w-full justify-between"
+      >
+        <span className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4" />
           AI-Powered Insights
-        </h2>
-      </div>
-      
-      {loadingAiInsights && (
-        <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800 mb-8">
-          <CardContent className="p-6 flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
-          </CardContent>
-        </Card>
+          {loadingAiInsights && <Loader2 className="w-3 h-3 animate-spin" />}
+        </span>
+        {showAiInsights ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </Button>
+
+      {/* AI Insights Content */}
+      {showAiInsights && (
+        <>
+          {loadingAiInsights && (
+            <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
+              <CardContent className="p-6 flex items-center justify-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
+              </CardContent>
+            </Card>
+          )}
+
+          {aiInsights && !loadingAiInsights && (
+            <AIInsightsPanel insights={aiInsights} />
+          )}
+        </>
       )}
 
-      {aiInsights && !loadingAiInsights && (
-        <div className="mb-8">
-          <AIInsightsPanel insights={aiInsights} />
-        </div>
-      )}
+      {/* Smart Tips Toggle */}
+      <Button
+        variant="outline"
+        onClick={() => setShowSmartTips(!showSmartTips)}
+        className="w-full justify-between"
+      >
+        <span className="flex items-center gap-2">
+          <Lightbulb className="w-4 h-4" />
+          Smart Tips for You
+          {tipsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+        </span>
+        {showSmartTips ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </Button>
 
-      {/* Smart Tips (AI Generated) */}
-      {(smartTips.length > 0 || tipsLoading) && (
-          <section className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                  <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200">
-                      <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
-                  </h2>
-              </div>
-              
+      {/* Smart Tips Content */}
+      {showSmartTips && (
+          <section>
               {tipsLoading ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Generating personalized tips based on your budget and diet...
                   </div>
-              ) : (
+              ) : smartTips.length > 0 ? (
                   <div className="grid grid-cols-1 gap-3">
                       {smartTips.map((tip, i) => {
                           const isSaving = tip.type === 'money_saving';
@@ -669,6 +688,8 @@ export default function Recommendations() {
                           );
                       })}
                   </div>
+              ) : (
+                  <p className="text-sm text-gray-500 p-4">No tips available yet.</p>
               )}
           </section>
       )}
