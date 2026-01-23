@@ -78,13 +78,20 @@ export default function Receipt() {
     // Trigger incremental habit and vector updates in the background
     const userId = confirmedReceipt.created_by;
     if (userId) {
+      console.log("Starting incremental updates for user:", userId);
+      
       // Fire and forget - don't await to avoid blocking UI
+      console.log("Calling rebuildUserHabits...");
       base44.functions.invoke('rebuildUserHabits', { userId, mode: 'incremental' })
         .then(res => console.log("Incremental habit rebuild completed", res.data))
         .catch(e => console.error("Incremental habit rebuild failed", e));
+      
+      console.log("Calling buildUserVectors...");
       base44.functions.invoke('buildUserVectors', { userId, mode: 'incremental' })
         .then(res => console.log("Incremental vector rebuild completed", res.data))
         .catch(e => console.error("Incremental vector rebuild failed", e));
+    } else {
+      console.warn("No userId found in confirmedReceipt.created_by");
     }
   };
 
