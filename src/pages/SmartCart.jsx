@@ -458,6 +458,16 @@ export default function SmartCart() {
       {(loadingSuggestions || suggestions && suggestions.status === 'draft') &&
         <TooltipProvider>
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
+              <CardHeader className="pb-3 cursor-pointer" onClick={() => setShowSuggestions(!showSuggestions)}>
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1">
+                          <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                              <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                              Suggested for Today
+                              {loadingSuggestions && <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />}
+                              {showSuggestions ? <ChevronUp className="w-4 h-4 text-indigo-500" /> : <ChevronDown className="w-4 h-4 text-indigo-500" />}
+                          </CardTitle>
+          <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-1">
