@@ -448,68 +448,95 @@ export default function Main() {
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-indigo-600" />
-                                How This Page Works - Technical Details
+                                How This Page Works
                             </DialogTitle>
                         </DialogHeader>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
+                            Your personal dashboard combines real-time analytics with AI to help you shop smarter and save money.
+                        </p>
                         <div className="space-y-4 text-sm">
-                            <div className="bg-slate-50 dark:bg-slate-900/20 p-3 rounded border border-slate-100 dark:border-slate-800">
+                            <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
                                 <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
-                                    <BarChart3 className="w-4 h-4" /> 
+                                    <BarChart3 className="w-4 h-4 text-slate-600" /> 
                                     Analytics Dashboard
                                 </h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                    Displays your shopping statistics and spending patterns:
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                    Track your spending at a glance with live metrics from your receipts.
                                 </p>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>Spent This Month:</strong> Total spending for the current calendar month with percentage change vs. last month.</li>
-                                    <li><strong>Total Receipts:</strong> Count of all uploaded receipts and how many were added this month.</li>
-                                    <li><strong>Avg Receipt:</strong> Your average spending per shopping trip.</li>
-                                    <li><strong>Last 30 Days:</strong> Rolling 30-day spending total for recent activity tracking.</li>
-                                    <li><strong>Category Trends:</strong> Line chart showing how your top 5 category percentages change over the last 6 months.</li>
-                                    <li><strong>Frequent Items:</strong> Your most purchased products by frequency and total spend.</li>
-                                </ul>
+                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>This Month</strong> — Current spending + % change vs last month</div>
+                                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>Total Receipts</strong> — All-time count + new this month</div>
+                                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>Avg Receipt</strong> — Your typical trip cost</div>
+                                    <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>Last 30 Days</strong> — Rolling recent activity</div>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                    📈 <strong>Category Trends</strong> shows how your top 5 categories shift over the last 6 months.
+                                </p>
                             </div>
 
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded border border-indigo-100 dark:border-indigo-800">
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800">
                                 <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4" /> 
+                                    <Sparkles className="w-4 h-4 text-indigo-600" /> 
                                     AI-Powered Insights
                                 </h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                    Analyzes up to 200 of your recent receipts to generate personalized financial insights:
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                    Our AI analyzes up to 200 of your receipts to find patterns and savings opportunities.
                                 </p>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>Spending Analysis:</strong> Aggregates total spending, average receipt value, and category breakdowns from your purchase history.</li>
-                                    <li><strong>Trend Detection:</strong> Compares your last 30 days spending vs. the previous 30 days to identify spending trends.</li>
-                                    <li><strong>Frequent Items:</strong> Identifies your top 10 most purchased products by frequency and total spend.</li>
-                                    <li><strong>Optimization Opportunities:</strong> AI generates specific savings recommendations with estimated amounts based on your actual data.</li>
+                                <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-500 mt-0.5">✓</span>
+                                        <span><strong>Spending Analysis</strong> — Breaks down totals, averages, and category splits</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-500 mt-0.5">✓</span>
+                                        <span><strong>Trend Detection</strong> — Compares last 30 days vs previous 30 days</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-500 mt-0.5">✓</span>
+                                        <span><strong>Optimization Tips</strong> — Specific savings recommendations with ₪ estimates</span>
+                                    </li>
                                 </ul>
                             </div>
 
-                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Smart Tips Engine</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">A Generative AI model creates 3-5 personalized tips based on:</p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li><strong>Your Profile:</strong> Diet, kosher level, allergies, budget focus, household size, and health preferences.</li>
-                                        <li><strong>Purchase Habits:</strong> Your top 5 most confident product habits by purchase frequency.</li>
-                                        <li><strong>Current Recommendations:</strong> Products and stores being recommended to you.</li>
-                                        <li><strong>Feedback Learning:</strong> Tips you've liked or disliked are stored and used to generate more relevant suggestions.</li>
-                                    </ul>
-                                    <p className="text-xs mt-2">
-                                        <strong>Tip Types:</strong> Money Saving (cheaper alternatives), Health & Dietary (compliance-verified suggestions), and Discovery (products similar users buy).
-                                    </p>
+                            <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                                    <Lightbulb className="w-4 h-4 text-purple-600" />
+                                    Smart Tips Engine
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                    AI generates 3-5 personalized tips tailored specifically to you.
+                                </p>
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex gap-2">
+                                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">💰 Money Saving</span>
+                                        <span className="text-gray-600 dark:text-gray-400">Cheaper alternatives with % savings</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded font-medium">🥗 Health</span>
+                                        <span className="text-gray-600 dark:text-gray-400">Diet & allergy-safe suggestions</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded font-medium">🔍 Discovery</span>
+                                        <span className="text-gray-600 dark:text-gray-400">Products similar shoppers love</span>
+                                    </div>
                                 </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                    Tips respect your kosher level, allergies, diet, and budget preferences.
+                                </p>
                             </div>
                             
-                            
-                            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Your Feedback Matters</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">Every interaction helps personalize your experience:</p>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>Thumbs Up/Down on Tips:</strong> Liked tips are saved and used to inspire future tip generation. Disliked tips are filtered out.</li>
-                                    <li><strong>Product Feedback:</strong> Thumbs up/down and dismissals are logged to refine future product recommendations.</li>
-                                    <li><strong>Receipt Scans:</strong> Verified purchases update your habit vectors and spending analysis.</li>
+                            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                                    <ThumbsUp className="w-4 h-4 text-amber-600" />
+                                    Your Feedback Shapes Everything
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                    Every interaction teaches the system what works for you.
+                                </p>
+                                <ul className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
+                                    <li>👍 <strong>Like a tip</strong> → We'll generate more like it</li>
+                                    <li>👎 <strong>Dislike a tip</strong> → It's hidden and that style is avoided</li>
+                                    <li>📄 <strong>Scan receipts</strong> → Updates your habits and spending analysis</li>
                                 </ul>
                             </div>
                         </div>
