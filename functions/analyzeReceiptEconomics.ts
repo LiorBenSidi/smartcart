@@ -33,13 +33,15 @@ export default Deno.serve(async (req) => {
 
         // Pre-fetch products for "Swap" simulation (optimization)
         // We'll look for products in same categories as expensive items
-        const allProducts = await svc.entities.Product.list();
+        const allProducts = await svc.entities.Product.list() || [];
         const productsByCategory = new Map();
-        allProducts.forEach(p => {
-            if (!p.category) return;
-            if (!productsByCategory.has(p.category)) productsByCategory.set(p.category, []);
-            productsByCategory.get(p.category).push(p);
-        });
+        if (Array.isArray(allProducts)) {
+            allProducts.forEach(p => {
+                if (!p.category) return;
+                if (!productsByCategory.has(p.category)) productsByCategory.set(p.category, []);
+                productsByCategory.get(p.category).push(p);
+            });
+        }
 
         const receiptItems = receipt.items || [];
         const insights = [];

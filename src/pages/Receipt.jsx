@@ -79,8 +79,12 @@ export default function Receipt() {
     const userId = confirmedReceipt.created_by;
     if (userId) {
       // Fire and forget - don't await to avoid blocking UI
-      base44.functions.invoke('rebuildUserHabits', { userId, mode: 'incremental' }).catch(e => console.error("Incremental habit rebuild failed", e));
-      base44.functions.invoke('buildUserVectors', { userId, mode: 'incremental' }).catch(e => console.error("Incremental vector rebuild failed", e));
+      base44.functions.invoke('rebuildUserHabits', { userId, mode: 'incremental' })
+        .then(res => console.log("Incremental habit rebuild completed", res.data))
+        .catch(e => console.error("Incremental habit rebuild failed", e));
+      base44.functions.invoke('buildUserVectors', { userId, mode: 'incremental' })
+        .then(res => console.log("Incremental vector rebuild completed", res.data))
+        .catch(e => console.error("Incremental vector rebuild failed", e));
     }
   };
 
