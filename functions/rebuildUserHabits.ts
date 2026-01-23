@@ -67,7 +67,14 @@ export default Deno.serve(async (req) => {
             if (existingHabits.length > 0) {
                 // Rate limit: 100 deletes per 30 seconds = ~3.3/sec, so delay ~350ms per delete
                 for (let i = 0; i < existingHabits.length; i++) {
-                    await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
+                    try {
+                        await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
+                    } catch (err) {
+                        // Ignore "not found" errors - habit may have been deleted already
+                        if (!err.message?.includes('not found')) {
+                            throw err;
+                        }
+                    }
                     await delay(350); // ~350ms per delete to stay under rate limit
                 }
             }
