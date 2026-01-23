@@ -682,17 +682,23 @@ export default function SmartCart() {
                 <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
                               <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
+                                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                                            <span className="font-semibold text-gray-900 dark:text-gray-100">{item.product_name}</span>
                                            <Badge className={`text-[10px] px-1.5 py-0 h-5 flex items-center gap-1 border ${
-                        item.reason_type === 'Weekly+Restock' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800' :
-                        item.reason_type === 'Collaborative' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
-                        item.reason_type === 'Hybrid' ? 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
-                        item.reason_type === 'Restock' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' :
-                        'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'}`
-                        }>
+                                      item.reason_type === 'Weekly+Restock' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800' :
+                                      item.reason_type === 'Collaborative' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
+                                      item.reason_type === 'Hybrid' ? 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
+                                      item.reason_type === 'Restock' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' :
+                                      'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'}`
+                                      }>
                                                {item.reason_type}
                                            </Badge>
+                                           {item.chainCount > 0 && (
+                                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
+                                                   <StoreIcon className="w-3 h-3 mr-0.5" />
+                                                   {item.chainCount} chains
+                                               </Badge>
+                                           )}
                                        </div>
                                       <div className="text-xs text-gray-500 flex items-center gap-3">
                                           <span>Qty: {item.suggested_qty}</span>
