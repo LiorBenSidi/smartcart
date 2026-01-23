@@ -17,7 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { format } from 'date-fns';
 import FrequentItemsCard from '../components/dashboard/FrequentItemsCard';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
@@ -53,22 +54,59 @@ function AnalyticsDashboard({ receipts, dashboardData }) {
     showTrend = true;
   }
 
-  // Calculate category data from ALL receipts
-  const allCategoryTotals = receipts.reduce((acc, receipt) => {
-    if (receipt.items && Array.isArray(receipt.items)) {
-      receipt.items.forEach(item => {
-        const cat = item.category || 'Other';
-        acc[cat] = (acc[cat] || 0) + (item.total || item.price || 0);
+  // Calculate category percentages over time (by month)
+  const categoryTrendData = (() => {
+    // Group receipts by month
+    const monthlyData = {};
+    
+    receipts.forEach(receipt => {
+      const date = new Date(receipt.date);
+      const monthKey = format(date, 'MMM yyyy');
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { month: monthKey, categories: {}, total: 0, sortDate: date };
+      }
+      
+      if (receipt.items && Array.isArray(receipt.items)) {
+        receipt.items.forEach(item => {
+          const cat = item.category || 'Other';
+          const amount = item.total || item.price || 0;
+          monthlyData[monthKey].categories[cat] = (monthlyData[monthKey].categories[cat] || 0) + amount;
+          monthlyData[monthKey].total += amount;
+        });
+      }
+    });
+
+    // Get top 5 categories overall
+    const allCategoryTotals = {};
+    Object.values(monthlyData).forEach(month => {
+      Object.entries(month.categories).forEach(([cat, amount]) => {
+        allCategoryTotals[cat] = (allCategoryTotals[cat] || 0) + amount;
       });
-    }
-    return acc;
-  }, {});
-  
-  const categoryData = Object.entries(allCategoryTotals)
-    .filter(([_, amount]) => amount > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, amount]) => ({ name, amount }));
+    });
+    
+    const topCategories = Object.entries(allCategoryTotals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name]) => name);
+
+    // Convert to chart data with percentages
+    return Object.values(monthlyData)
+      .sort((a, b) => a.sortDate - b.sortDate)
+      .slice(-6) // Last 6 months
+      .map(month => {
+        const dataPoint = { month: month.month };
+        topCategories.forEach(cat => {
+          const percentage = month.total > 0 ? ((month.categories[cat] || 0) / month.total) * 100 : 0;
+          dataPoint[cat] = Math.round(percentage * 10) / 10;
+        });
+        return dataPoint;
+      });
+  })();
+
+  const topCategories = categoryTrendData.length > 0 
+    ? Object.keys(categoryTrendData[0]).filter(k => k !== 'month')
+    : [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -126,40 +164,38 @@ function AnalyticsDashboard({ receipts, dashboardData }) {
           </CardContent>
         </Card>
 
-        {/* Top Categories Pie Chart */}
-        {categoryData.length > 0 && (
+        {/* Category Trends Line Chart */}
+        {categoryTrendData.length > 0 && (
           <Card className="border-none shadow-sm col-span-2 lg:col-span-2">
             <CardContent className="p-5 h-full flex flex-col">
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">Top Categories</p>
+              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">Category Trends (%)</p>
               <div className="flex-1 min-h-[80px]">
                 <ResponsiveContainer width="100%" height={80}>
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      dataKey="amount"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={35}
-                      label={false}
-                      labelLine={false}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <LineChart data={categoryTrendData}>
+                    <XAxis dataKey="month" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} width={30} />
                     <Tooltip 
-                      formatter={(value) => `₪${value.toFixed(2)}`}
-                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                      formatter={(value) => `${value}%`}
+                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '11px'}}
                     />
-                  </PieChart>
+                    {topCategories.map((cat, idx) => (
+                      <Line 
+                        key={cat} 
+                        type="monotone" 
+                        dataKey={cat} 
+                        stroke={COLORS[idx % COLORS.length]} 
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    ))}
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                {categoryData.map((cat, idx) => (
+                {topCategories.map((cat, idx) => (
                   <span key={idx} className="text-[10px] flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
-                    {cat.name}
+                    {cat}
                   </span>
                 ))}
               </div>
@@ -418,7 +454,7 @@ export default function Recommendations() {
                                     <li><strong>Total Receipts:</strong> Count of all uploaded receipts and how many were added this month.</li>
                                     <li><strong>Avg Receipt:</strong> Your average spending per shopping trip.</li>
                                     <li><strong>Last 30 Days:</strong> Rolling 30-day spending total for recent activity tracking.</li>
-                                    <li><strong>Top Categories:</strong> Pie chart showing your top 5 spending categories across all receipts.</li>
+                                    <li><strong>Category Trends:</strong> Line chart showing how your top 5 category percentages change over the last 6 months.</li>
                                     <li><strong>Frequent Items:</strong> Your most purchased products by frequency and total spend.</li>
                                 </ul>
                             </div>
