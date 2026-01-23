@@ -248,40 +248,24 @@ export default function Admin() {
           const productsToUpdate = products.filter(p => {
             if (p.gtin === bestGtin) return false; // Skip reference product
 
-            // Check for same chain_item_code with different GTIN (data conflict)
-            if (p.chain_item_code && referenceProduct.chain_item_code && 
-                p.chain_item_code === referenceProduct.chain_item_code) {
-              return false; // Same chain code but different GTIN = don't merge
-            }
-
-            // Check for same chain_id (same chain shouldn't have different GTINs for same product)
+            // Check for same chain_id AND chain_item_code (exact same product entry)
             if (p.chain_id && referenceProduct.chain_id && 
-                p.chain_id === referenceProduct.chain_id) {
-              return false; // Same chain = don't merge
+                p.chain_id === referenceProduct.chain_id &&
+                p.chain_item_code && referenceProduct.chain_item_code &&
+                p.chain_item_code === referenceProduct.chain_item_code) {
+              return false; // Same chain + same item code = don't merge
             }
 
-            // Check category match
-            if ((p.category || '') !== (referenceProduct.category || '')) {
-              return false;
-            }
-
-            // Check kosher_level match
-            if ((p.kosher_level || '') !== (referenceProduct.kosher_level || '')) {
-              return false;
-            }
-
-            // Check brand_name match
-            if ((p.brand_name || '') !== (referenceProduct.brand_name || '')) {
-              return false;
-            }
-
-            // Check allergen_tags match
-            if (!arraysEqual(p.allergen_tags, referenceProduct.allergen_tags)) {
-              return false;
-            }
-
-            return true; // All checks passed, safe to merge
+            return true; // Safe to merge (different chains or different item codes)
           });
+          
+          // Track field differences for UI display
+          const fieldDiffs = {
+            category: new Set(products.map(p => p.category || '')).size > 1,
+            brand_name: new Set(products.map(p => p.brand_name || '')).size > 1,
+            kosher_level: new Set(products.map(p => p.kosher_level || '')).size > 1,
+            allergen_tags: !products.every(p => arraysEqual(p.allergen_tags, referenceProduct.allergen_tags))
+          };
 
           if (productsToUpdate.length > 0) {
             duplicates.push({ 
