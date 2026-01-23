@@ -430,7 +430,14 @@ export default function Recommendations() {
       <div className="space-y-2">
         <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">For You</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                    {(() => {
+                        const hour = new Date().getHours();
+                        if (hour < 12) return 'Good Morning';
+                        if (hour < 17) return 'Good Afternoon';
+                        return 'Good Evening';
+                    })()}{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}
+                </h1>
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
