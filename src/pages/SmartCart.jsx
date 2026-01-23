@@ -1130,22 +1130,64 @@ export default function SmartCart() {
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
-                      {cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="text-xs text-indigo-600 hover:text-indigo-700 mt-1"
-                          onClick={() => setShowPriceCompare(showPriceCompare === cart.id ? null : cart.id)}
-                        >
-                          <TrendingDown className="w-3 h-3 mr-1" />
-                          {showPriceCompare === cart.id ? 'Hide' : 'Compare'}
-                        </Button>
-                      )}
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 mt-1"
+                        onClick={async () => {
+                          if (showPriceCompare === cart.id) {
+                            setShowPriceCompare(null);
+                          } else {
+                            // Fetch prices if not stored
+                            const needsPrices = cart.items?.some(item => !item.chainPrices || Object.keys(item.chainPrices).length === 0);
+                            if (needsPrices) {
+                              const gtins = cart.items.map(item => item.gtin);
+                              try {
+                                const allProducts = await base44.entities.Product.filter({
+                                  gtin: { $in: gtins }
+                                }, '-updated_date', 500);
+                                
+                                const pricesByGtin = {};
+                                allProducts.forEach(product => {
+                                  if (product.chain_id && product.current_price != null) {
+                                    if (!pricesByGtin[product.gtin]) {
+                                      pricesByGtin[product.gtin] = {};
+                                    }
+                                    if (!pricesByGtin[product.gtin][product.chain_id] || 
+                                        product.current_price < pricesByGtin[product.gtin][product.chain_id].price) {
+                                      pricesByGtin[product.gtin][product.chain_id] = {
+                                        price: product.current_price,
+                                        chain_id: product.chain_id,
+                                        store_id: product.store_id
+                                      };
+                                    }
+                                  }
+                                });
+                                
+                                // Update the cart in state with fetched prices
+                                const updatedItems = cart.items.map(item => ({
+                                  ...item,
+                                  chainPrices: pricesByGtin[item.gtin] || item.chainPrices || {}
+                                }));
+                                setSavedCarts(prev => prev.map(c => 
+                                  c.id === cart.id ? { ...c, items: updatedItems } : c
+                                ));
+                              } catch (error) {
+                                console.error("Failed to fetch prices", error);
+                              }
+                            }
+                            setShowPriceCompare(cart.id);
+                          }
+                        }}
+                      >
+                        <TrendingDown className="w-3 h-3 mr-1" />
+                        {showPriceCompare === cart.id ? 'Hide' : 'Compare'}
+                      </Button>
                     </div>
                   </div>
 
                   {/* Price comparison table from stored data */}
-                  {showPriceCompare === cart.id && cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (() => {
+                  {showPriceCompare === cart.id && (() => {
                     // Get all unique chain IDs from saved cart items
                     const allChainIds = new Set();
                     cart.items.forEach(item => {
@@ -1156,7 +1198,12 @@ export default function SmartCart() {
                     const chainIds = Array.from(allChainIds);
                     const chainsInTable = chainIds.map(id => chains.find(c => c.id === id)).filter(Boolean);
 
-                    if (chainsInTable.length === 0) return null;
+                    if (chainsInTable.length === 0) return (
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-center text-gray-500 text-sm py-4">
+                        <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                        Loading prices...
+                      </div>
+                    );
 
                     return (
                       <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
