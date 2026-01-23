@@ -124,46 +124,56 @@ export default function ReceiptFilters({ receipts, onFilteredReceipts }) {
                     variant={showFilters ? "default" : "outline"}
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
-                    className={cn("gap-2", showFilters && "bg-indigo-600")}
+                    className={cn(
+                        "gap-2 h-8 text-xs", 
+                        showFilters 
+                            ? "bg-indigo-600 hover:bg-indigo-500" 
+                            : "border-gray-700 bg-gray-800/50 text-gray-300 hover:bg-gray-800"
+                    )}
                 >
-                    <Filter className="w-4 h-4" />
+                    <Filter className="w-3.5 h-3.5" />
                     Filters
                     {hasActiveFilters && (
-                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
                     )}
                 </Button>
 
                 <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[160px] h-9">
-                        <ArrowUpDown className="w-4 h-4 mr-2" />
+                    <SelectTrigger className="w-[140px] h-8 text-xs border-gray-700 bg-gray-800/50 text-gray-300">
+                        <ArrowUpDown className="w-3.5 h-3.5 mr-1.5" />
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="date-desc">Newest First</SelectItem>
-                        <SelectItem value="date-asc">Oldest First</SelectItem>
+                        <SelectItem value="date-desc">Date: Newest</SelectItem>
+                        <SelectItem value="date-asc">Date: Oldest</SelectItem>
                     </SelectContent>
                 </Select>
 
                 {hasActiveFilters && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-gray-500">
-                        <X className="w-4 h-4" />
-                        Clear
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={clearFilters} 
+                        className="gap-1 text-gray-500 hover:text-gray-300 hover:bg-gray-800/50 h-8 text-xs"
+                    >
+                        <X className="w-3.5 h-3.5" />
+                        Clear all
                     </Button>
                 )}
 
-                <span className="text-xs text-gray-500 ml-auto">
-                    {filteredReceipts.length} of {receipts.length} receipts
+                <span className="text-[10px] text-gray-500 ml-auto">
+                    {filteredReceipts.length} of {receipts.length}
                 </span>
             </div>
 
             {/* Filter Panel */}
             {showFilters && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="p-4 bg-gray-800/50 rounded-xl border border-gray-700/50 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     {/* Date Range */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Date</label>
                         <Select value={dateRange} onValueChange={setDateRange}>
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full bg-gray-900/50 border-gray-700 text-gray-200 h-9">
                                 <SelectValue placeholder="All time" />
                             </SelectTrigger>
                             <SelectContent>
@@ -180,9 +190,9 @@ export default function ReceiptFilters({ receipts, onFilteredReceipts }) {
                             <div className="flex gap-2 flex-wrap">
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-2">
-                                            <CalendarIcon className="w-4 h-4" />
-                                            {customStartDate ? format(customStartDate, 'MMM d, yyyy') : 'Start date'}
+                                        <Button variant="outline" size="sm" className="gap-2 bg-gray-900/50 border-gray-700 text-gray-300 hover:bg-gray-800 h-8 text-xs">
+                                            <CalendarIcon className="w-3.5 h-3.5" />
+                                            {customStartDate ? format(customStartDate, 'MMM d') : 'Start'}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
@@ -196,9 +206,9 @@ export default function ReceiptFilters({ receipts, onFilteredReceipts }) {
                                 </Popover>
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-2">
-                                            <CalendarIcon className="w-4 h-4" />
-                                            {customEndDate ? format(customEndDate, 'MMM d, yyyy') : 'End date'}
+                                        <Button variant="outline" size="sm" className="gap-2 bg-gray-900/50 border-gray-700 text-gray-300 hover:bg-gray-800 h-8 text-xs">
+                                            <CalendarIcon className="w-3.5 h-3.5" />
+                                            {customEndDate ? format(customEndDate, 'MMM d') : 'End'}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
@@ -216,14 +226,14 @@ export default function ReceiptFilters({ receipts, onFilteredReceipts }) {
 
                     {/* Store Search */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Store</label>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                             <Input
-                                placeholder="Search by store name..."
+                                placeholder="Search store..."
                                 value={storeSearch}
                                 onChange={(e) => setStoreSearch(e.target.value)}
-                                className="pl-9"
+                                className="pl-9 bg-gray-900/50 border-gray-700 text-gray-200 h-9 text-sm placeholder:text-gray-500"
                                 list="store-suggestions"
                             />
                             <datalist id="store-suggestions">
@@ -236,22 +246,22 @@ export default function ReceiptFilters({ receipts, onFilteredReceipts }) {
 
                     {/* Amount Range */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Amount (₪)</label>
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Amount (₪)</label>
                         <div className="flex gap-2 items-center">
                             <Input
                                 type="number"
                                 placeholder="Min"
                                 value={minAmount}
                                 onChange={(e) => setMinAmount(e.target.value)}
-                                className="w-24"
+                                className="w-20 bg-gray-900/50 border-gray-700 text-gray-200 h-9 text-sm"
                             />
-                            <span className="text-gray-400">—</span>
+                            <span className="text-gray-600">–</span>
                             <Input
                                 type="number"
                                 placeholder="Max"
                                 value={maxAmount}
                                 onChange={(e) => setMaxAmount(e.target.value)}
-                                className="w-24"
+                                className="w-20 bg-gray-900/50 border-gray-700 text-gray-200 h-9 text-sm"
                             />
                         </div>
                     </div>

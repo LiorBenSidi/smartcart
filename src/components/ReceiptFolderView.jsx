@@ -6,11 +6,15 @@ import { ChevronRight, ShoppingBag, Folder, Calendar, Loader2, AlertCircle, Refr
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function ReceiptFolderView({ receipts, onDelete }) {
+    // Determine current year for default expansion
+    const currentYear = new Date().getFullYear().toString();
+    
     if (!receipts || receipts.length === 0) {
         return (
-            <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-                <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500 dark:text-gray-400 text-sm">No receipts found.</p>
+            <div className="text-center py-12 bg-gray-800/30 rounded-xl border border-dashed border-gray-700">
+                <ShoppingBag className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">No receipts found</p>
+                <p className="text-gray-600 text-xs mt-1">Upload your first receipt above</p>
             </div>
         );
     }
@@ -19,7 +23,6 @@ export default function ReceiptFolderView({ receipts, onDelete }) {
     const grouped = receipts.reduce((acc, receipt, index) => {
         const date = new Date(receipt.date);
         const year = format(date, 'yyyy');
-        // Use month index for sorting, display name for rendering
         const monthKey = format(date, 'MM'); 
         const monthName = format(date, 'MMMM');
         
@@ -35,75 +38,75 @@ export default function ReceiptFolderView({ receipts, onDelete }) {
 
     return (
         <div className="space-y-2">
-            <Accordion type="multiple" className="w-full space-y-2">
+            <Accordion type="multiple" defaultValue={[currentYear]} className="w-full space-y-2">
                 {years.map(year => (
-                    <AccordionItem key={year} value={year} className="border-b-0 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 px-1">
-                        <AccordionTrigger className="hover:no-underline py-3 px-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
-                                    <Folder className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <AccordionItem key={year} value={year} className="border-b-0 bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+                        <AccordionTrigger className="hover:no-underline py-3 px-4 hover:bg-gray-800/50 transition-colors">
+                            <div className="flex items-center gap-3 w-full">
+                                <div className="p-1.5 bg-indigo-500/20 rounded-lg">
+                                    <Folder className="w-4 h-4 text-indigo-400" />
                                 </div>
-                                <span className="font-bold text-gray-900 dark:text-gray-100">{year}</span>
-                                <span className="text-xs text-gray-400 font-normal ml-auto mr-2">
-                                    {Object.values(grouped[year].months).reduce((acc, m) => acc + m.items.length, 0)} receipts
+                                <span className="font-semibold text-gray-200">{year}</span>
+                                <span className="text-[10px] text-gray-500 font-normal ml-auto mr-2">
+                                    {Object.values(grouped[year].months).reduce((acc, m) => acc + m.items.length, 0)}
                                 </span>
                             </div>
                         </AccordionTrigger>
-                        <AccordionContent className="pl-4 pr-1 pt-1 pb-2">
-                            <Accordion type="multiple" className="w-full space-y-1">
+                        <AccordionContent className="px-2 pb-2">
+                            <Accordion type="multiple" defaultValue={[`${year}-${Object.keys(grouped[year].months)[0]}`]} className="w-full space-y-1">
                                 {Object.keys(grouped[year].months)
                                     .sort((a, b) => grouped[year].months[a].firstIndex - grouped[year].months[b].firstIndex)
                                     .map(monthKey => {
                                         const { name: monthName, items } = grouped[year].months[monthKey];
                                         return (
                                             <AccordionItem key={monthKey} value={`${year}-${monthKey}`} className="border-b-0">
-                                                <AccordionTrigger className="hover:no-underline py-2 px-3 rounded-lg text-sm group hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                                    <div className="flex items-center gap-3">
-                                                        <Calendar className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors" />
-                                                        <span className="text-gray-700 dark:text-gray-300 font-medium">{monthName}</span>
-                                                        <span className="text-xs text-gray-400 font-normal ml-auto mr-2">
-                                                            {items.length} items
+                                                <AccordionTrigger className="hover:no-underline py-2 px-3 rounded-lg text-sm group hover:bg-gray-800/50 transition-colors">
+                                                    <div className="flex items-center gap-3 w-full">
+                                                        <Calendar className="w-3.5 h-3.5 text-gray-500 group-hover:text-indigo-400 transition-colors" />
+                                                        <span className="text-gray-300 font-medium text-sm">{monthName}</span>
+                                                        <span className="text-[10px] text-gray-600 font-normal ml-auto mr-2">
+                                                            {items.length}
                                                         </span>
                                                     </div>
                                                 </AccordionTrigger>
-                                                <AccordionContent className="pl-4 pt-2 pb-2">
-                                                    <div className="space-y-2">
+                                                <AccordionContent className="pl-2 pt-1 pb-1">
+                                                    <div className="space-y-1">
                                                         {items.map(receipt => {
                                                             const isPending = receipt.processingStatus === 'pending';
                                                             const isFailed = receipt.processingStatus === 'failed';
                                                             return (
                                                                 <Link key={receipt.id} to={`${createPageUrl('Receipt')}?id=${receipt.id}`} className="block">
-                                                                    <div className={`p-3 rounded-lg border flex items-center justify-between hover:shadow-sm transition-all bg-white dark:bg-gray-800/50 ${
-                                                                        isPending ? 'border-indigo-200 dark:border-indigo-800 bg-indigo-50/30' : 
-                                                                        isFailed ? 'border-red-200 dark:border-red-800 bg-red-50/30' : 
-                                                                        'border-gray-100 dark:border-gray-700'
+                                                                    <div className={`p-3 rounded-lg border flex items-center justify-between hover:bg-gray-800/70 transition-all ${
+                                                                        isPending ? 'border-indigo-800/50 bg-indigo-900/20' : 
+                                                                        isFailed ? 'border-red-800/50 bg-red-900/20' : 
+                                                                        'border-gray-700/50 bg-gray-800/30'
                                                                     }`}>
                                                                         <div className="flex items-center gap-3">
-                                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${
-                                                                                isPending ? 'bg-indigo-100 dark:bg-indigo-900/30 border-indigo-200' :
-                                                                                isFailed ? 'bg-red-100 dark:bg-red-900/30 border-red-200' :
-                                                                                'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600'
+                                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                                                isPending ? 'bg-indigo-500/20' :
+                                                                                isFailed ? 'bg-red-500/20' :
+                                                                                'bg-gray-700/50'
                                                                             }`}>
                                                                                 {isPending ? (
-                                                                                    <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                                                                                    <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
                                                                                 ) : isFailed ? (
-                                                                                    <AlertCircle className="w-4 h-4 text-red-500" />
+                                                                                    <AlertCircle className="w-4 h-4 text-red-400" />
                                                                                 ) : (
                                                                                     <ShoppingBag className="w-4 h-4 text-gray-500" />
                                                                                 )}
                                                                             </div>
                                                                             <div>
-                                                                                <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                                                                                <h4 className="font-medium text-gray-200 text-sm" dir="auto">
                                                                                     {isPending ? 'Processing...' : receipt.storeName}
                                                                                 </h4>
                                                                                 <p className="text-[10px] text-gray-500">
-                                                                                    {format(new Date(receipt.date), 'MMM d, yyyy')}
+                                                                                    {format(new Date(receipt.date), 'MMM d')}
                                                                                 </p>
                                                                             </div>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             {!isPending && !isFailed && (
-                                                                                <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">₪{receipt.totalAmount?.toFixed(2)}</span>
+                                                                                <span className="font-semibold text-gray-200 text-sm">₪{receipt.totalAmount?.toFixed(0)}</span>
                                                                             )}
                                                                             {onDelete && (
                                                                                 <button
@@ -112,13 +115,13 @@ export default function ReceiptFolderView({ receipts, onDelete }) {
                                                                                         e.stopPropagation();
                                                                                         onDelete(receipt.id);
                                                                                     }}
-                                                                                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                                                    title="Delete receipt"
+                                                                                    className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
+                                                                                    title="Delete"
                                                                                 >
-                                                                                    <Trash2 className="w-4 h-4" />
+                                                                                    <Trash2 className="w-3.5 h-3.5" />
                                                                                 </button>
                                                                             )}
-                                                                            <ChevronRight className="w-3 h-3 text-gray-300" />
+                                                                            <ChevronRight className="w-3 h-3 text-gray-600" />
                                                                         </div>
                                                                     </div>
                                                                 </Link>
