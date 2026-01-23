@@ -330,7 +330,7 @@ export default function SmartCart() {
       <div className="space-y-6">
 
       {/* Suggested for Today */}
-      {(loadingSuggestions || (suggestions && suggestions.status === 'draft')) &&
+      {(loadingSuggestions || (suggestions && suggestions.status === 'draft' && suggestions.items?.length > 0)) &&
           <TooltipProvider>
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
