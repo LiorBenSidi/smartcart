@@ -135,16 +135,10 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                     chainCount: chainCountByGtin[gtin]?.size || 0
                 }));
                 
-                // AI Suggestions: prioritize products available in most chains (min 3), sorted by chainCount
-                const suggestionCandidates = uniqueProducts
-                    .filter(p => p.chainCount >= 3)
-                    .sort((a, b) => b.chainCount - a.chainCount)
-                    .slice(0, 5);
-                setSuggestions(suggestionCandidates);
+                // Filter to only products available in at least 3 chains
+                let finalResults = uniqueProducts.filter(p => p.chainCount >= 3);
                 
-                // Main search results: apply user-selected sorting
-                let finalResults = [...uniqueProducts];
-                
+                // Apply sorting based on sortBy state
                 if (sortBy === 'price_asc') {
                     finalResults.sort((a, b) => (a.current_price || 999999) - (b.current_price || 999999));
                 } else if (sortBy === 'price_desc') {
@@ -164,7 +158,13 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                 }
                 
                 // Limit to 10 results max
-                setSearchResults(finalResults.slice(0, 10));
+                finalResults = finalResults.slice(0, 10);
+                
+                // Show top 5 as suggestions
+                setSuggestions(finalResults.slice(0, 5));
+                
+                // Show all results (limited to 50)
+                setSearchResults(finalResults.slice(0, 50));
             } catch (error) {
                 console.error("Failed to search products", error);
             } finally {
