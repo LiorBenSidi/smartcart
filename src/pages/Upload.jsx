@@ -301,6 +301,30 @@ export default function Upload() {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-purple-600" />
+                  Filter & Organize
+                </h4>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                  Use powerful filters to quickly find any receipt in your history.
+                </p>
+                <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 mt-0.5">✓</span>
+                    <span><strong>Date Range</strong> — Filter by specific time periods</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 mt-0.5">✓</span>
+                    <span><strong>Store Filter</strong> — View receipts from specific chains</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 mt-0.5">✓</span>
+                    <span><strong>Amount Range</strong> — Find receipts by total spent</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
