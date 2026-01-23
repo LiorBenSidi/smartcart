@@ -92,7 +92,7 @@ export default function AlternativeProductSelector({
     <div className="absolute z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-3 w-80 max-h-96 overflow-hidden flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-gray-400">Select alternative for <span className="text-yellow-400">{chainName}</span></span>
-        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onClose}>
+        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onClose(); }}>
           <X className="w-4 h-4" />
         </Button>
       </div>
