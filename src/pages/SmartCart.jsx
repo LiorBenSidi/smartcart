@@ -42,6 +42,7 @@ export default function SmartCart() {
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [addedItems, setAddedItems] = useState(new Set());
+  const [showPriceCompare, setShowPriceCompare] = useState(null); // cart id to show price comparison
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -440,6 +441,9 @@ export default function SmartCart() {
     });
     setCartItemPrices(loadedPrices);
     setShowHistory(false);
+    // Trigger save dialog to show comparison
+    setCartName(savedCart.name + ' (copy)');
+    setShowSaveDialog(true);
   };
 
   const editSavedCart = (savedCart) => {
@@ -461,6 +465,8 @@ export default function SmartCart() {
     setEditingCartId(savedCart.id);
     setCartName(savedCart.name);
     setShowHistory(false);
+    // Show save dialog with comparison table
+    setShowSaveDialog(true);
     toast.info("Editing cart - make changes and save");
   };
 
@@ -1125,11 +1131,22 @@ export default function SmartCart() {
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
+                      {cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-xs text-indigo-600 hover:text-indigo-700 mt-1"
+                          onClick={() => setShowPriceCompare(showPriceCompare === cart.id ? null : cart.id)}
+                        >
+                          <TrendingDown className="w-3 h-3 mr-1" />
+                          {showPriceCompare === cart.id ? 'Hide' : 'Compare'}
+                        </Button>
+                      )}
                     </div>
                   </div>
 
                   {/* Price comparison table from stored data */}
-                  {cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (() => {
+                  {showPriceCompare === cart.id && cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (() => {
                     // Get all unique chain IDs from saved cart items
                     const allChainIds = new Set();
                     cart.items.forEach(item => {
