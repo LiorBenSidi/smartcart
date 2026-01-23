@@ -297,102 +297,116 @@ export default function NearbyStores() {
                   <DialogHeader>
                       <DialogTitle className="flex items-center gap-2">
                           <MapPin className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                          Store Discovery - Technical Details
+                          How Store Discovery Works
                       </DialogTitle>
                   </DialogHeader>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
+                      We help you find the best nearby stores by combining distance, user ratings, and community sentiment — all personalized to your preferences.
+                  </p>
                   <div className="space-y-4 text-sm">
-                      <div>
-                          <h4 className="font-semibold mb-2">Process Overview:</h4>
-                          <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                              <li>Retrieve user's geolocation</li>
-                              <li>Calculate distances to all stores in database</li>
-                              <li>Fetch routing information for nearest stores</li>
-                              <li>Rank and display results with navigation options</li>
-                          </ol>
-                      </div>
-                      
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                          <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Distance Calculation (Haversine):</h4>
-                          <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Calculates "as the crow flies" distance using latitude/longitude:</p>
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
-                              <code className="text-gray-700 dark:text-gray-300">
-                                  R = 6371 km (Earth radius)<br />
-                                  Δφ = lat₂ - lat₁<br />
-                                  Δλ = lon₂ - lon₁<br />
-                                  a = sin²(Δφ/2) + cos(φ₁)⋅cos(φ₂)⋅sin²(Δλ/2)<br />
-                                  c = 2⋅atan2(√a, √(1-a))<br />
-                                  distance = R × c
-                              </code>
+                      <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
+                          <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                              <Target className="w-4 h-4 text-slate-600" />
+                              How We Find Stores
+                          </h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                              A simple 4-step process to show you the best options:
+                          </p>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                              <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>1. Location</strong> — Get your current position</div>
+                              <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>2. Distance</strong> — Find all stores nearby</div>
+                              <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>3. Travel Time</strong> — Calculate driving routes</div>
+                              <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>4. Ranking</strong> — Score and display results</div>
                           </div>
                       </div>
                       
-                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                          <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Driving Time Estimation (OSRM):</h4>
-                          <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                              <p className="text-xs">Uses Open Source Routing Machine (OSRM) API for accurate distance ranking:</p>
-                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                  <li><strong>Top 25 stores</strong> (by Haversine distance): Fetches actual road routes with real driving duration</li>
-                                  <li><strong>Stores beyond top 25</strong>: Ranked by straight-line (Haversine) distance due to API rate limits</li>
-                                  <li>Uses cached route data from RouteCache to reduce API calls</li>
-                                  <li>Returns distance (meters) and duration (seconds) for routing calculations</li>
-                                  <li>Provides route geometry for map visualization</li>
-                                  <li>Stores ranked by actual driving time when available, falls back to Haversine distance otherwise</li>
-                              </ul>
-                              <p className="text-xs mt-2"><strong>Modes:</strong> driving (default), walking, cycling</p>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                          <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-blue-600" />
+                              Distance Measurement
+                          </h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                              We calculate the straight-line distance between you and each store to quickly identify the closest options.
+                          </p>
+                          <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                              <li className="flex items-start gap-2">
+                                  <span className="text-blue-500 mt-0.5">✓</span>
+                                  <span><strong>Fast initial scan</strong> — Quickly ranks all stores by proximity</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                  <span className="text-blue-500 mt-0.5">✓</span>
+                                  <span><strong>Accurate enough</strong> — Great for identifying nearby candidates</span>
+                              </li>
+                          </ul>
+                      </div>
+                      
+                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
+                          <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200 flex items-center gap-2">
+                              <Car className="w-4 h-4 text-green-600" />
+                              Driving Time Estimation
+                          </h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                              For the closest stores, we fetch actual driving routes to give you real travel times.
+                          </p>
+                          <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                              <li className="flex items-start gap-2">
+                                  <span className="text-green-500 mt-0.5">✓</span>
+                                  <span><strong>Top 25 closest stores</strong> — Get real driving duration based on road routes</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                  <span className="text-green-500 mt-0.5">✓</span>
+                                  <span><strong>Further stores</strong> — Use straight-line distance to keep things fast</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                  <span className="text-green-500 mt-0.5">✓</span>
+                                  <span><strong>Route caching</strong> — Faster results on repeat visits</span>
+                              </li>
+                          </ul>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                              💡 Stores beyond the top 25 show "Haversine distance" badge — this means straight-line distance, not actual driving time.
+                          </p>
+                      </div>
+                      
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                          <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                              <Trophy className="w-4 h-4 text-purple-600" />
+                              Smart Ranking
+                          </h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                              We combine three factors to recommend the best stores for you. Adjust the sliders to match your priorities!
+                          </p>
+                          <div className="space-y-2 text-xs">
+                              <div className="flex gap-2 items-center">
+                                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded font-medium min-w-[100px]">📍 Distance</span>
+                                  <span className="text-gray-600 dark:text-gray-400">Closer stores rank higher (default: 50%)</span>
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                  <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded font-medium min-w-[100px]">⭐ Rating</span>
+                                  <span className="text-gray-600 dark:text-gray-400">Based on user reviews, 1-5 stars (default: 25%)</span>
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                  <span className="px-2 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded font-medium min-w-[100px]">💬 Sentiment</span>
+                                  <span className="text-gray-600 dark:text-gray-400">AI-analyzed community feedback (default: 25%)</span>
+                              </div>
+                          </div>
+                          <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400">
+                              <strong>Note:</strong> Stores without reviews receive a small ranking penalty (-5 points) to encourage visiting reviewed locations.
                           </div>
                       </div>
                       
-                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                          <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Ranking Algorithm:</h4>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Weighted Scoring System (Default: 50% Distance, 25% Rating, 25% Sentiment):</p>
-                          
-                          <div className="space-y-2 text-xs text-gray-700 dark:text-gray-300 ml-4">
-                              <div>
-                                  <strong>1. Distance Score (0-1):</strong>
-                                  <p className="ml-4">Normalized based on maximum distance in search radius. Closer stores score higher.</p>
-                              </div>
-                              
-                              <div>
-                                  <strong>2. Rating Score (0-1):</strong>
-                                  <p className="ml-4">Average user rating from StoreReview entities, normalized to 0-1 scale (5-star max).</p>
-                              </div>
-                              
-                              <div>
-                                  <strong>3. Sentiment Score (0-1):</strong>
-                                  <p className="ml-4">AI-analyzed sentiment from StoreSentiment entities:
-                                      <ul className="list-disc ml-6 mt-1">
-                                          <li>Positive sentiment = 1.0</li>
-                                          <li>Neutral sentiment = 0.5</li>
-                                          <li>Negative sentiment = 0.0</li>
-                                      </ul>
-                                  </p>
-                              </div>
-                              
-                              <div className="mt-2 bg-white dark:bg-gray-800 p-2 rounded">
-                                  <strong>Final Score Calculation:</strong>
-                                  <code className="block mt-1 text-xs">
-                                      score = (distanceScore × distanceWeight + <br/>
-                                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ratingScore × ratingWeight + <br/>
-                                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sentimentScore × sentimentWeight) × 100
-                                  </code>
-                              </div>
-                              
-                              <div>
-                                  <strong>Penalty for Stores Without Reviews:</strong>
-                                  <ul className="list-disc ml-6 mt-1">
-                                      <li>Stores with no reviews: -5 points (always applied)</li>
-                                  </ul>
-                              </div>
-                              </div>
-
-                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-3"><strong>User Controls:</strong> Adjust weight sliders to prioritize distance, rating, or sentiment according to your preferences.</p>
-
-                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">Top 3 stores displayed in podium format. All stores grouped by chain and sorted alphabetically in accordion view.</p>
-                      </div>
-                      
-                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                          <h4 className="font-semibold mb-2">Map Visualization:</h4>
-                          <p className="text-xs text-gray-700 dark:text-gray-300">Uses Leaflet + OpenStreetMap. Custom markers show chain logos, with gold highlight for closest store. Click any marker to view details and get directions.</p>
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                          <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+                              <Layers className="w-4 h-4 text-indigo-600" />
+                              Map & Display
+                          </h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              Interactive map with custom markers showing chain logos. Gold highlight marks the top-ranked store.
+                          </p>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                              <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded">🏆 Top 3 Podium</span>
+                              <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded">📍 Click for directions</span>
+                              <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded">🏪 Grouped by chain</span>
+                          </div>
                       </div>
                   </div>
               </DialogContent>
