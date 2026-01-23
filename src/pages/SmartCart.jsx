@@ -835,23 +835,42 @@ export default function SmartCart() {
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 dark:text-gray-100">{cart.name}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {cart.store_name} • {new Date(cart.created_date).toLocaleDateString()} at {new Date(cart.created_date).toLocaleTimeString()}
+                        {cart.store_name && <><StoreIcon className="w-3 h-3 inline mr-1" />{cart.store_name} • </>}
+                        {new Date(cart.created_date).toLocaleDateString()}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                        {cart.total_items} items • ₪{cart.total_amount?.toFixed(2)}
+                      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 flex items-center gap-2">
+                        <span>{cart.total_items} items</span>
+                        {cart.total_amount > 0 && (
+                          <span className="font-semibold text-green-700 dark:text-green-400">₪{cart.total_amount?.toFixed(2)}</span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => loadSavedCart(cart)}>
-                        Load
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => deleteSavedCart(cart.id)}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" onClick={() => loadSavedCart(cart)}>
+                          Load
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => editSavedCart(cart)}>
+                          ✏️
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteSavedCart(cart.id)}>
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-400 bg-amber-50 p-2 rounded border border-amber-200">
-                    📅 Historical pricing from {new Date(cart.created_date).toLocaleDateString()}
+                  {/* Show items preview */}
+                  <div className="text-xs text-gray-500 mt-2 flex flex-wrap gap-1">
+                    {cart.items?.slice(0, 5).map((item, i) => (
+                      <Badge key={i} variant="outline" className="text-[10px] py-0 bg-white dark:bg-gray-700">
+                        {item.name?.substring(0, 20)}{item.name?.length > 20 ? '...' : ''}
+                      </Badge>
+                    ))}
+                    {cart.items?.length > 5 && (
+                      <Badge variant="outline" className="text-[10px] py-0 bg-gray-100">
+                        +{cart.items.length - 5} more
+                      </Badge>
+                    )}
                   </div>
                 </div>
             )
