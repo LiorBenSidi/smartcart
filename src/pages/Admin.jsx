@@ -275,7 +275,8 @@ export default function Admin() {
               gtins: uniqueGtins,
               bestGtin,
               productsToUpdate,
-              gtinCounts
+              gtinCounts,
+              fieldDiffs
             });
           }
         }
