@@ -63,11 +63,13 @@ export default Deno.serve(async (req) => {
                 svc.entities.UserProductHabit.filter({ created_by: targetUser.email })
             );
             
-            // Delete in smaller batches with delays and retries to avoid rate limiting
-            // Rate limit: 100 deletes per 30 seconds = ~3.3/sec, so delay ~350ms per delete
-            for (let i = 0; i < existingHabits.length; i++) {
-                await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
-                await delay(350); // ~350ms per delete to stay under rate limit
+            // Delete existing habits if any
+            if (existingHabits.length > 0) {
+                // Rate limit: 100 deletes per 30 seconds = ~3.3/sec, so delay ~350ms per delete
+                for (let i = 0; i < existingHabits.length; i++) {
+                    await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
+                    await delay(350); // ~350ms per delete to stay under rate limit
+                }
             }
 
             // 4. Re-calculate habits
