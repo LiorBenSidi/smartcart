@@ -414,27 +414,15 @@ export default function SmartCart() {
 
   const loadSavedCart = (savedCart) => {
     setCartItems(savedCart.items.map((item) => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
+    // Also load the stored chain prices
+    const loadedPrices = {};
+    savedCart.items.forEach(item => {
+      if (item.chainPrices) {
+        loadedPrices[item.gtin] = item.chainPrices;
+      }
+    });
+    setCartItemPrices(loadedPrices);
     setShowHistory(false);
-  };
-
-  const fetchSavedCartComparison = async (savedCart) => {
-    if (savedCartComparisons[savedCart.id]) return; // Already fetched
-    setLoadingCartComparison(savedCart.id);
-    try {
-      const response = await base44.functions.invoke('getCartRecommendations', {
-        cartItems: savedCart.items.map((item) => ({ gtin: item.gtin, quantity: item.quantity })),
-        userLat: userLocation?.lat,
-        userLon: userLocation?.lon
-      });
-      setSavedCartComparisons(prev => ({
-        ...prev,
-        [savedCart.id]: response.data.topStores || []
-      }));
-    } catch (error) {
-      console.error('Failed to fetch comparison for saved cart', error);
-    } finally {
-      setLoadingCartComparison(null);
-    }
   };
 
   const editSavedCart = (savedCart) => {
