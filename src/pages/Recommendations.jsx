@@ -628,7 +628,7 @@ export default function Recommendations() {
                   </div>
               ) : smartTips.length > 0 ? (
                   <div className="grid grid-cols-1 gap-3">
-                      {smartTips.map((tip, i) => {
+                      {smartTips.slice(0, 3).map((tip, i) => {
                           const isSaving = tip.type === 'money_saving';
                           const isHealth = tip.type === 'health_dietary';
                           
