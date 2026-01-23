@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, Plus, SlidersHorizontal, X } from 'lucide-react';
 
-export default function EnhancedProductSearch({ onAddToCart }) {
+export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
@@ -184,8 +184,31 @@ export default function EnhancedProductSearch({ onAddToCart }) {
         return storeName || chainName || 'Unknown';
     };
 
-    const handleAddProduct = (product) => {
-        onAddToCart(product);
+    const handleAddProduct = async (product) => {
+        // Fetch all products with the same GTIN (from all chains)
+        const allVariants = await base44.entities.Product.filter({
+            gtin: product.gtin
+        });
+        
+        // Build prices map by chain_id
+        const pricesByChain = {};
+        allVariants.forEach(variant => {
+            if (variant.chain_id && variant.current_price) {
+                pricesByChain[variant.chain_id] = {
+                    price: variant.current_price,
+                    chain_id: variant.chain_id,
+                    store_id: variant.store_id
+                };
+            }
+        });
+        
+        // If the new callback is provided, use it with prices
+        if (onAddToCartWithPrices) {
+            onAddToCartWithPrices(product, pricesByChain);
+        } else {
+            onAddToCart(product);
+        }
+        
         setSearchTerm('');
         setSearchResults([]);
         setSuggestions([]);
