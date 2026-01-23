@@ -129,23 +129,23 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                     }
                 });
                 
-                // If no filters are chosen, prioritize by chain count then show best price per GTIN
+                // If no filters are chosen, prioritize by chain count, require at least 3 chains
                 let finalResults = results;
                 if (!hasActiveFilters) {
-                    // Get unique products (one per GTIN), sorted by chain count desc, then price asc
+                    // Get unique products (one per GTIN), sorted by chain count desc
                     const uniqueProducts = Object.entries(bestProductByGtin).map(([gtin, product]) => ({
                         ...product,
                         chainCount: chainCountByGtin[gtin]?.size || 0
                     }));
                     
-                    uniqueProducts.sort((a, b) => {
-                        // First by chain count (descending)
-                        if (b.chainCount !== a.chainCount) return b.chainCount - a.chainCount;
-                        // Then by price (ascending)
-                        return (a.current_price || 999999) - (b.current_price || 999999);
-                    });
+                    // Filter to only products available in at least 3 chains
+                    const filteredProducts = uniqueProducts.filter(p => p.chainCount >= 3);
                     
-                    finalResults = uniqueProducts;
+                    // Sort by chain count descending
+                    filteredProducts.sort((a, b) => b.chainCount - a.chainCount);
+                    
+                    // Limit to 10 results max
+                    finalResults = filteredProducts.slice(0, 10);
                 } else {
                     // Apply filters and sorting
                     finalResults = applyFiltersAndSort(results);
