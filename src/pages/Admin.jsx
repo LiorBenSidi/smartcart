@@ -237,6 +237,33 @@ export default function Admin() {
             </Card>
         </div>
 
+        {/* Batch Delay Control */}
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
+            <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                    <Clock className="w-5 h-5 text-gray-500" />
+                    <div className="flex-1">
+                        <Label htmlFor="batchDelay" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Delay between batches (ms)
+                        </Label>
+                        <Input
+                            id="batchDelay"
+                            type="number"
+                            min="0"
+                            step="500"
+                            value={batchDelay}
+                            onChange={(e) => setBatchDelay(Number(e.target.value))}
+                            className="w-32 mt-1"
+                            disabled={processState.loading}
+                        />
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
+                        Increase delay to avoid rate limits. Recommended: 1000-2000ms for heavy operations.
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
                 <Link to={createPageUrl('CatalogAdmin')} className="w-full">
