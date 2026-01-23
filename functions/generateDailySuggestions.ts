@@ -150,18 +150,19 @@ export default Deno.serve(async (req) => {
                 processing_status: 'processed' 
             }, '-purchased_at', 100);
 
-            // 0) MINIMUM DATA GATING
+            // 0) DETERMINE USER TIER
             const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            const tierConfig = getTierConfig(validReceipts.length);
             
-            // For CF-only users, skip weekly patterns and proceed to collaborative filtering
-            if (isCFOnlyUser) {
+            // For Tier 1 users, skip weekly patterns entirely
+            if (tierConfig.skipPatterns) {
                 return Response.json({ 
                     hasMore: true, 
                     progress: 25, 
-                    message: "Skipping weekly patterns (CF-only user)...",
+                    message: `Skipping weekly patterns (${tierConfig.tierName})...`,
                     skipped: true,
-                    isCFOnlyUser: true
+                    tier: tierConfig.tier,
+                    tierName: tierConfig.tierName
                 });
             }
 
@@ -201,9 +202,10 @@ export default Deno.serve(async (req) => {
                     }
                 });
 
-                if (total_weeks > 0 && weekdayMatches >= CONFIG.MIN_WEEKDAY_OCCURRENCES_K) {
+                // Use tier-specific thresholds
+                if (total_weeks > 0 && weekdayMatches >= tierConfig.minWeekdayOccurrences) {
                     const confidence = weekdayMatches / total_weeks;
-                    if (confidence >= CONFIG.MIN_WEEKLY_CONFIDENCE) {
+                    if (confidence >= tierConfig.minWeeklyConfidence) {
                         weeklySuggestions.push({
                             product_id: pid,
                             product_name: productInfo[pid].name,
@@ -213,7 +215,7 @@ export default Deno.serve(async (req) => {
                             evidence: {
                                 weekday: currentWeekday,
                                 occurrences: weekdayMatches,
-                                n_weeks: total_weeks, // Rename to n_weeks for clarity in UI
+                                n_weeks: total_weeks,
                                 total_weeks: total_weeks,
                                 last_dates: datesOnWeekday.slice(0, 3)
                             }
@@ -230,7 +232,9 @@ export default Deno.serve(async (req) => {
             return Response.json({ 
                 hasMore: true, 
                 progress: 25, 
-                message: "Analyzing weekly patterns..." 
+                message: "Analyzing weekly patterns...",
+                tier: tierConfig.tier,
+                tierName: tierConfig.tierName
             });
         }
 
