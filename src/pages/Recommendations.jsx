@@ -164,45 +164,47 @@ function AnalyticsDashboard({ receipts, dashboardData }) {
           </CardContent>
         </Card>
 
-        {/* Category Trends Line Chart */}
-        {categoryTrendData.length > 0 && (
-          <Card className="border-none shadow-sm col-span-2 lg:col-span-2">
-            <CardContent className="p-5 h-full flex flex-col">
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">Category Trends (%)</p>
-              <div className="flex-1 min-h-[80px]">
-                <ResponsiveContainer width="100%" height={80}>
-                  <LineChart data={categoryTrendData}>
-                    <XAxis dataKey="month" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} width={30} />
-                    <Tooltip 
-                      formatter={(value) => `${value}%`}
-                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '11px'}}
-                    />
-                    {topCategories.map((cat, idx) => (
-                      <Line 
-                        key={cat} 
-                        type="monotone" 
-                        dataKey={cat} 
-                        stroke={COLORS[idx % COLORS.length]} 
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                {topCategories.map((cat, idx) => (
-                  <span key={idx} className="text-[10px] flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
-                    {cat}
-                  </span>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
       </section>
+
+      {/* Category Trends Line Chart - Full Width */}
+      {categoryTrendData.length > 0 && (
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-5">
+            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-3">Category Trends (%)</p>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={categoryTrendData}>
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} width={35} />
+                  <Tooltip 
+                    formatter={(value) => `${value}%`}
+                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px'}}
+                  />
+                  {topCategories.map((cat, idx) => (
+                    <Line 
+                      key={cat} 
+                      type="monotone" 
+                      dataKey={cat} 
+                      stroke={COLORS[idx % COLORS.length]} 
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+              {topCategories.map((cat, idx) => (
+                <span key={idx} className="text-xs flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
+                  {cat}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Frequent Items */}
       {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
