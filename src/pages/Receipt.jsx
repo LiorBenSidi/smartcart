@@ -75,28 +75,7 @@ export default function Receipt() {
       console.error("Analysis failed", e);
     }
 
-    // Trigger incremental habit and vector updates in the background (sequential)
-    // Use confirmedReceipt.created_by or fall back to the original receipt's created_by
-    const userId = confirmedReceipt.created_by || receipt.created_by;
-    console.log("Receipt created_by:", confirmedReceipt.created_by, "Original receipt created_by:", receipt.created_by);
-    if (userId) {
-      console.log("Starting incremental updates for user:", userId);
-      
-      // Fire and forget - don't await to avoid blocking UI
-      // But run sequentially: habits first, then vectors
-      console.log("Calling rebuildUserHabits...");
-      base44.functions.invoke('rebuildUserHabits', { userId, mode: 'incremental' })
-        .then(res => {
-          console.log("Incremental habit rebuild completed", res.data);
-          // Now call buildUserVectors after habits are done
-          console.log("Calling buildUserVectors...");
-          return base44.functions.invoke('buildUserVectors', { userId, mode: 'incremental' });
-        })
-        .then(res => console.log("Incremental vector rebuild completed", res.data))
-        .catch(e => console.error("Incremental update failed", e));
-    } else {
-      console.warn("No userId found in confirmedReceipt.created_by");
-    }
+    // Habit and vector updates are now triggered directly in ReceiptReview on "Confirm & Continue"
   };
 
   const handleItemChange = (index, field, value) => {
