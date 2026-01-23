@@ -772,7 +772,7 @@ export default function SmartCart() {
               </Button>
             }
             <Button variant="outline" className="flex-1" onClick={() => setShowHistory(!showHistory)}>
-              {showHistory ? 'Hide' : 'Show'} History
+              {showHistory ? 'Hide' : 'My Lists'}
             </Button>
           </div>
         </CardContent>
