@@ -83,7 +83,9 @@ export default Deno.serve(async (req) => {
             }
         });
 
-        return Response.json({ success: true, recommendations: Object.values(aggregated) });
+        const results = Object.values(aggregated);
+        console.log(`[CF] Returning ${results.length} aggregated recommendations`);
+        return Response.json({ success: true, recommendations: results });
 
     } catch (error) {
         return Response.json({ error: error.message }, { status: 500 });
