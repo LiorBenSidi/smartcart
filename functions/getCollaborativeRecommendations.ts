@@ -52,21 +52,12 @@ export default Deno.serve(async (req) => {
 
         // Get top products purchased by similar users
         for (const neighborId of neighborIds) {
-            // First try UserProductHabit (created_by = neighborId)
-            let neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
-                { created_by: neighborId },
-                '-purchase_count',
-                15
-            ).catch(() => []);
-            
-            // If no habits, also try user_id field
-            if (neighborHabits.length === 0) {
-                neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
+            // Query by user_id field (the actual owner of the habit)
+                const neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
                     { user_id: neighborId },
                     '-purchase_count',
                     15
                 ).catch(() => []);
-            }
             
             console.log(`[CF] Neighbor ${neighborId}: Found ${neighborHabits.length} habits`);
 
