@@ -409,8 +409,7 @@ export default function SmartCart() {
         }
       };
 
-  const [savedCartComparisons, setSavedCartComparisons] = useState({});
-  const [loadingCartComparison, setLoadingCartComparison] = useState(null);
+
 
   const loadSavedCart = (savedCart) => {
     setCartItems(savedCart.items.map((item) => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
