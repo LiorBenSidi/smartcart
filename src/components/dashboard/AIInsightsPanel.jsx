@@ -34,13 +34,7 @@ export default function AIInsightsPanel({ insights }) {
     return (
         <div className="space-y-4">
             <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
-                <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-indigo-600" />
-                        AI-Powered Insights
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="pt-6 space-y-4">
                     {allInsights.map((insight, idx) => (
                         <div 
                             key={idx} 
