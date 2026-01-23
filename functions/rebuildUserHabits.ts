@@ -53,10 +53,11 @@ export default Deno.serve(async (req) => {
             
             // Only delete on first chunk for this user (habitOffset === 0)
             if ((payload.habitOffset || 0) === 0 && existingHabits.length > 0) {
-                // Use bulkDelete to avoid hitting entity_delete rate limit (100/30s)
-                const idsToDelete = existingHabits.map(h => h.id);
-                await svc.entities.UserProductHabit.bulkDelete(idsToDelete);
-                console.log(`[rebuildUserHabits] Bulk deleted ${existingHabits.length} existing habits for ${targetUser.email}`);
+                // Delete sequentially - rate limit is 100/30s, so this should be fine for most users
+                for (const h of existingHabits) {
+                    await svc.entities.UserProductHabit.delete(h.id);
+                }
+                console.log(`[rebuildUserHabits] Deleted ${existingHabits.length} existing habits for ${targetUser.email}`);
             } else if ((payload.habitOffset || 0) > 0) {
                 console.log(`[rebuildUserHabits] Skipping delete (continuing habit creation from offset ${payload.habitOffset})`);
             }
