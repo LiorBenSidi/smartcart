@@ -1196,8 +1196,52 @@ export default function SmartCart() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
-                          onClick={() => setShowPriceCompare(showPriceCompare === cart.id ? null : cart.id)}
+                          className="text-indigo-600 border-indigo-300 hover:bg-indigo-100 dark:text-indigo-400 dark:border-indigo-600 dark:hover:bg-indigo-900/50"
+                          onClick={async () => {
+                            if (showPriceCompare === cart.id) {
+                              setShowPriceCompare(null);
+                            } else {
+                              // Fetch prices if not stored
+                              const needsPrices = cart.items?.some(item => !item.chainPrices || Object.keys(item.chainPrices).length === 0);
+                              if (needsPrices) {
+                                const gtins = cart.items.map(item => item.gtin);
+                                try {
+                                  const allProducts = await base44.entities.Product.filter({
+                                    gtin: { $in: gtins }
+                                  }, '-updated_date', 500);
+                                  
+                                  const pricesByGtin = {};
+                                  allProducts.forEach(product => {
+                                    if (product.chain_id && product.current_price != null) {
+                                      if (!pricesByGtin[product.gtin]) {
+                                        pricesByGtin[product.gtin] = {};
+                                      }
+                                      if (!pricesByGtin[product.gtin][product.chain_id] || 
+                                          product.current_price < pricesByGtin[product.gtin][product.chain_id].price) {
+                                        pricesByGtin[product.gtin][product.chain_id] = {
+                                          price: product.current_price,
+                                          chain_id: product.chain_id,
+                                          store_id: product.store_id
+                                        };
+                                      }
+                                    }
+                                  });
+                                  
+                                  // Update the cart in state with fetched prices
+                                  const updatedItems = cart.items.map(item => ({
+                                    ...item,
+                                    chainPrices: pricesByGtin[item.gtin] || item.chainPrices || {}
+                                  }));
+                                  setSavedCarts(prev => prev.map(c => 
+                                    c.id === cart.id ? { ...c, items: updatedItems } : c
+                                  ));
+                                } catch (error) {
+                                  console.error("Failed to fetch prices", error);
+                                }
+                              }
+                              setShowPriceCompare(cart.id);
+                            }
+                          }}
                         >
                           <TrendingDown className="w-3 h-3 mr-1" />
                           Compare
