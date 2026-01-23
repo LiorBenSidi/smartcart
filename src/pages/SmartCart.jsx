@@ -425,60 +425,28 @@ export default function SmartCart() {
 
 
 
-  const loadSavedCart = async (savedCart) => {
+  const loadSavedCart = (savedCart) => {
     setCartItems(savedCart.items.map((item) => ({ 
       gtin: item.gtin, 
       name: item.name, 
       quantity: item.quantity,
       fromSuggestion: item.fromSuggestion || false 
     })));
-    
-    // Load stored chain prices or fetch if not available
+    // Also load the stored chain prices
     const loadedPrices = {};
-    const gtinsNeedingPrices = [];
-    
     savedCart.items.forEach(item => {
-      if (item.chainPrices && Object.keys(item.chainPrices).length > 0) {
+      if (item.chainPrices) {
         loadedPrices[item.gtin] = item.chainPrices;
-      } else {
-        gtinsNeedingPrices.push(item.gtin);
       }
     });
-    
-    // Fetch prices for items that don't have stored chain prices
-    if (gtinsNeedingPrices.length > 0) {
-      try {
-        const allProducts = await base44.entities.Product.filter({
-          gtin: { $in: gtinsNeedingPrices }
-        }, '-updated_date', 500);
-        
-        allProducts.forEach(product => {
-          if (product.chain_id && product.current_price != null) {
-            if (!loadedPrices[product.gtin]) {
-              loadedPrices[product.gtin] = {};
-            }
-            if (!loadedPrices[product.gtin][product.chain_id] || 
-                product.current_price < loadedPrices[product.gtin][product.chain_id].price) {
-              loadedPrices[product.gtin][product.chain_id] = {
-                price: product.current_price,
-                chain_id: product.chain_id,
-                store_id: product.store_id
-              };
-            }
-          }
-        });
-      } catch (error) {
-        console.error("Failed to fetch prices for cart items", error);
-      }
-    }
-    
     setCartItemPrices(loadedPrices);
     setShowHistory(false);
+    // Trigger save dialog to show comparison
     setCartName(savedCart.name + ' (copy)');
     setShowSaveDialog(true);
   };
 
-  const editSavedCart = async (savedCart) => {
+  const editSavedCart = (savedCart) => {
     // Load the cart items for editing including fromSuggestion flag
     setCartItems(savedCart.items.map((item) => ({ 
       gtin: item.gtin, 
@@ -486,50 +454,18 @@ export default function SmartCart() {
       quantity: item.quantity,
       fromSuggestion: item.fromSuggestion || false 
     })));
-    
-    // Load stored chain prices or fetch if not available
+    // Also load the stored chain prices
     const loadedPrices = {};
-    const gtinsNeedingPrices = [];
-    
     savedCart.items.forEach(item => {
-      if (item.chainPrices && Object.keys(item.chainPrices).length > 0) {
+      if (item.chainPrices) {
         loadedPrices[item.gtin] = item.chainPrices;
-      } else {
-        gtinsNeedingPrices.push(item.gtin);
       }
     });
-    
-    // Fetch prices for items that don't have stored chain prices
-    if (gtinsNeedingPrices.length > 0) {
-      try {
-        const allProducts = await base44.entities.Product.filter({
-          gtin: { $in: gtinsNeedingPrices }
-        }, '-updated_date', 500);
-        
-        allProducts.forEach(product => {
-          if (product.chain_id && product.current_price != null) {
-            if (!loadedPrices[product.gtin]) {
-              loadedPrices[product.gtin] = {};
-            }
-            if (!loadedPrices[product.gtin][product.chain_id] || 
-                product.current_price < loadedPrices[product.gtin][product.chain_id].price) {
-              loadedPrices[product.gtin][product.chain_id] = {
-                price: product.current_price,
-                chain_id: product.chain_id,
-                store_id: product.store_id
-              };
-            }
-          }
-        });
-      } catch (error) {
-        console.error("Failed to fetch prices for cart items", error);
-      }
-    }
-    
     setCartItemPrices(loadedPrices);
     setEditingCartId(savedCart.id);
     setCartName(savedCart.name);
     setShowHistory(false);
+    // Show save dialog with comparison table
     setShowSaveDialog(true);
     toast.info("Editing cart - make changes and save");
   };
@@ -746,23 +682,17 @@ export default function SmartCart() {
                 <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm">
                               <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                      <div className="flex items-center gap-2 mb-1">
                                            <span className="font-semibold text-gray-900 dark:text-gray-100">{item.product_name}</span>
                                            <Badge className={`text-[10px] px-1.5 py-0 h-5 flex items-center gap-1 border ${
-                                      item.reason_type === 'Weekly+Restock' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800' :
-                                      item.reason_type === 'Collaborative' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
-                                      item.reason_type === 'Hybrid' ? 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
-                                      item.reason_type === 'Restock' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' :
-                                      'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'}`
-                                      }>
+                        item.reason_type === 'Weekly+Restock' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800' :
+                        item.reason_type === 'Collaborative' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
+                        item.reason_type === 'Hybrid' ? 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
+                        item.reason_type === 'Restock' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' :
+                        'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'}`
+                        }>
                                                {item.reason_type}
                                            </Badge>
-                                           {item.chainCount > 0 && (
-                                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">
-                                                   <StoreIcon className="w-3 h-3 mr-0.5" />
-                                                   {item.chainCount} chains
-                                               </Badge>
-                                           )}
                                        </div>
                                       <div className="text-xs text-gray-500 flex items-center gap-3">
                                           <span>Qty: {item.suggested_qty}</span>
@@ -1193,59 +1123,6 @@ export default function SmartCart() {
                         <Button size="sm" variant="outline" onClick={() => loadSavedCart(cart)}>
                           Load
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-indigo-600 border-indigo-300 hover:bg-indigo-100 dark:text-indigo-400 dark:border-indigo-600 dark:hover:bg-indigo-900/50"
-                          onClick={async () => {
-                            if (showPriceCompare === cart.id) {
-                              setShowPriceCompare(null);
-                            } else {
-                              // Fetch prices if not stored
-                              const needsPrices = cart.items?.some(item => !item.chainPrices || Object.keys(item.chainPrices).length === 0);
-                              if (needsPrices) {
-                                const gtins = cart.items.map(item => item.gtin);
-                                try {
-                                  const allProducts = await base44.entities.Product.filter({
-                                    gtin: { $in: gtins }
-                                  }, '-updated_date', 500);
-                                  
-                                  const pricesByGtin = {};
-                                  allProducts.forEach(product => {
-                                    if (product.chain_id && product.current_price != null) {
-                                      if (!pricesByGtin[product.gtin]) {
-                                        pricesByGtin[product.gtin] = {};
-                                      }
-                                      if (!pricesByGtin[product.gtin][product.chain_id] || 
-                                          product.current_price < pricesByGtin[product.gtin][product.chain_id].price) {
-                                        pricesByGtin[product.gtin][product.chain_id] = {
-                                          price: product.current_price,
-                                          chain_id: product.chain_id,
-                                          store_id: product.store_id
-                                        };
-                                      }
-                                    }
-                                  });
-                                  
-                                  // Update the cart in state with fetched prices
-                                  const updatedItems = cart.items.map(item => ({
-                                    ...item,
-                                    chainPrices: pricesByGtin[item.gtin] || item.chainPrices || {}
-                                  }));
-                                  setSavedCarts(prev => prev.map(c => 
-                                    c.id === cart.id ? { ...c, items: updatedItems } : c
-                                  ));
-                                } catch (error) {
-                                  console.error("Failed to fetch prices", error);
-                                }
-                              }
-                              setShowPriceCompare(cart.id);
-                            }
-                          }}
-                        >
-                          <TrendingDown className="w-3 h-3 mr-1" />
-                          Compare
-                        </Button>
                         <Button size="sm" variant="outline" onClick={() => editSavedCart(cart)}>
                           ✏️
                         </Button>
@@ -1253,14 +1130,25 @@ export default function SmartCart() {
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
+                      {cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-xs text-indigo-600 hover:text-indigo-700 mt-1"
+                          onClick={() => setShowPriceCompare(showPriceCompare === cart.id ? null : cart.id)}
+                        >
+                          <TrendingDown className="w-3 h-3 mr-1" />
+                          {showPriceCompare === cart.id ? 'Hide' : 'Compare'}
+                        </Button>
+                      )}
                     </div>
                   </div>
 
                   {/* Price comparison table from stored data */}
-                  {showPriceCompare === cart.id && (() => {
+                  {showPriceCompare === cart.id && cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (() => {
                     // Get all unique chain IDs from saved cart items
                     const allChainIds = new Set();
-                    cart.items?.forEach(item => {
+                    cart.items.forEach(item => {
                       if (item.chainPrices) {
                         Object.keys(item.chainPrices).forEach(chainId => allChainIds.add(chainId));
                       }
@@ -1268,12 +1156,7 @@ export default function SmartCart() {
                     const chainIds = Array.from(allChainIds);
                     const chainsInTable = chainIds.map(id => chains.find(c => c.id === id)).filter(Boolean);
 
-                    if (chainsInTable.length === 0) return (
-                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-center text-gray-500 text-sm py-4">
-                        <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-                        Loading prices...
-                      </div>
-                    );
+                    if (chainsInTable.length === 0) return null;
 
                     return (
                       <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -1281,7 +1164,7 @@ export default function SmartCart() {
                           <TrendingDown className="w-3 h-3 text-green-600" /> Price Comparison:
                         </div>
                         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                          <div className="overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
@@ -1697,7 +1580,12 @@ export default function SmartCart() {
 
                   </div> :
 
-          null
+          <Card>
+              <CardContent className="p-10 text-center text-gray-400">
+                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No price data available for comparison</p>
+              </CardContent>
+            </Card>
           }
         </>
         }
