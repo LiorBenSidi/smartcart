@@ -1,25 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 
-// Helper to add delay between API calls to avoid rate limiting
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Retry wrapper with exponential backoff
-const withRetry = async (fn, maxRetries = 3, baseDelay = 500) => {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            return await fn();
-        } catch (error) {
-            if (error.status === 429 && attempt < maxRetries - 1) {
-                const waitTime = baseDelay * Math.pow(2, attempt);
-                console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}...`);
-                await delay(waitTime);
-            } else {
-                throw error;
-            }
-        }
-    }
-};
-
 export default Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
@@ -36,8 +16,8 @@ export default Deno.serve(async (req) => {
         const batch = payload.batch || 0;
         const skip = batch * limit;
 
-        // 1. Fetch Users (using service role to bypass auth restrictions)
-        const users = await svc.entities.User.list('created_date', 1000);
+        // 1. Fetch Users
+        const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
         // Manual pagination since list params might vary
         const batchUsers = users.slice(skip, skip + limit);
         
@@ -59,33 +39,11 @@ export default Deno.serve(async (req) => {
 
             // 3. Wipe existing habits for this user to ensure clean rebuild
             // We need to find them first.
-            const existingHabits = await withRetry(() => 
-                svc.entities.UserProductHabit.filter({ created_by: targetUser.email })
-            );
-            
-            // Delete existing habits using deleteMany for efficiency
-            if (existingHabits.length > 0) {
-                // Use filter-based delete instead of individual deletes
-                try {
-                    await withRetry(() => 
-                        svc.entities.UserProductHabit.deleteMany({ created_by: targetUser.email })
-                    );
-                } catch (err) {
-                    // If deleteMany fails, fall back to individual deletes
-                    console.log("deleteMany failed, falling back to individual deletes");
-                    for (let i = 0; i < existingHabits.length; i++) {
-                        try {
-                            await svc.entities.UserProductHabit.delete(existingHabits[i].id);
-                        } catch (delErr) {
-                            // Ignore "not found" errors
-                            if (!delErr.message?.includes('not found')) {
-                                console.log(`Delete error for ${existingHabits[i].id}: ${delErr.message}`);
-                            }
-                        }
-                        if ((i + 1) % 3 === 0) await delay(350);
-                    }
-                }
-                await delay(600); // Wait after bulk delete
+            // Note: If habits table is huge, this might be slow.
+            // Using filter by user_id if possible, or created_by
+            const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
+            for (const h of existingHabits) {
+                await svc.entities.UserProductHabit.delete(h.id);
             }
 
             // 4. Re-calculate habits
@@ -167,12 +125,10 @@ export default Deno.serve(async (req) => {
             });
 
             if (habitsToCreate.length > 0) {
-                // Bulk create in smaller chunks with delays and retries to avoid rate limiting
-                // Rate limit: 50 bulk creates per 60 seconds = ~1.2/sec, so delay ~1200ms per chunk
-                for (let i = 0; i < habitsToCreate.length; i += 10) {
-                    const chunk = habitsToCreate.slice(i, i + 10);
-                    await withRetry(() => svc.entities.UserProductHabit.bulkCreate(chunk));
-                    await delay(1300); // ~1.3s per bulk create to stay under rate limit
+                // Bulk create in chunks of 50
+                for (let i = 0; i < habitsToCreate.length; i += 50) {
+                    const chunk = habitsToCreate.slice(i, i + 50);
+                    await svc.entities.UserProductHabit.bulkCreate(chunk);
                 }
             }
 
