@@ -357,13 +357,13 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 3: FINALIZE ---
         if (batch === 3) {
-            // Check if CF-only user
+            // Determine user tier
             const receipts = await base44.entities.Receipt.filter({ 
                 created_by: user.email, 
                 processing_status: 'processed' 
             }, '-purchased_at', 100);
             const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            const tierConfig = getTierConfig(validReceipts.length);
             
             // Need user preferences to filter
             const userPreferences = await base44.entities.UserProductPreference.filter({ 
@@ -377,12 +377,16 @@ export default Deno.serve(async (req) => {
 
             let allSuggestions = draft.items || [];
             
-            // For CF-only users, ensure only collaborative suggestions are kept
-            if (isCFOnlyUser) {
+            // For Tier 1 users, ensure only collaborative suggestions are kept
+            if (tierConfig.skipPatterns) {
                 allSuggestions = allSuggestions.filter(s => s.reason_type === "Collaborative");
             }
             
             const suggestionMap = new Map();
+
+            // Use tier-specific weights for blending
+            const effectiveWeeklyWeight = tierConfig.weeklyWeight;
+            const effectiveCollaborativeWeight = tierConfig.collaborativeWeight;
 
             // Merge Logic
             allSuggestions.forEach(s => {
@@ -402,14 +406,15 @@ export default Deno.serve(async (req) => {
                         }
                     }
                     
-                    // Blend Confidence
+                    // Blend Confidence using tier-specific weights
                     if (s.reason_type === 'Collaborative' || existing.reason_type === 'Collaborative' || existing.reason_type === 'Hybrid') {
-                         const totalWeight = weeklyWeight + collaborativeWeight || 1;
-                         existing.confidence = (existing.confidence * weeklyWeight + s.confidence * collaborativeWeight) / totalWeight;
+                         const totalWeight = effectiveWeeklyWeight + effectiveCollaborativeWeight || 1;
+                         existing.confidence = (existing.confidence * effectiveWeeklyWeight + s.confidence * effectiveCollaborativeWeight) / totalWeight;
                          existing.evidence = { 
                             ...existing.evidence, 
                             collaborative_evidence: s.reason_type === 'Collaborative' ? s.evidence : existing.evidence?.collaborative_evidence,
-                            blending_weights: { weekly: weeklyWeight, collaborative: collaborativeWeight }
+                            blending_weights: { weekly: effectiveWeeklyWeight, collaborative: effectiveCollaborativeWeight },
+                            tier: tierConfig.tier
                          };
                     } else {
                         existing.confidence = Math.max(existing.confidence, s.confidence);
@@ -424,13 +429,24 @@ export default Deno.serve(async (req) => {
 
             let finalSuggestions = Array.from(suggestionMap.values());
 
-            // Sorting
+            // Tier-adjusted sorting priorities
+            const getSortPriority = (reasonType, tier) => {
+                if (tier === 1) {
+                    // Tier 1: Only CF matters
+                    return { "Collaborative": 5 }[reasonType] || 0;
+                } else if (tier === 2) {
+                    // Tier 2: CF slightly higher, but patterns also valued
+                    return { "Collaborative": 5, "Hybrid": 4, "Weekly+Restock": 3, "Restock": 2, "Weekly": 1 }[reasonType] || 0;
+                } else {
+                    // Tier 3: Patterns are primary
+                    return { "Weekly+Restock": 5, "Hybrid": 4, "Restock": 3, "Weekly": 2, "Collaborative": 1 }[reasonType] || 0;
+                }
+            };
+
+            // Sorting with tier-aware priorities
             finalSuggestions.sort((a, b) => {
-                const priority = { 
-                    "Weekly+Restock": 5, "Collaborative": 4, "Hybrid": 3, "Restock": 2, "Weekly": 1 
-                };
-                const pA = priority[a.reason_type] || 0;
-                const pB = priority[b.reason_type] || 0;
+                const pA = getSortPriority(a.reason_type, tierConfig.tier);
+                const pB = getSortPriority(b.reason_type, tierConfig.tier);
                 if (pA !== pB) return pB - pA;
                 if (Math.abs(a.confidence - b.confidence) > 0.05) return b.confidence - a.confidence;
                 return (b.evidence?.due_score || 0) - (a.evidence?.due_score || 0);
@@ -453,18 +469,31 @@ export default Deno.serve(async (req) => {
                 filteredSuggestions.push(backfillPool.shift());
             }
 
+            // Generate tier-specific note
+            let note = undefined;
+            if (filteredSuggestions.length === 0) {
+                if (tierConfig.tier === 1) {
+                    note = "No community suggestions available yet. Keep shopping to build your profile!";
+                } else {
+                    note = "No patterns found. Try uploading more receipts.";
+                }
+            }
+
             // Save Final
             const finalDraft = await base44.entities.SuggestedCartDraft.update(draft.id, {
                 status: 'draft',
                 items: filteredSuggestions,
-                note: filteredSuggestions.length === 0 ? "No patterns found." : undefined
+                note: note
             });
 
             return Response.json({ 
                 hasMore: false, 
                 progress: 100, 
                 message: "Done!",
-                draft: finalDraft
+                draft: finalDraft,
+                tier: tierConfig.tier,
+                tierName: tierConfig.tierName,
+                receiptCount: validReceipts.length
             });
         }
 
