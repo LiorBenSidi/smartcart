@@ -474,6 +474,11 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                                                     {product.category}
                                                 </Badge>
                                             )}
+                                            {product.chainCount > 1 && (
+                                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-indigo-300 text-indigo-600 dark:border-indigo-600 dark:text-indigo-400">
+                                                    {product.chainCount} chains
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
                                     <Button
