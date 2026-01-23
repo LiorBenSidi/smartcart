@@ -296,22 +296,45 @@ export default function SmartCart() {
     setSaving(true);
     try {
       const bestStore = storeComparisons.length > 0 ? storeComparisons[0] : null;
+      
+      // Build items with prices
+      const itemsWithPrices = cartItems.map((item) => ({
+        ...item,
+        price: itemPrices[item.gtin] || 0
+      }));
 
-      await base44.entities.SavedCart.create({
-        name: cartName,
-        store_id: bestStore?.store?.id,
-        store_name: bestStore?.store?.name,
-        items: cartItems.map((item) => ({ ...item, price: 0 })),
-        total_amount: bestStore?.totalCost || 0,
-        total_items: totalItems
-      });
+      if (editingCartId) {
+        // Update existing cart
+        await base44.entities.SavedCart.update(editingCartId, {
+          name: cartName,
+          store_id: bestStore?.store?.id,
+          store_name: bestStore?.chain?.name || bestStore?.store?.name,
+          items: itemsWithPrices,
+          total_amount: bestStore?.totalCost || itemsWithPrices.reduce((sum, i) => sum + (i.price * i.quantity), 0),
+          total_items: totalItems
+        });
+        toast.success("Cart updated!");
+      } else {
+        // Create new cart
+        await base44.entities.SavedCart.create({
+          name: cartName,
+          store_id: bestStore?.store?.id,
+          store_name: bestStore?.chain?.name || bestStore?.store?.name,
+          items: itemsWithPrices,
+          total_amount: bestStore?.totalCost || itemsWithPrices.reduce((sum, i) => sum + (i.price * i.quantity), 0),
+          total_items: totalItems
+        });
+        toast.success("Cart saved!");
+      }
 
       const updatedCarts = await base44.entities.SavedCart.list('-created_date');
       setSavedCarts(updatedCarts);
       setShowSaveDialog(false);
       setCartName('');
+      setEditingCartId(null);
     } catch (error) {
       console.error('Failed to save cart', error);
+      toast.error("Failed to save cart");
     } finally {
       setSaving(false);
     }
