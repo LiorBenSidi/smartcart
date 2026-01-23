@@ -531,79 +531,91 @@ export default function SmartCart() {
                                   <DialogHeader>
                                       <DialogTitle className="flex items-center gap-2">
                                           <CalendarDays className="w-5 h-5 text-indigo-600" />
-                                          Daily Suggestions - Technical Details
+                                          How Suggestions Work
                                       </DialogTitle>
                                   </DialogHeader>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
+                                      We create a personalized shopping list based on your habits — so you never forget what you need.
+                                  </p>
                                   <div className="space-y-4 text-sm dark:text-gray-200">
-                                      <div>
-                                          <h4 className="font-semibold mb-2">Algorithm Overview:</h4>
-                                          <p className="text-gray-700 dark:text-gray-300 mb-2">Runs daily to predict what you should buy today based on your purchase history.</p>
-                                      </div>
-
-                                      <div className="bg-slate-800 border border-slate-700 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-white">Weekly Pattern Detection:</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Analyzes purchases from all available historical weeks:</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li>Groups receipts by day of week (e.g., all your Fridays)</li>
-                                                  <li>Counts how often each product appears on this weekday</li>
-                                                  <li>Threshold: Product must appear ≥50% of weeks</li>
-                                                  <li>occurrences: This represents the number of times the user has purchased that specific item on the same day of the week (e.g., every Monday) within the observation period</li>
-                                                  <li>total_weeks: This is the total number of weeks being considered in that observation period</li>
-                                                  <li>Confidence = (occurrences / total_weeks)</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Example:</strong> If you bought milk on 6 out of 8 Fridays → 75% confidence for Friday milk suggestion</p>
+                                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                                          <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                                              <CalendarDays className="w-4 h-4 text-blue-600" />
+                                              Weekly Patterns
+                                          </h4>
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                              Items you regularly buy on this day of the week.
+                                          </p>
+                                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                                              <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>How it works</strong> — We look at what you buy on Fridays, Sundays, etc.</div>
+                                              <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>Confidence</strong> — Based on how consistently you buy the item</div>
                                           </div>
+                                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                              💡 <strong>Example:</strong> You bought milk on 6 out of 8 Fridays → suggested for this Friday!
+                                          </p>
                                       </div>
 
-                                      <div className="bg-slate-900 border border-yellow-700/30 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-yellow-400">Restock Prediction (Cadence-Based):</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Uses UserProductHabit records (pre-calculated):</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li>avg_cadence_days: Average days between purchases</li>
-                                                  <li>last_purchase_date: When you last bought it</li>
-                                                  <li>days_since = (today - last_purchase_date)</li>
-                                                  <li>ratio = days_since / avg_cadence_days</li>
-                                                  <li>Suggests if ratio ≥ 0.85 (85% through cycle)</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Example:</strong> You buy eggs every 7 days. Last purchase was 6 days ago → ratio=0.86 → suggest restock!</p>
-                                          </div>
-                                      </div>
-
-                                      <div>
-                                          <h4 className="font-semibold mb-2">Quantity Estimation:</h4>
-                                          <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300 space-y-1">
-                                              <li>Weekly suggestions: Uses mode (most common quantity)</li>
-                                              <li>Restock suggestions: Uses average quantity from habits</li>
-                                              <li>Default to 1 if no history</li>
+                                      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                                          <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                                              <RefreshCw className="w-4 h-4 text-amber-600" />
+                                              Restock Reminders
+                                          </h4>
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                              Items you're running low on based on your buying cycle.
+                                          </p>
+                                          <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                              <li className="flex items-start gap-2">
+                                                  <span className="text-amber-500 mt-0.5">✓</span>
+                                                  <span><strong>Learns your rhythm</strong> — Tracks how often you buy each product</span>
+                                              </li>
+                                              <li className="flex items-start gap-2">
+                                                  <span className="text-amber-500 mt-0.5">✓</span>
+                                                  <span><strong>Predicts when you'll run out</strong> — Suggests before you need it</span>
+                                              </li>
                                           </ul>
+                                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                              💡 <strong>Example:</strong> You buy eggs every 7 days, last purchase was 6 days ago → time to restock!
+                                          </p>
                                       </div>
 
-                                      <div className="bg-orange-900/20 border border-orange-700/30 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-orange-400">Collaborative Filtering:</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Identifies products bought by users similar to you:</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li>Compares your purchase patterns with other users to find "neighbors".</li>
-                                                  <li>Recommends products frequently purchased by your neighbors that you haven't bought.</li>
-                                                  <li>Confidence is based on neighbor similarity and purchase frequency.</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Example:</strong> Similar users often buy fresh herbs with their produce. If you don't, it's suggested!</p>
+                                      <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                                          <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                                              <Sparkles className="w-4 h-4 text-purple-600" />
+                                              Community Favorites
+                                          </h4>
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                              Products that shoppers like you often buy — discover new items!
+                                          </p>
+                                          <div className="space-y-2 text-xs">
+                                              <div className="flex gap-2">
+                                                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded font-medium">🤝 Similar Shoppers</span>
+                                                  <span className="text-gray-600 dark:text-gray-400">Found by matching shopping patterns</span>
+                                              </div>
+                                              <div className="flex gap-2">
+                                                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded font-medium">🔍 New Discoveries</span>
+                                                  <span className="text-gray-600 dark:text-gray-400">Items you haven't tried yet</span>
+                                              </div>
                                           </div>
                                       </div>
 
-                                      <div className="bg-slate-800 border border-slate-700 p-4 rounded">
-                                          <h4 className="font-semibold mb-2 text-white">Combination Logic:</h4>
-                                          <div className="space-y-2 text-gray-300">
-                                              <p className="text-xs">Suggestions from different sources are merged and prioritized:</p>
-                                              <ul className="list-disc list-inside ml-4 text-xs space-y-1">
-                                                  <li><strong>Deduplication:</strong> Unique products are identified across all suggestion types.</li>
-                                                  <li><strong>Confidence Blending:</strong> If a product appears in multiple suggestion types (e.g., Weekly and Collaborative), their confidence scores are blended with a 50/50 weighting.</li>
-                                                  <li><strong>Reason Types:</strong> Products can have 'Weekly', 'Restock', 'Weekly+Restock', 'Collaborative', or 'Hybrid' (for blended suggestions) reasons.</li>
-                                              </ul>
-                                              <p className="text-xs mt-3"><strong>Prioritization Order:</strong> Weekly+Restock > Hybrid > Restock > Weekly > Collaborative (highest confidence wins within same priority)</p>
+                                      <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
+                                          <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                                              <Settings className="w-4 h-4 text-slate-600" />
+                                              Smart Prioritization
+                                          </h4>
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                              We combine all signals and show you the most relevant items first.
+                                          </p>
+                                          <div className="flex flex-wrap gap-2 text-xs">
+                                              <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Weekly+Restock</Badge>
+                                              <Badge className="bg-teal-100 text-teal-700 border-teal-200">Hybrid</Badge>
+                                              <Badge className="bg-amber-100 text-amber-700 border-amber-200">Restock</Badge>
+                                              <Badge className="bg-blue-100 text-blue-700 border-blue-200">Weekly</Badge>
+                                              <Badge className="bg-purple-100 text-purple-700 border-purple-200">Community</Badge>
                                           </div>
+                                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                              Items appearing in multiple categories get priority. Use 👍👎 to personalize further!
+                                          </p>
                                       </div>
                                   </div>
                               </DialogContent>
@@ -1591,55 +1603,74 @@ export default function SmartCart() {
                           <DialogHeader>
                               <DialogTitle className="flex items-center gap-2">
                                   <TrendingDown className="w-5 h-5 text-green-600" />
-                                  Price Comparison - Technical Details
+                                  How Price Comparison Works
                               </DialogTitle>
                           </DialogHeader>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2 mb-4">
+                              Find the cheapest store for your entire cart — we compare prices across all supermarkets in real-time.
+                          </p>
                           <div className="space-y-4 text-sm">
-                              <div>
-                                  <h4 className="font-semibold mb-2">Process (getCartRecommendations):</h4>
-                                  <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                                      <li>Receives cart items (GTIN + quantity)</li>
-                                      <li>Finds all Products matching GTINs across all chains</li>
-                                      <li>Groups products by chain_id</li>
-                                      <li>Calculates total cost per chain</li>
-                                      <li>Ranks chains by total cost (ascending)</li>
-                                      <li>Returns top 3 cheapest options</li>
-                                  </ol>
-                              </div>
-                              
-                              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                                  <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">Cost Calculation:</h4>
-                                  <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
-                                      <p className="mb-2">For each chain:</p>
-                                      <code className="text-gray-700 dark:text-gray-300">
-                                          totalCost = Σ (item.current_price × item.quantity)<br />
-                                          availableItems = count(matched products)<br />
-                                          missingItems = cart.length - availableItems
-                                      </code>
+                              <div className="bg-slate-50 dark:bg-slate-900/20 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
+                                  <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                                      <Search className="w-4 h-4 text-slate-600" />
+                                      Instant Comparison
+                                  </h4>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                      We scan prices across all stores and rank them by total cart cost.
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                                      <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>All Stores</strong> — Prices from every supermarket chain</div>
+                                      <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>Top 3</strong> — Cheapest options for your cart</div>
+                                      <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>Item Check</strong> — Shows if items are missing at a store</div>
+                                      <div className="bg-white dark:bg-gray-800 p-2 rounded"><strong>Live Prices</strong> — Updated from store catalogs</div>
                                   </div>
                               </div>
                               
-                              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                  <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Location Integration:</h4>
-                                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">If user location provided (lat/lon):</p>
-                                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                      <li>Finds nearest Store for each chain using Haversine distance</li>
-                                      <li>Fetches driving route from OSRM (Open Source Routing Machine)</li>
-                                      <li>Optionally fetches transit route if available</li>
-                                      <li>Displays distance, duration, and branch address</li>
+                              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                                  <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                                      <MapPin className="w-4 h-4 text-blue-600" />
+                                      Nearest Branch Finder
+                                  </h4>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                      Allow location access to see the closest store for each chain.
+                                  </p>
+                                  <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                      <li className="flex items-start gap-2">
+                                          <span className="text-blue-500 mt-0.5">✓</span>
+                                          <span><strong>Distance & Time</strong> — Driving time to nearest branch</span>
+                                      </li>
+                                      <li className="flex items-start gap-2">
+                                          <span className="text-blue-500 mt-0.5">✓</span>
+                                          <span><strong>Address</strong> — Full store location shown</span>
+                                      </li>
+                                      <li className="flex items-start gap-2">
+                                          <span className="text-blue-500 mt-0.5">✓</span>
+                                          <span><strong>Public Transit</strong> — Bus/train time when available</span>
+                                      </li>
                                   </ul>
                               </div>
                               
-                              <div className="bg-violet-50 dark:bg-violet-900/20 p-3 rounded">
-                                  <h4 className="font-semibold mb-2 text-violet-900 dark:text-violet-200">Smart Cart Optimization:</h4>
-                                  <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">Multi-store split algorithm:</p>
-                                  <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                      <li>For each cart item, finds the chain with lowest price</li>
-                                      <li>Creates optimized cart splitting items across stores</li>
-                                      <li>Calculates total savings vs. single-store shopping</li>
-                                      <li>Shows breakdown of which items to buy where</li>
-                                  </ul>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">Note: Doesn't account for travel costs between stores</p>
+                              <div className="bg-violet-50 dark:bg-violet-900/20 p-4 rounded-lg border border-violet-100 dark:border-violet-800">
+                                  <h4 className="font-semibold mb-2 text-violet-900 dark:text-violet-200 flex items-center gap-2">
+                                      <Split className="w-4 h-4 text-violet-600" />
+                                      Smart Cart Split
+                                  </h4>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                      Save even more by shopping at multiple stores — we show you exactly where to buy each item.
+                                  </p>
+                                  <div className="space-y-2 text-xs">
+                                      <div className="flex gap-2">
+                                          <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">💰 Maximum Savings</span>
+                                          <span className="text-gray-600 dark:text-gray-400">Find cheapest price for each item</span>
+                                      </div>
+                                      <div className="flex gap-2">
+                                          <span className="px-2 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded font-medium">📋 Shopping List</span>
+                                          <span className="text-gray-600 dark:text-gray-400">Shows which items to buy where</span>
+                                      </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                      💡 Split suggestions appear when savings exceed 5% vs single-store shopping.
+                                  </p>
                               </div>
                           </div>
                       </DialogContent>
