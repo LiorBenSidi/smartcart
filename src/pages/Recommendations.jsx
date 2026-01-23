@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Check } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -690,17 +690,68 @@ export default function Recommendations() {
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="h-7 text-xs gap-1 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400"
-                                                    onClick={() => {
-                                                        // Navigate to SmartCart with the product name to search
-                                                        const url = new URL(window.location.origin);
-                                                        url.pathname = '/smartcart';
-                                                        url.searchParams.set('search', tip.related_entity_name);
-                                                        window.location.href = url.toString();
+                                                    className={`h-7 text-xs gap-1 transition-all duration-300 ${
+                                                        tip.addedToCart 
+                                                            ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white' 
+                                                            : 'bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400'
+                                                    }`}
+                                                    onClick={async () => {
+                                                        // Search for the product by name
+                                                        const products = await base44.entities.Product.filter({
+                                                            canonical_name: { $regex: tip.related_entity_name, $options: 'i' }
+                                                        }, 'current_price', 1);
+                                                        
+                                                        if (products.length > 0) {
+                                                            const product = products[0];
+                                                            // Get current cart from localStorage
+                                                            const savedCart = localStorage.getItem('smartCartItems');
+                                                            const cartItems = savedCart ? JSON.parse(savedCart) : [];
+                                                            
+                                                            // Check if already in cart
+                                                            const existing = cartItems.find(item => item.gtin === product.gtin);
+                                                            if (existing) {
+                                                                existing.quantity += 1;
+                                                            } else {
+                                                                cartItems.push({
+                                                                    gtin: product.gtin,
+                                                                    name: product.canonical_name,
+                                                                    quantity: 1,
+                                                                    fromSuggestion: true
+                                                                });
+                                                            }
+                                                            
+                                                            // Save back to localStorage
+                                                            localStorage.setItem('smartCartItems', JSON.stringify(cartItems));
+                                                            
+                                                            // Update UI to show added
+                                                            setSmartTips(prev => prev.map(t => 
+                                                                t === tip ? { ...t, addedToCart: true } : t
+                                                            ));
+                                                            
+                                                            toast.success(`Added ${product.canonical_name} to cart`);
+                                                            
+                                                            // Reset after 2 seconds
+                                                            setTimeout(() => {
+                                                                setSmartTips(prev => prev.map(t => 
+                                                                    t.related_entity_name === tip.related_entity_name ? { ...t, addedToCart: false } : t
+                                                                ));
+                                                            }, 2000);
+                                                        } else {
+                                                            toast.error("Product not found");
+                                                        }
                                                     }}
                                                 >
-                                                    <ShoppingCart className="w-3 h-3" />
-                                                    Add to Cart
+                                                    {tip.addedToCart ? (
+                                                        <>
+                                                            <Check className="w-3 h-3" />
+                                                            Added!
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ShoppingCart className="w-3 h-3" />
+                                                            Add to Cart
+                                                        </>
+                                                    )}
                                                 </Button>
                                             </div>
                                         )}
