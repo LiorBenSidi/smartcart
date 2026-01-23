@@ -1008,6 +1008,52 @@ export default function SmartCart() {
         </Card>
         }
 
+      {/* Live Price Comparison by Chain */}
+      {cartItems.length > 0 && bestChains.length > 0 && (
+        <Card className="border-green-200 bg-green-50/50 dark:bg-green-900/10 dark:border-green-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingDown className="w-5 h-5 text-green-600" />
+              Live Price Comparison
+            </CardTitle>
+            <p className="text-xs text-gray-500">Based on product prices from each chain</p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {bestChains.map((chainData, idx) => (
+              <div 
+                key={chainData.chain_id}
+                className={`flex items-center justify-between p-3 rounded-lg ${
+                  idx === 0 
+                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700' 
+                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {idx === 0 && <Badge className="bg-green-600 text-white text-[10px]">Best</Badge>}
+                  <span className="font-medium">{chainData.chain?.name || 'Unknown Chain'}</span>
+                  <span className="text-xs text-gray-500">({chainData.itemCount} items)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold ${idx === 0 ? 'text-green-700 dark:text-green-400 text-lg' : 'text-gray-700 dark:text-gray-300'}`}>
+                    ₪{chainData.totalCost.toFixed(2)}
+                  </span>
+                  {idx > 0 && bestChains[0] && (
+                    <span className="text-xs text-red-500">
+                      +₪{(chainData.totalCost - bestChains[0].totalCost).toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+            {bestChains.length === 0 && cartItems.length > 0 && Object.keys(cartItemPrices).length > 0 && (
+              <div className="text-center text-gray-500 text-sm py-2">
+                No chain has all items available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Cart Items List */}
       {cartItems.length === 0 ?
         <Card>
