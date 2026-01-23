@@ -812,13 +812,13 @@ export default function SmartCart() {
 
               {/* Enhanced Product Search */}
               <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Add Products to Cart</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <EnhancedProductSearch onAddToCart={addToCart} />
-        </CardContent>
-      </Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Add Products to Cart</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <EnhancedProductSearch onAddToCart={addToCart} onAddToCartWithPrices={addToCartWithPrices} />
+                  </CardContent>
+                </Card>
 
       {/* Cart Summary */}
       <Card className="bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800">
