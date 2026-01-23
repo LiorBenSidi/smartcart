@@ -244,7 +244,7 @@ export default function Admin() {
           const bestGtin = sortedGtins[0][0];
           const referenceProduct = products.find(p => p.gtin === bestGtin);
 
-          // Strict validation: Check if all products in the group are truly the same
+          // Only exclude products with SAME chain_id AND chain_item_code as reference
           const productsToUpdate = products.filter(p => {
             if (p.gtin === bestGtin) return false; // Skip reference product
 
@@ -256,16 +256,8 @@ export default function Admin() {
               return false; // Same chain + same item code = don't merge
             }
 
-            return true; // Safe to merge (different chains or different item codes)
+            return true; // Safe to merge
           });
-          
-          // Track field differences for UI display
-          const fieldDiffs = {
-            category: new Set(products.map(p => p.category || '')).size > 1,
-            brand_name: new Set(products.map(p => p.brand_name || '')).size > 1,
-            kosher_level: new Set(products.map(p => p.kosher_level || '')).size > 1,
-            allergen_tags: !products.every(p => arraysEqual(p.allergen_tags, referenceProduct.allergen_tags))
-          };
 
           if (productsToUpdate.length > 0) {
             duplicates.push({ 
@@ -275,8 +267,7 @@ export default function Admin() {
               gtins: uniqueGtins,
               bestGtin,
               productsToUpdate,
-              gtinCounts,
-              fieldDiffs
+              gtinCounts
             });
           }
         }
