@@ -620,55 +620,53 @@ export default function SmartCart() {
                           )}
 
                   {suggestions?.items?.length > 0 && (
-                          <div className="mt-4 flex gap-3">
-                              <Button
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                    onClick={() => {
-                      suggestions.items.forEach((item) => {
-                        const existing = cartItems.find((i) => i.gtin === item.product_id);
-                        if (existing) {
-                          setCartItems(cartItems.map((i) =>
-                          i.gtin === item.product_id ?
-                          { ...i, quantity: i.quantity + item.suggested_qty } :
-                          i
-                          ));
-                        } else {
-                          setCartItems((prev) => [...prev, {
-                            gtin: item.product_id,
-                            name: item.product_name,
-                            quantity: item.suggested_qty || 1
-                          }]);
-                        }
-                      });
-                      toast.success(`Added ${suggestions.items.length} items to cart`);
-                    }}>
-
-                          Add All to Cart
-                      </Button>
-                      <Button
-                    variant="outline"
-                    className="text-gray-500"
-                    onClick={async () => {
-                      try {
-                        await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
-                        setSuggestions(null);
-                      } catch (e) {console.error(e);}
-                    }}>
-
-                          Dismiss
-                      </Button>
-                  </div>
-                  {suggestions.items.length > 6 &&
-                <div className="text-center mt-2">
-                          <button
-                    className="text-xs text-gray-500 hover:text-indigo-600"
-                    onClick={() => setShowAllSuggestions(!showAllSuggestions)}>
-
-                              {showAllSuggestions ? 'Show Less' : `Show ${suggestions.items.length - 6} More`}
-                          </button>
+                    <>
+                      <div className="mt-4 flex gap-3">
+                          <Button
+                            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                            onClick={() => {
+                              suggestions.items.forEach((item) => {
+                                const existing = cartItems.find((i) => i.gtin === item.product_id);
+                                if (existing) {
+                                  setCartItems(cartItems.map((i) =>
+                                  i.gtin === item.product_id ?
+                                  { ...i, quantity: i.quantity + item.suggested_qty } :
+                                  i
+                                  ));
+                                } else {
+                                  setCartItems((prev) => [...prev, {
+                                    gtin: item.product_id,
+                                    name: item.product_name,
+                                    quantity: item.suggested_qty || 1
+                                  }]);
+                                }
+                              });
+                              toast.success(`Added ${suggestions.items.length} items to cart`);
+                            }}>
+                              Add All to Cart
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="text-gray-500"
+                            onClick={async () => {
+                              try {
+                                await base44.entities.SuggestedCartDraft.update(suggestions.id, { status: 'dismissed' });
+                                setSuggestions(null);
+                              } catch (e) {console.error(e);}
+                            }}>
+                              Dismiss
+                          </Button>
                       </div>
-                }
-                  </div>
+                      {suggestions.items.length > 6 && (
+                        <div className="text-center mt-2">
+                            <button
+                              className="text-xs text-gray-500 hover:text-indigo-600"
+                              onClick={() => setShowAllSuggestions(!showAllSuggestions)}>
+                                {showAllSuggestions ? 'Show Less' : `Show ${suggestions.items.length - 6} More`}
+                            </button>
+                        </div>
+                      )}
+                    </>
                   )}
               </CardContent>
               </Card>
