@@ -782,22 +782,36 @@ export default function SmartCart() {
       {showSaveDialog &&
         <Card className="border-green-200 bg-green-50">
           <CardHeader>
-            <CardTitle className="text-slate-950 text-lg font-semibold tracking-tight">Save Cart List</CardTitle>
+            <CardTitle className="text-slate-950 text-lg font-semibold tracking-tight">
+              {editingCartId ? 'Update Cart' : 'Save Cart List'}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <input
               type="text"
               placeholder="Enter cart name (e.g., Weekly Groceries)"
               value={cartName}
-              onChange={(e) => setCartName(e.target.value)} className="text-slate-950 px-4 py-2 rounded-lg w-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500" />
-
-
+              onChange={(e) => setCartName(e.target.value)} 
+              className="text-slate-950 px-4 py-2 rounded-lg w-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500" 
+            />
+            {storeComparisons.length > 0 && (
+              <div className="bg-white p-3 rounded-lg border border-green-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Best store:</span>
+                  <span className="font-semibold text-gray-900">{storeComparisons[0].chain?.name || storeComparisons[0].store?.name}</span>
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-sm text-gray-600">Estimated total:</span>
+                  <span className="font-bold text-green-700 text-lg">₪{storeComparisons[0].totalCost?.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowSaveDialog(false)}>
+              <Button variant="outline" className="flex-1" onClick={() => { setShowSaveDialog(false); setEditingCartId(null); setCartName(''); }}>
                 Cancel
               </Button>
               <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={saveCart} disabled={saving || !cartName.trim()}>
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? 'Saving...' : editingCartId ? 'Update' : 'Save'}
               </Button>
             </div>
           </CardContent>
