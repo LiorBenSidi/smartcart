@@ -294,7 +294,7 @@ export default function Recommendations() {
                 <RecommendationExplainer mode="general" />
             </div>
         </div>
-        <p className="text-gray-500 dark:text-gray-400">Personalized picks based on people with similar taste.</p>
+        <p className="text-gray-500 dark:text-gray-400">AI-powered insights, smart tips, and personalized recommendations based on your shopping habits.</p>
       </div>
 
       {/* AI Insights Section */}
