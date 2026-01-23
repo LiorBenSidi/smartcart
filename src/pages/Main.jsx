@@ -557,7 +557,7 @@ export default function Main() {
                 <RecommendationExplainer mode="general" />
             </div>
         </div>
-        <p className="text-gray-500 dark:text-gray-400">Here you will get analytics dashboard, AI-powered insights, smart tips, and personalized recommendations based on your shopping habits, preferences, and collaborative filtering.</p>
+        <p className="text-gray-500 dark:text-gray-400">Your personal hub for spending insights, AI-powered tips, and smarter shopping — all tailored to you.</p>
       </div>
 
       {/* Analytics Dashboard Toggle */}
