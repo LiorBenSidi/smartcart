@@ -143,7 +143,7 @@ export default function Layout({ children, currentPageName }) {
                 return (
                   <Link
                     key={item.label}
-                    to={createPageUrl(item.path === '/' ? 'Home' : item.path.substring(1))}
+                    to={createPageUrl(item.path === '/' ? 'Main' : item.path.substring(1))}
                     className={`flex flex-col items-center gap-1 transition-colors duration-200 ${
                     isActive ?
                     darkMode ? 'text-indigo-600' : 'text-indigo-400' :
