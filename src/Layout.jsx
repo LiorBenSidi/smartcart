@@ -137,7 +137,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex justify-around items-center">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
-                const isActive = item.path === '/' && currentPageName === 'Home' ||
+                const isActive = (item.path === '/' && currentPageName === 'Main') ||
                 `/${currentPageName.toLowerCase()}` === item.path;
 
                 return (
