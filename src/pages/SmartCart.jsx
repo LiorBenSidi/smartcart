@@ -1064,30 +1064,125 @@ export default function SmartCart() {
                     </div>
                   </div>
 
-                  {/* Price comparison from stored data */}
-                  {savedBestChains.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2">
-                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                        <TrendingDown className="w-3 h-3 text-green-600" /> Best Chains:
-                      </div>
-                      {savedBestChains.map((chainData, idx) => (
-                        <div 
-                          key={chainData.chain_id} 
-                          className={`flex items-center justify-between p-2 rounded-lg text-xs ${
-                            idx === 0 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {idx === 0 && <Badge className="bg-green-600 text-white text-[10px] px-1">Best</Badge>}
-                            <span className="font-medium">{chainData.chain?.name || 'Unknown'}</span>
-                          </div>
-                          <span className={`font-bold ${idx === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                            ₪{chainData.totalCost?.toFixed(2)}
-                          </span>
+                  {/* Price comparison table from stored data */}
+                  {cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (() => {
+                    // Get all unique chain IDs from saved cart items
+                    const allChainIds = new Set();
+                    cart.items.forEach(item => {
+                      if (item.chainPrices) {
+                        Object.keys(item.chainPrices).forEach(chainId => allChainIds.add(chainId));
+                      }
+                    });
+                    const chainIds = Array.from(allChainIds);
+                    const chainsInTable = chainIds.map(id => chains.find(c => c.id === id)).filter(Boolean);
+
+                    if (chainsInTable.length === 0) return null;
+
+                    return (
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-2">
+                          <TrendingDown className="w-3 h-3 text-green-600" /> Price Comparison:
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                                  <th className="text-left p-1.5 font-semibold text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-50 dark:bg-gray-700">Product</th>
+                                  {chainsInTable.map(chain => (
+                                    <th key={chain.id} className="text-center p-1.5 font-semibold text-gray-700 dark:text-gray-300 min-w-[70px]">
+                                      {chain.name}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cart.items.map((item, idx) => {
+                                  const itemChainPrices = item.chainPrices || {};
+                                  const prices = chainIds.map(chainId => itemChainPrices[chainId]?.price);
+                                  const validPrices = prices.filter(p => p != null);
+                                  const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : null;
+                                  const maxPrice = validPrices.length > 0 ? Math.max(...validPrices) : null;
+
+                                  return (
+                                    <tr key={item.gtin} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                                      <td className="p-1.5 font-medium text-gray-900 dark:text-gray-100 sticky left-0 bg-inherit max-w-[120px] truncate" title={item.name}>
+                                        {item.name}
+                                        {item.quantity > 1 && <span className="text-gray-500 text-[10px] ml-1">×{item.quantity}</span>}
+                                      </td>
+                                      {chainIds.map(chainId => {
+                                        const price = itemChainPrices[chainId]?.price;
+                                        const isMin = price != null && price === minPrice && minPrice !== maxPrice;
+                                        const isMax = price != null && price === maxPrice && minPrice !== maxPrice;
+
+                                        return (
+                                          <td 
+                                            key={chainId} 
+                                            className={`text-center p-1.5 font-medium ${
+                                              isMin ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 
+                                              isMax ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' : 
+                                              'text-gray-600 dark:text-gray-400'
+                                            }`}
+                                          >
+                                            {price != null ? `₪${price.toFixed(2)}` : '-'}
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  );
+                                })}
+                                {/* Total Row */}
+                                <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 font-bold">
+                                  <td className="p-1.5 text-gray-900 dark:text-gray-100 sticky left-0 bg-gray-100 dark:bg-gray-700">Total</td>
+                                  {chainIds.map(chainId => {
+                                    let total = 0;
+                                    let hasAllItems = true;
+                                    cart.items.forEach(item => {
+                                      const price = item.chainPrices?.[chainId]?.price;
+                                      if (price != null) {
+                                        total += price * item.quantity;
+                                      } else {
+                                        hasAllItems = false;
+                                      }
+                                    });
+
+                                    const allTotals = chainIds.map(cid => {
+                                      let t = 0;
+                                      let valid = true;
+                                      cart.items.forEach(item => {
+                                        const p = item.chainPrices?.[cid]?.price;
+                                        if (p != null) t += p * item.quantity;
+                                        else valid = false;
+                                      });
+                                      return valid ? t : null;
+                                    }).filter(t => t != null);
+
+                                    const minTotal = allTotals.length > 0 ? Math.min(...allTotals) : null;
+                                    const maxTotal = allTotals.length > 0 ? Math.max(...allTotals) : null;
+                                    const isMinTotal = hasAllItems && total === minTotal && minTotal !== maxTotal;
+                                    const isMaxTotal = hasAllItems && total === maxTotal && minTotal !== maxTotal;
+
+                                    return (
+                                      <td 
+                                        key={chainId} 
+                                        className={`text-center p-1.5 ${
+                                          isMinTotal ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200' : 
+                                          isMaxTotal ? 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200' : 
+                                          'text-gray-700 dark:text-gray-300'
+                                        }`}
+                                      >
+                                        {hasAllItems ? `₪${total.toFixed(2)}` : '-'}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Show items preview */}
                   <div className="text-xs text-gray-500 mt-3 flex flex-wrap gap-1">
