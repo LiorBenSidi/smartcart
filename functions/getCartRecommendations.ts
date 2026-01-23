@@ -88,6 +88,15 @@ Deno.serve(async (req) => {
     }
     
     console.log(`pricesByChain has ${pricesByChain.size} chains`);
+    
+    // Debug: show which chains have this product
+    for (const [chainId, chainPrices] of pricesByChain) {
+      const chain = chainsById.get(chainId);
+      console.log(`Chain ${chain?.name || chainId}: ${chainPrices.size} products`);
+      for (const [gtin, product] of chainPrices) {
+        console.log(`  - ${gtin}: ₪${product.current_price}`);
+      }
+    }
 
     // Calculate cart total for each chain
     const chainResults = new Map();
