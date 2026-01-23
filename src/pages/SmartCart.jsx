@@ -345,6 +345,15 @@ export default function SmartCart() {
     setShowHistory(false);
   };
 
+  const editSavedCart = (savedCart) => {
+    // Load the cart items for editing
+    setCartItems(savedCart.items.map((item) => ({ gtin: item.gtin, name: item.name, quantity: item.quantity })));
+    setEditingCartId(savedCart.id);
+    setCartName(savedCart.name);
+    setShowHistory(false);
+    toast.info("Editing cart - make changes and save");
+  };
+
   const deleteSavedCart = async (id) => {
     await base44.entities.SavedCart.delete(id);
     const updatedCarts = await base44.entities.SavedCart.list('-created_date');
