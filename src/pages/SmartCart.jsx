@@ -28,6 +28,8 @@ export default function SmartCart() {
   const [showHistory, setShowHistory] = useState(false);
   const [editingCartId, setEditingCartId] = useState(null); // For editing saved carts
   const [itemPrices, setItemPrices] = useState({}); // Store prices per item by gtin
+  const [cartItemPrices, setCartItemPrices] = useState({}); // Store all chain prices per gtin: { gtin: { chain_id: { price, chain_id, store_id } } }
+  const [chains, setChains] = useState([]); // All chains for display
   const [userLocation, setUserLocation] = useState(null);
   const [suggestions, setSuggestions] = useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
