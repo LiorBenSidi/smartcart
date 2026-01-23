@@ -51,7 +51,7 @@ export default Deno.serve(async (req) => {
             
             // Delete in batches with delays to avoid rate limits
             const DELETE_BATCH_SIZE = 10;
-            const DELAY_MS = 500;
+            const DELAY_MS = 5000;
             
             for (let i = 0; i < existingHabits.length; i += DELETE_BATCH_SIZE) {
                 const batch = existingHabits.slice(i, i + DELETE_BATCH_SIZE);
@@ -150,7 +150,7 @@ export default Deno.serve(async (req) => {
             if (habitsToCreate.length > 0) {
                 // Bulk create in chunks of 25 with delays to avoid rate limits
                 const CREATE_BATCH_SIZE = 25;
-                const CREATE_DELAY_MS = 500;
+                const CREATE_DELAY_MS = 5000;
                 
                 for (let i = 0; i < habitsToCreate.length; i += CREATE_BATCH_SIZE) {
                     const chunk = habitsToCreate.slice(i, i + CREATE_BATCH_SIZE);
