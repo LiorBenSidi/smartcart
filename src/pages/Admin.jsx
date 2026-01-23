@@ -30,6 +30,8 @@ export default function Admin() {
   const [gtinMergeResults, setGtinMergeResults] = useState(null);
   const [gtinDuplicates, setGtinDuplicates] = useState(null);
   const [processingMerge, setProcessingMerge] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState({}); // { dupName: { productId: boolean } }
+  const [selectedTargetGtin, setSelectedTargetGtin] = useState({}); // { dupName: gtin }
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -277,6 +279,19 @@ export default function Admin() {
         setGtinMergeResults({ message: "No duplicates found!", updated: 0 });
       } else {
         setGtinDuplicates(duplicates);
+        // Initialize selections
+        const initialSelected = {};
+        const initialTargetGtin = {};
+        duplicates.forEach(dup => {
+          initialSelected[dup.name] = {};
+          dup.products.forEach(p => {
+            // Pre-select products that are not the reference
+            initialSelected[dup.name][p.id] = p.gtin !== dup.bestGtin;
+          });
+          initialTargetGtin[dup.name] = dup.bestGtin;
+        });
+        setSelectedProducts(initialSelected);
+        setSelectedTargetGtin(initialTargetGtin);
       }
       
     } catch (error) {
@@ -290,22 +305,30 @@ export default function Admin() {
   const handleApproveMerge = async (duplicate) => {
     setProcessingMerge(duplicate.name);
     try {
-      for (const product of duplicate.productsToUpdate) {
-        await base44.entities.Product.update(product.id, { gtin: duplicate.bestGtin });
+      const targetGtin = selectedTargetGtin[duplicate.name] || duplicate.bestGtin;
+      const selected = selectedProducts[duplicate.name] || {};
+      const productsToMerge = duplicate.products.filter(p => selected[p.id] && p.gtin !== targetGtin);
+      
+      for (const product of productsToMerge) {
+        await base44.entities.Product.update(product.id, { gtin: targetGtin });
       }
       
       // Remove from pending list
       setGtinDuplicates(prev => prev.filter(d => d.name !== duplicate.name));
       
+      const targetGtin = selectedTargetGtin[duplicate.name] || duplicate.bestGtin;
+      const selected = selectedProducts[duplicate.name] || {};
+      const mergedCount = duplicate.products.filter(p => selected[p.id] && p.gtin !== targetGtin).length;
+      
       // Update results
       setGtinMergeResults(prev => ({
-        message: `Merged ${(prev?.updated || 0) + duplicate.productsToUpdate.length} products`,
-        updated: (prev?.updated || 0) + duplicate.productsToUpdate.length,
+        message: `Merged ${(prev?.updated || 0) + mergedCount} products`,
+        updated: (prev?.updated || 0) + mergedCount,
         details: [...(prev?.details || []), {
           name: duplicate.displayName,
-          oldGtins: duplicate.gtins.filter(g => g !== duplicate.bestGtin),
-          newGtin: duplicate.bestGtin,
-          updatedCount: duplicate.productsToUpdate.length
+          oldGtins: duplicate.gtins.filter(g => g !== targetGtin),
+          newGtin: targetGtin,
+          updatedCount: mergedCount
         }]
       }));
     } catch (error) {
@@ -835,11 +858,31 @@ export default function Admin() {
                         </div>
                     </div>
                     <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                        {gtinDuplicates.map((dup, idx) => (
+                        {gtinDuplicates.map((dup, idx) => {
+                            const targetGtin = selectedTargetGtin[dup.name] || dup.bestGtin;
+                            const selected = selectedProducts[dup.name] || {};
+                            const selectedCount = Object.entries(selected).filter(([id, checked]) => {
+                                const product = dup.products.find(p => p.id === id);
+                                return checked && product?.gtin !== targetGtin;
+                            }).length;
+                            
+                            return (
                             <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-amber-200 dark:border-amber-700">
                                 <div className="flex items-center justify-between mb-3">
                                     <p className="font-semibold text-gray-900 dark:text-gray-100">{dup.displayName}</p>
-                                    <div className="flex gap-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="text-gray-500">Target GTIN:</span>
+                                            <select 
+                                                className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 font-mono"
+                                                value={targetGtin}
+                                                onChange={(e) => setSelectedTargetGtin(prev => ({...prev, [dup.name]: e.target.value}))}
+                                            >
+                                                {dup.gtins.map(gtin => (
+                                                    <option key={gtin} value={gtin}>{gtin}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                         <Button 
                                             size="sm" 
                                             variant="outline"
@@ -852,7 +895,7 @@ export default function Admin() {
                                             size="sm" 
                                             className="bg-green-600 hover:bg-green-700"
                                             onClick={() => handleApproveMerge(dup)}
-                                            disabled={processingMerge === dup.name}
+                                            disabled={processingMerge === dup.name || selectedCount === 0}
                                         >
                                             {processingMerge === dup.name ? 'Merging...' : 'Approve'}
                                         </Button>
@@ -864,6 +907,22 @@ export default function Admin() {
                                     <table className="w-full text-xs border-collapse">
                                         <thead>
                                             <tr className="bg-gray-50 dark:bg-gray-900">
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-center w-8">
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={dup.products.filter(p => p.gtin !== targetGtin).every(p => selected[p.id])}
+                                                        onChange={(e) => {
+                                                            const newSelected = {...selected};
+                                                            dup.products.forEach(p => {
+                                                                if (p.gtin !== targetGtin) {
+                                                                    newSelected[p.id] = e.target.checked;
+                                                                }
+                                                            });
+                                                            setSelectedProducts(prev => ({...prev, [dup.name]: newSelected}));
+                                                        }}
+                                                        className="w-3 h-3"
+                                                    />
+                                                </th>
                                                 <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">GTIN</th>
                                                 <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Chain ID</th>
                                                 <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Item Code</th>
@@ -876,7 +935,8 @@ export default function Admin() {
                                         </thead>
                                         <tbody>
                                             {dup.products.map((product, pIdx) => {
-                                                const isReference = product.gtin === dup.bestGtin;
+                                                const isTarget = product.gtin === targetGtin;
+                                                const isChecked = selected[product.id] || false;
                                                 const categories = [...new Set(dup.products.map(p => p.category || ''))];
                                                 const brands = [...new Set(dup.products.map(p => p.brand_name || ''))];
                                                 const koshers = [...new Set(dup.products.map(p => p.kosher_level || ''))];
@@ -884,9 +944,26 @@ export default function Admin() {
                                                 const uniqueAllergens = [...new Set(allergenSets)];
                                                 
                                                 return (
-                                                    <tr key={pIdx} className={isReference ? 'bg-green-50 dark:bg-green-900/20' : ''}>
-                                                        <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1 font-mono ${isReference ? 'font-bold text-green-700 dark:text-green-400' : ''}`}>
-                                                            {product.gtin} {isReference && '✓'}
+                                                    <tr key={pIdx} className={isTarget ? 'bg-green-50 dark:bg-green-900/20' : isChecked ? 'bg-blue-50 dark:bg-blue-900/20' : ''}>
+                                                        <td className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-center">
+                                                            {isTarget ? (
+                                                                <span className="text-green-600 font-bold">✓</span>
+                                                            ) : (
+                                                                <input 
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={(e) => {
+                                                                        setSelectedProducts(prev => ({
+                                                                            ...prev,
+                                                                            [dup.name]: {...prev[dup.name], [product.id]: e.target.checked}
+                                                                        }));
+                                                                    }}
+                                                                    className="w-3 h-3"
+                                                                />
+                                                            )}
+                                                        </td>
+                                                        <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1 font-mono ${isTarget ? 'font-bold text-green-700 dark:text-green-400' : ''}`}>
+                                                            {product.gtin} {isTarget && '(target)'}
                                                         </td>
                                                         <td className="border border-gray-200 dark:border-gray-700 px-2 py-1 font-mono text-gray-600 dark:text-gray-400">
                                                             {product.chain_id || '-'}
@@ -917,10 +994,10 @@ export default function Admin() {
                                 </div>
                                 
                                 <div className="mt-2 text-xs text-gray-500">
-                                    Will merge {dup.productsToUpdate.length} products to GTIN: <span className="font-mono font-bold text-green-600">{dup.bestGtin}</span>
+                                    Will merge {selectedCount} selected products to GTIN: <span className="font-mono font-bold text-green-600">{targetGtin}</span>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 </CardContent>
             </Card>
