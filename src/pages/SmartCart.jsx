@@ -886,15 +886,15 @@ export default function SmartCart() {
               onChange={(e) => setCartName(e.target.value)} 
               className="text-slate-950 px-4 py-2 rounded-lg w-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500" 
             />
-            {storeComparisons.length > 0 && (
+            {bestChains.length > 0 && (
               <div className="bg-white p-3 rounded-lg border border-green-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Best store:</span>
-                  <span className="font-semibold text-gray-900">{storeComparisons[0].chain?.name || storeComparisons[0].store?.name}</span>
+                  <span className="text-sm text-gray-600">Best chain:</span>
+                  <span className="font-semibold text-gray-900">{bestChains[0].chain?.name}</span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-sm text-gray-600">Estimated total:</span>
-                  <span className="font-bold text-green-700 text-lg">₪{storeComparisons[0].totalCost?.toFixed(2)}</span>
+                  <span className="font-bold text-green-700 text-lg">₪{bestChains[0].totalCost?.toFixed(2)}</span>
                 </div>
               </div>
             )}
