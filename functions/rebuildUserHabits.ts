@@ -4,12 +4,15 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Retry wrapper with exponential backoff
-const withRetry = async (fn, maxRetries = 3, baseDelay = 500) => {
+const withRetry = async (fn, maxRetries = 5, baseDelay = 1000) => {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             return await fn();
         } catch (error) {
-            if (error.status === 429 && attempt < maxRetries - 1) {
+            const isRateLimit = error.status === 429 || 
+                (error.message && error.message.toLowerCase().includes('rate limit'));
+            
+            if (isRateLimit && attempt < maxRetries - 1) {
                 const waitTime = baseDelay * Math.pow(2, attempt);
                 console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}...`);
                 await delay(waitTime);
