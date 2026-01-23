@@ -11,6 +11,7 @@ import { createPageUrl } from '@/utils';
 import SystemValidationPanel from '../components/SystemValidationPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { processManager } from "@/components/processManager";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
