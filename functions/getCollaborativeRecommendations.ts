@@ -51,13 +51,26 @@ export default Deno.serve(async (req) => {
         console.log(`[CF] Processing ${neighborIds.length} neighbors: ${neighborIds.join(', ')}`);
 
         // Get current user's purchased products to exclude them from recommendations
+        // For new users with no habits, we should still recommend products
         const userHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
             { created_by: user.email },
             '-purchase_count',
             200
         ).catch(() => []);
-        const userPurchasedProducts = new Set(userHabits.map(h => h.product_id));
-        console.log(`[CF] User has purchased ${userPurchasedProducts.size} unique products`);
+        
+        // Also check user_id field for habits
+        let userHabitsByUserId = [];
+        if (userHabits.length === 0) {
+            userHabitsByUserId = await base44.asServiceRole.entities.UserProductHabit.filter(
+                { user_id: user.email },
+                '-purchase_count',
+                200
+            ).catch(() => []);
+        }
+        
+        const allUserHabits = [...userHabits, ...userHabitsByUserId];
+        const userPurchasedProducts = new Set(allUserHabits.map(h => h.product_id));
+        console.log(`[CF] User has purchased ${userPurchasedProducts.size} unique products (${userHabits.length} by created_by, ${userHabitsByUserId.length} by user_id)`);
 
         // Get top products purchased by similar users (habits are created by individual users)
         for (const neighborId of neighborIds) {
