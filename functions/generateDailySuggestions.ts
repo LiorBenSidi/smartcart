@@ -320,14 +320,6 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 3: FINALIZE ---
         if (batch === 3) {
-            // Check if CF-only user
-            const receipts = await base44.entities.Receipt.filter({ 
-                created_by: user.email, 
-                processing_status: 'processed' 
-            }, '-purchased_at', 100);
-            const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
-            
             // Need user preferences to filter
             const userPreferences = await base44.entities.UserProductPreference.filter({ 
                 created_by: user.email,
