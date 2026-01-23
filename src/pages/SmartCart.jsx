@@ -360,53 +360,54 @@ export default function SmartCart() {
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const saveCart = async () => {
-    if (!cartName.trim()) return;
-    setSaving(true);
-    try {
-      const bestStore = storeComparisons.length > 0 ? storeComparisons[0] : null;
-      
-      // Build items with prices
-      const itemsWithPrices = cartItems.map((item) => ({
-        ...item,
-        price: itemPrices[item.gtin] || 0
-      }));
+        if (!cartName.trim()) return;
+        setSaving(true);
+        try {
+          const bestChain = bestChains.length > 0 ? bestChains[0] : null;
 
-      if (editingCartId) {
-        // Update existing cart
-        await base44.entities.SavedCart.update(editingCartId, {
-          name: cartName,
-          store_id: bestStore?.store?.id,
-          store_name: bestStore?.chain?.name || bestStore?.store?.name,
-          items: itemsWithPrices,
-          total_amount: bestStore?.totalCost || itemsWithPrices.reduce((sum, i) => sum + (i.price * i.quantity), 0),
-          total_items: totalItems
-        });
-        toast.success("Cart updated!");
-      } else {
-        // Create new cart
-        await base44.entities.SavedCart.create({
-          name: cartName,
-          store_id: bestStore?.store?.id,
-          store_name: bestStore?.chain?.name || bestStore?.store?.name,
-          items: itemsWithPrices,
-          total_amount: bestStore?.totalCost || itemsWithPrices.reduce((sum, i) => sum + (i.price * i.quantity), 0),
-          total_items: totalItems
-        });
-        toast.success("Cart saved!");
-      }
+          // Build items with prices from all chains
+          const itemsWithPrices = cartItems.map((item) => ({
+            ...item,
+            price: bestChain ? (cartItemPrices[item.gtin]?.[bestChain.chain_id]?.price || 0) : 0,
+            chainPrices: cartItemPrices[item.gtin] || {} // Store all chain prices
+          }));
 
-      const updatedCarts = await base44.entities.SavedCart.list('-created_date');
-      setSavedCarts(updatedCarts);
-      setShowSaveDialog(false);
-      setCartName('');
-      setEditingCartId(null);
-    } catch (error) {
-      console.error('Failed to save cart', error);
-      toast.error("Failed to save cart");
-    } finally {
-      setSaving(false);
-    }
-  };
+          if (editingCartId) {
+            // Update existing cart
+            await base44.entities.SavedCart.update(editingCartId, {
+              name: cartName,
+              store_id: bestChain?.chain_id,
+              store_name: bestChain?.chain?.name,
+              items: itemsWithPrices,
+              total_amount: bestChain?.totalCost || 0,
+              total_items: totalItems
+            });
+            toast.success("Cart updated!");
+          } else {
+            // Create new cart
+            await base44.entities.SavedCart.create({
+              name: cartName,
+              store_id: bestChain?.chain_id,
+              store_name: bestChain?.chain?.name,
+              items: itemsWithPrices,
+              total_amount: bestChain?.totalCost || 0,
+              total_items: totalItems
+            });
+            toast.success("Cart saved!");
+          }
+
+          const updatedCarts = await base44.entities.SavedCart.list('-created_date');
+          setSavedCarts(updatedCarts);
+          setShowSaveDialog(false);
+          setCartName('');
+          setEditingCartId(null);
+        } catch (error) {
+          console.error('Failed to save cart', error);
+          toast.error("Failed to save cart");
+        } finally {
+          setSaving(false);
+        }
+      };
 
   const [savedCartComparisons, setSavedCartComparisons] = useState({});
   const [loadingCartComparison, setLoadingCartComparison] = useState(null);
