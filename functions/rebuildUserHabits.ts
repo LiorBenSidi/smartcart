@@ -61,18 +61,16 @@ export default Deno.serve(async (req) => {
             }
 
             // 3. Wipe existing habits for this user to ensure clean rebuild
-            // We need to find them first.
+            await delay(300);
             const existingHabits = await withRetry(() => 
                 svc.entities.UserProductHabit.filter({ created_by: targetUser.email })
             );
             
-            // Delete in smaller batches with delays and retries to avoid rate limiting
+            // Delete in smaller batches with longer delays to avoid rate limiting
             for (let i = 0; i < existingHabits.length; i++) {
                 await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
-                // Add delay every 5 deletes to avoid rate limits
-                if ((i + 1) % 5 === 0) {
-                    await delay(200);
-                }
+                // Add delay after every delete to avoid rate limits
+                await delay(150);
             }
 
             // 4. Re-calculate habits
