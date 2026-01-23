@@ -225,7 +225,7 @@ export default function Main() {
   const [selectedStore, setSelectedStore] = useState(null);
   const [aiInsights, setAiInsights] = useState(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(true);
   const [showAiInsights, setShowAiInsights] = useState(false);
   const [showSmartTips, setShowSmartTips] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);

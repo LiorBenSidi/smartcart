@@ -29,11 +29,11 @@ export default function Landing() {
   }, []);
 
   const handleAuth = () => {
-    base44.auth.redirectToLogin(createPageUrl('Home'));
+    base44.auth.redirectToLogin(createPageUrl('Main'));
   };
 
   const handleNavigation = () => {
-    window.location.href = createPageUrl('Home');
+    window.location.href = createPageUrl('Main');
   };
 
   return (
