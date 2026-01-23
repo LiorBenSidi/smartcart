@@ -170,6 +170,14 @@ export default function Admin() {
     }
   };
 
+  const handleComputeSimilarUsers = async () => {
+    try {
+        await processManager.startProcess('computeSimilarUsers', { limit: 5 }, { delayMs: batchDelay });
+    } catch (err) {
+        console.error('Similar users computation failed:', err);
+    }
+  };
+
   const handleRebuildUserHabits = async () => {
     try {
         // Use 60 second delay between users to avoid rate limits
