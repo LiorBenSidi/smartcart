@@ -74,19 +74,19 @@ export default Deno.serve(async (req) => {
         - **Allergy Avoidance:** The user has strict dietary needs. ALL suggested products MUST be free of items in their 'allergen_avoid_list': ${JSON.stringify(userProfile.allergen_avoid_list || [])}. Never suggest items containing these allergens.
         - **Kosher Compliance:** Tips involving food products must rigorously adhere to the user's 'kosher_level': '${userProfile.kosher_level || "none"}'. Only suggest products that meet this kosher standard.
         - **Dietary Restrictions:** Suggestions must align with the user's 'diet': '${userProfile.diet || "none"}' and 'dietary_restrictions': ${JSON.stringify(userProfile.dietary_restrictions || [])}. Do not suggest products that violate these restrictions.
-        - **Budget Focus:** Tailor money-saving tips to their 'budget_focus': '${userProfile.budget_focus || "medium"}' and 'monthly_budget': ${userProfile.monthly_budget || "not specified"}. Be specific about actual savings amounts when possible.
+        - **Budget Focus:** Tailor money-saving tips to their 'budget_focus': '${userProfile.budget_focus || "medium"}' and 'monthly_budget': ${userProfile.monthly_budget || "not specified"}. IMPORTANT: Express savings as PERCENTAGES, not absolute amounts (e.g., "save 20%" not "save ₪2"). Percentages are psychologically more attractive.
         - **Health Preferences:** If 'health_preferences' are specified (${JSON.stringify(userProfile.health_preferences || [])}), prioritize tips that align with them.
         - **Household Context:** Consider 'household_size': ${userProfile.household_size || 1} and 'user_role': '${userProfile.user_role || "not specified"}' when suggesting quantities or family-oriented products.
         - **Store Preferences:** If the user prefers specific chains (${JSON.stringify(userProfile.preferred_store_chains || [])}), reference these stores in your tips when relevant.
 
         **SPECIFICITY REQUIREMENTS:**
         - Use actual product names from recommendations, not generic categories
-        - Include specific price comparisons or savings amounts when suggesting alternatives
+        - Include specific price comparisons as PERCENTAGES when suggesting alternatives (e.g., "20% cheaper" instead of "₪2 less")
         - Reference real stores from the user's area when applicable
         - Base discovery tips on the user's actual purchase history and habits
 
         Desired Tip Categories:
-        1. Money-saving: Suggest specific cheaper alternatives or brands with actual price differences.
+        1. Money-saving: Suggest specific cheaper alternatives or brands with PERCENTAGE savings (e.g., "Switch to X brand and save 25%").
         2. Health/Dietary: Highlight specific items fitting their exact dietary profile with compliance confirmation.
         3. Discovery: Recommend specific products that similar users buy, ensuring all preferences are met.
 
