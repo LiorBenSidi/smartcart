@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CartAlternatives from '@/components/CartAlternatives';
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
+import AlternativeProductSelector from '@/components/AlternativeProductSelector';
 import { processManager } from "@/components/processManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -43,6 +44,7 @@ export default function SmartCart() {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [addedItems, setAddedItems] = useState(new Set());
   const [showPriceCompare, setShowPriceCompare] = useState(null); // cart id to show price comparison
+  const [alternativeSelector, setAlternativeSelector] = useState(null); // { cartId, itemGtin, chainId }
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -1172,74 +1174,7 @@ export default function SmartCart() {
                                   Object.keys(prices).forEach(chainId => allChainIds.add(chainId));
                                 });
                                 
-                                // Search alternatives by name for missing chain prices
-                                for (const item of cart.items) {
-                                  const itemPrices = pricesByGtin[item.gtin] || {};
-                                  const missingChains = [...allChainIds].filter(chainId => !itemPrices[chainId]);
-                                  
-                                  if (missingChains.length > 0 && item.name) {
-                                    // Search by canonical_name containing the item name
-                                    const nameWords = item.name.split(' ').slice(0, 3).join(' ');
-                                    let alternatives = await base44.entities.Product.filter({
-                                      canonical_name: { $regex: nameWords, $options: 'i' },
-                                      chain_id: { $in: missingChains },
-                                      gtin: { $ne: item.gtin }
-                                    }, 'current_price', 200);
-                                    
-                                    // Group by chain and pick cheapest for each missing chain
-                                    const processAlternatives = (alts) => {
-                                      alts.forEach(alt => {
-                                        if (alt.chain_id && alt.current_price != null && alt.gtin !== item.gtin) {
-                                          if (!pricesByGtin[item.gtin]) {
-                                            pricesByGtin[item.gtin] = {};
-                                          }
-                                          // Only add if no price yet for this chain, or if this one is cheaper
-                                          if (!pricesByGtin[item.gtin][alt.chain_id] || 
-                                              (pricesByGtin[item.gtin][alt.chain_id].isAlternative && 
-                                               alt.current_price < pricesByGtin[item.gtin][alt.chain_id].price)) {
-                                            pricesByGtin[item.gtin][alt.chain_id] = {
-                                              price: alt.current_price,
-                                              chain_id: alt.chain_id,
-                                              store_id: alt.store_id,
-                                              isAlternative: true,
-                                              altName: alt.canonical_name,
-                                              altGtin: alt.gtin
-                                            };
-                                          }
-                                        }
-                                      });
-                                    };
-                                    
-                                    processAlternatives(alternatives);
-                                    
-                                    // Check if still missing chains after first search
-                                    const stillMissingChains = missingChains.filter(chainId => 
-                                      !pricesByGtin[item.gtin]?.[chainId]
-                                    );
-                                    
-                                    // If still missing, try fuzzy search with 80% name match and same category
-                                    if (stillMissingChains.length > 0) {
-                                      // Get original product to find its category
-                                      const originalProducts = await base44.entities.Product.filter({
-                                        gtin: item.gtin
-                                      }, '-updated_date', 1);
-                                      const originalCategory = originalProducts[0]?.category;
-                                      
-                                      if (originalCategory) {
-                                        // Search with shorter name (first 2 words) and same category
-                                        const shorterName = item.name.split(' ').slice(0, 2).join(' ');
-                                        const fuzzyAlternatives = await base44.entities.Product.filter({
-                                          canonical_name: { $regex: shorterName, $options: 'i' },
-                                          category: originalCategory,
-                                          chain_id: { $in: stillMissingChains },
-                                          gtin: { $ne: item.gtin }
-                                        }, 'current_price', 100);
-                                        
-                                        processAlternatives(fuzzyAlternatives);
-                                      }
-                                    }
-                                  }
-                                }
+
                                 
                                 // Update the cart in state with fetched prices
                                 const updatedItems = cart.items.map(item => ({
@@ -1329,8 +1264,20 @@ export default function SmartCart() {
                                               isMin ? 'bg-green-900/60 text-green-400' : 
                                               isMax ? 'bg-red-900/60 text-red-400' : 
                                               'text-gray-400'
-                                            } ${isAlternative ? 'border-2 border-dashed border-yellow-500' : ''}`}
-                                            title={isAlternative ? `Alternative: ${priceData.altName}` : ''}
+                                            } ${isAlternative ? 'border-2 border-dashed border-yellow-500' : ''} ${
+                                              price == null ? 'cursor-pointer hover:bg-gray-800' : ''
+                                            }`}
+                                            title={isAlternative ? `Alternative: ${priceData.altName}` : price == null ? 'Click to select alternative' : ''}
+                                            onClick={() => {
+                                              if (price == null) {
+                                                setAlternativeSelector({
+                                                  cartId: cart.id,
+                                                  itemGtin: item.gtin,
+                                                  itemName: item.name,
+                                                  chainId: chainId
+                                                });
+                                              }
+                                            }}
                                           >
                                             {price != null ? (
                                               <span className="flex flex-col items-center">
@@ -1339,7 +1286,49 @@ export default function SmartCart() {
                                                   <span className="text-[8px] text-yellow-400 font-normal">~alt</span>
                                                 )}
                                               </span>
-                                            ) : '-'}
+                                            ) : (
+                                              <span className="text-yellow-500 text-[10px]">+ Add</span>
+                                            )}
+
+                                            {/* Alternative selector popup */}
+                                            {alternativeSelector?.cartId === cart.id && 
+                                             alternativeSelector?.itemGtin === item.gtin && 
+                                             alternativeSelector?.chainId === chainId && (
+                                              <AlternativeProductSelector
+                                                itemName={item.name}
+                                                itemGtin={item.gtin}
+                                                chainId={chainId}
+                                                chainName={chainsInTable.find(c => c.id === chainId)?.name || 'Unknown'}
+                                                onClose={() => setAlternativeSelector(null)}
+                                                onSelect={(product) => {
+                                                  // Update the cart's chainPrices for this item
+                                                  setSavedCarts(prev => prev.map(c => {
+                                                    if (c.id !== cart.id) return c;
+                                                    return {
+                                                      ...c,
+                                                      items: c.items.map(i => {
+                                                        if (i.gtin !== item.gtin) return i;
+                                                        return {
+                                                          ...i,
+                                                          chainPrices: {
+                                                            ...i.chainPrices,
+                                                            [chainId]: {
+                                                              price: product.current_price,
+                                                              chain_id: chainId,
+                                                              store_id: product.store_id,
+                                                              isAlternative: true,
+                                                              altName: product.canonical_name,
+                                                              altGtin: product.gtin
+                                                            }
+                                                          }
+                                                        };
+                                                      })
+                                                    };
+                                                  }));
+                                                  setAlternativeSelector(null);
+                                                }}
+                                              />
+                                            )}
                                           </td>
                                         );
                                       })}
