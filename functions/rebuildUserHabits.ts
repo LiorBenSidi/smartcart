@@ -134,13 +134,16 @@ export default Deno.serve(async (req) => {
                 return rest;
             });
 
+            console.log(`[rebuildUserHabits] Creating ${habitsToCreate.length} habits for ${targetUser.email}`);
             if (habitsToCreate.length > 0) {
                 // Bulk create in chunks of 50
                 for (let i = 0; i < habitsToCreate.length; i += 50) {
                     const chunk = habitsToCreate.slice(i, i + 50);
+                    console.log(`[rebuildUserHabits] Creating chunk ${Math.floor(i/50) + 1}: ${chunk.length} habits`);
                     await svc.entities.UserProductHabit.bulkCreate(chunk);
                 }
             }
+            console.log(`[rebuildUserHabits] Done processing ${targetUser.email}`);
 
             results.push({ 
                 email: targetUser.email, 
