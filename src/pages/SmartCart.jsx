@@ -1216,6 +1216,7 @@ export default function SmartCart() {
                               <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                                   <th className="text-left p-1.5 font-semibold text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-50 dark:bg-gray-700">Product</th>
+                                  <th className="text-center p-1.5 font-semibold text-gray-700 dark:text-gray-300 min-w-[40px]">Qty</th>
                                   {chainsInTable.map(chain => (
                                     <th key={chain.id} className="text-center p-1.5 font-semibold text-gray-700 dark:text-gray-300 min-w-[70px]">
                                       {chain.name}
@@ -1235,8 +1236,8 @@ export default function SmartCart() {
                                     <tr key={item.gtin} className="bg-gray-900">
                                       <td className="p-1.5 font-medium text-gray-100 sticky left-0 bg-gray-900 max-w-[120px] truncate" title={item.name}>
                                         {item.name}
-                                        {item.quantity > 1 && <span className="text-gray-500 text-[10px] ml-1">×{item.quantity}</span>}
                                       </td>
+                                      <td className="text-center p-1.5 text-gray-300">{item.quantity}</td>
                                       {chainIds.map(chainId => {
                                         const price = itemChainPrices[chainId]?.price;
                                         const isMin = price != null && price === minPrice && minPrice !== maxPrice;
@@ -1261,6 +1262,7 @@ export default function SmartCart() {
                                 {/* Total Row */}
                                 <tr className="border-t-2 border-gray-600 bg-gray-900 font-bold">
                                   <td className="p-1.5 text-gray-100 sticky left-0 bg-gray-900">Total</td>
+                                  <td className="text-center p-1.5 text-gray-300">{cart.items.reduce((sum, i) => sum + i.quantity, 0)}</td>
                                   {chainIds.map(chainId => {
                                     let total = 0;
                                     let hasAllItems = true;
