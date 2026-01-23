@@ -1257,10 +1257,10 @@ export default function SmartCart() {
                   </div>
 
                   {/* Price comparison table from stored data */}
-                  {showPriceCompare === cart.id && cart.items?.some(item => item.chainPrices && Object.keys(item.chainPrices).length > 0) && (() => {
+                  {showPriceCompare === cart.id && (() => {
                     // Get all unique chain IDs from saved cart items
                     const allChainIds = new Set();
-                    cart.items.forEach(item => {
+                    cart.items?.forEach(item => {
                       if (item.chainPrices) {
                         Object.keys(item.chainPrices).forEach(chainId => allChainIds.add(chainId));
                       }
@@ -1268,7 +1268,12 @@ export default function SmartCart() {
                     const chainIds = Array.from(allChainIds);
                     const chainsInTable = chainIds.map(id => chains.find(c => c.id === id)).filter(Boolean);
 
-                    if (chainsInTable.length === 0) return null;
+                    if (chainsInTable.length === 0) return (
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-center text-gray-500 text-sm py-4">
+                        <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                        Loading prices...
+                      </div>
+                    );
 
                     return (
                       <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
