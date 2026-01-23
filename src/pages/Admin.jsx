@@ -261,6 +261,12 @@ export default function Admin() {
             return true; // Safe to merge
           });
 
+          // Skip if all products are from the same chain_id
+          const uniqueChainIds = [...new Set(products.map(p => p.chain_id).filter(Boolean))];
+          if (uniqueChainIds.length <= 1) {
+            continue; // All from same chain, skip this group
+          }
+
           if (productsToUpdate.length > 0) {
             duplicates.push({ 
               name, 
