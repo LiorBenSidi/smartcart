@@ -129,8 +129,12 @@ export default function SmartCart() {
 
   useEffect(() => {
     const loadData = async () => {
-      const savedCartsList = await base44.entities.SavedCart.list('-created_date');
+      const [savedCartsList, chainsList] = await Promise.all([
+        base44.entities.SavedCart.list('-created_date'),
+        base44.entities.Chain.list()
+      ]);
       setSavedCarts(savedCartsList);
+      setChains(chainsList);
     };
     loadData();
 
