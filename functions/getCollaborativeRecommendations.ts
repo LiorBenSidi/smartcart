@@ -11,9 +11,8 @@ export default Deno.serve(async (req) => {
 
         const collaborativeSuggestions = [];
         
-        // Use service role to access cross-user data (vectors and edges are created by service role)
         // Check for user vectors (stored by user_id field, not created_by)
-        const userVectors = await base44.asServiceRole.entities.UserVectorSnapshot.filter({ user_id: user.email }, '-computed_at', 1).catch(() => []);
+        const userVectors = await base44.entities.UserVectorSnapshot.filter({ user_id: user.email }, '-computed_at', 1).catch(() => []);
         console.log(`[CF] User ${user.email}: Found ${userVectors.length} vector snapshots`);
 
         if (userVectors.length === 0) {
@@ -25,8 +24,8 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        // Get similar users (stored by user_id field, created by service role)
-        const similarUsers = await base44.asServiceRole.entities.SimilarUserEdge.filter(
+        // Get similar users (stored by user_id field, not created_by)
+        const similarUsers = await base44.entities.SimilarUserEdge.filter(
             { user_id: user.email },
             '-similarity',
             10
@@ -42,85 +41,39 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        // Build a map of neighbor similarity scores
-        const neighborSimilarityMap = {};
-        similarUsers.forEach(su => {
-            neighborSimilarityMap[su.neighbor_user_id] = su.similarity;
-        });
-        const neighborIds = Object.keys(neighborSimilarityMap);
+        {
+        const neighborIds = similarUsers.map(su => su.neighbor_user_id);
         console.log(`[CF] Processing ${neighborIds.length} neighbors: ${neighborIds.join(', ')}`);
 
-        // Get current user's purchased products to exclude them from recommendations
-        // For new users with no habits, we should still recommend products
-        const userHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
-            { created_by: user.email },
-            '-purchase_count',
-            200
-        ).catch(() => []);
-        
-        // Also check user_id field for habits
-        let userHabitsByUserId = [];
-        if (userHabits.length === 0) {
-            userHabitsByUserId = await base44.asServiceRole.entities.UserProductHabit.filter(
-                { user_id: user.email },
-                '-purchase_count',
-                200
-            ).catch(() => []);
-        }
-        
-        const allUserHabits = [...userHabits, ...userHabitsByUserId];
-        const userPurchasedProducts = new Set(allUserHabits.map(h => h.product_id));
-        console.log(`[CF] User has purchased ${userPurchasedProducts.size} unique products (${userHabits.length} by created_by, ${userHabitsByUserId.length} by user_id)`);
-
-        // Get top products purchased by similar users (habits are created by individual users)
+        // Get top products purchased by similar users
         for (const neighborId of neighborIds) {
-            const similarity = neighborSimilarityMap[neighborId];
-            
-            // UserProductHabit is created by users, use service role to access other users' habits
-            let neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
+            // UserProductHabit is stored by created_by (the user who created it)
+            const neighborHabits = await base44.entities.UserProductHabit.filter(
                 { created_by: neighborId },
                 '-purchase_count',
-                20
+                10
             ).catch(() => []);
             
             // If no habits via created_by, also try user_id field
             if (neighborHabits.length === 0) {
-                neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
+                const habitsByUserId = await base44.entities.UserProductHabit.filter(
                     { user_id: neighborId },
                     '-purchase_count',
-                    20
+                    10
                 ).catch(() => []);
+                neighborHabits.push(...habitsByUserId);
             }
-            console.log(`[CF] Neighbor ${neighborId} (similarity: ${similarity.toFixed(3)}): Found ${neighborHabits.length} habits`);
-            
-            // Debug: log first habit if exists
-            if (neighborHabits.length > 0) {
-                console.log(`[CF] Sample habit for ${neighborId}: product_id=${neighborHabits[0].product_id}, purchase_count=${neighborHabits[0].purchase_count}`);
-            }
+            console.log(`[CF] Neighbor ${neighborId}: Found ${neighborHabits.length} habits`);
 
-            let skippedCount = 0;
             neighborHabits.forEach(habit => {
-                // Skip products the user has already purchased
-                if (userPurchasedProducts.has(habit.product_id)) {
-                    skippedCount++;
-                    return;
-                }
-                
-                // Confidence = neighbor_similarity * habit_confidence * purchase_frequency_factor
-                const purchaseFrequencyFactor = Math.min(1, (habit.purchase_count || 1) / 5); // Normalize by 5 purchases
-                const habitConfidence = habit.confidence_score || 0.5;
-                const confidence = similarity * habitConfidence * (0.5 + 0.5 * purchaseFrequencyFactor);
-                
                 collaborativeSuggestions.push({
                     product_id: habit.product_id,
                     product_name: habit.product_name,
                     suggested_qty: Math.round(habit.avg_quantity) || 1,
                     reason_type: "Collaborative",
-                    confidence: confidence,
+                    confidence: 0.5 * (habit.confidence_score || 0.5), 
                     evidence: {
                         similar_users_count: 1,
-                        neighbor_similarity: similarity,
-                        neighbor_purchase_count: habit.purchase_count || 1,
                         source: "similar_neighbors"
                     }
                 });
@@ -131,39 +84,21 @@ export default Deno.serve(async (req) => {
         const aggregated = {};
         collaborativeSuggestions.forEach(item => {
             if (!aggregated[item.product_id]) {
-                aggregated[item.product_id] = { ...item };
+                aggregated[item.product_id] = item;
             } else {
-                // Boost confidence based on additional neighbors recommending the same product
-                // Use weighted average based on similarity scores
-                const existing = aggregated[item.product_id];
-                const totalSimilarity = existing.evidence.neighbor_similarity + item.evidence.neighbor_similarity;
-                existing.confidence = Math.min(0.95, existing.confidence + item.confidence * 0.5);
-                existing.evidence.similar_users_count += 1;
-                existing.evidence.neighbor_similarity = totalSimilarity / existing.evidence.similar_users_count;
-                existing.evidence.neighbor_purchase_count = Math.max(
-                    existing.evidence.neighbor_purchase_count, 
-                    item.evidence.neighbor_purchase_count
-                );
+                // Boost confidence if recommended by multiple neighbors
+                // Cap at 0.9
+                const newConfidence = Math.min(0.9, aggregated[item.product_id].confidence + 0.1);
+                aggregated[item.product_id].confidence = newConfidence;
+                aggregated[item.product_id].evidence.similar_users_count = (aggregated[item.product_id].evidence.similar_users_count || 1) + 1;
             }
         });
 
-        // Sort by confidence and return top recommendations
-        const results = Object.values(aggregated)
-            .sort((a, b) => b.confidence - a.confidence)
-            .slice(0, 15);
-        console.log(`[CF] Returning ${results.length} aggregated recommendations (filtered from ${Object.keys(aggregated).length})`);
-        console.log(`[CF] Total collaborative suggestions before aggregation: ${collaborativeSuggestions.length}`);
-        return Response.json({ 
-            success: true, 
-            recommendations: results,
-            debug: {
-                user_purchased_count: userPurchasedProducts.size,
-                suggestions_before_filter: collaborativeSuggestions.length,
-                aggregated_count: Object.keys(aggregated).length
-            }
-        });
+        const results = Object.values(aggregated);
+        console.log(`[CF] Returning ${results.length} aggregated recommendations`);
+        return Response.json({ success: true, recommendations: results });
 
-        } catch (error) {
-            return Response.json({ error: error.message }, { status: 500 });
-        }
+    } catch (error) {
+        return Response.json({ error: error.message }, { status: 500 });
+    }
 });
