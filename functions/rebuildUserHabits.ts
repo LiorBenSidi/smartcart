@@ -64,12 +64,10 @@ export default Deno.serve(async (req) => {
             );
             
             // Delete in smaller batches with delays and retries to avoid rate limiting
+            // Rate limit: 100 deletes per 30 seconds = ~3.3/sec, so delay ~350ms per delete
             for (let i = 0; i < existingHabits.length; i++) {
                 await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
-                // Add delay every 5 deletes to avoid rate limits
-                if ((i + 1) % 5 === 0) {
-                    await delay(200);
-                }
+                await delay(350); // ~350ms per delete to stay under rate limit
             }
 
             // 4. Re-calculate habits
@@ -152,11 +150,11 @@ export default Deno.serve(async (req) => {
 
             if (habitsToCreate.length > 0) {
                 // Bulk create in smaller chunks with delays and retries to avoid rate limiting
+                // Rate limit: 50 bulk creates per 60 seconds = ~1.2/sec, so delay ~1200ms per chunk
                 for (let i = 0; i < habitsToCreate.length; i += 10) {
                     const chunk = habitsToCreate.slice(i, i + 10);
                     await withRetry(() => svc.entities.UserProductHabit.bulkCreate(chunk));
-                    // Add delay between chunks to avoid rate limits
-                    await delay(300);
+                    await delay(1300); // ~1.3s per bulk create to stay under rate limit
                 }
             }
 
