@@ -859,11 +859,38 @@ export default function Admin() {
                         </div>
                     </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {gtinDuplicates.map((dup, idx) => (
+                        {gtinDuplicates.map((dup, idx) => {
+                            const refProduct = dup.products.find(p => p.gtin === dup.bestGtin);
+                            return (
                             <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-amber-200 dark:border-amber-700">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
                                         <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{dup.displayName}</p>
+                                        
+                                        {/* Product details */}
+                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                            {refProduct?.category && (
+                                                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                                                    📁 {refProduct.category}
+                                                </span>
+                                            )}
+                                            {refProduct?.brand_name && (
+                                                <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400">
+                                                    🏷️ {refProduct.brand_name}
+                                                </span>
+                                            )}
+                                            {refProduct?.kosher_level && refProduct.kosher_level !== 'none' && (
+                                                <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400">
+                                                    ✡️ {refProduct.kosher_level}
+                                                </span>
+                                            )}
+                                            {refProduct?.allergen_tags && refProduct.allergen_tags.length > 0 && (
+                                                <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                                                    ⚠️ {refProduct.allergen_tags.join(', ')}
+                                                </span>
+                                            )}
+                                        </div>
+                                        
                                         <div className="mt-2 space-y-1 text-xs">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-gray-500">Current GTINs:</span>
@@ -911,7 +938,7 @@ export default function Admin() {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 </CardContent>
             </Card>
