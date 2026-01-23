@@ -795,10 +795,10 @@ export default function SmartCart() {
                 }
                     </>
               }
-              </CardContent>
+              </CardContent>}
               </Card>
               </TooltipProvider>
-        }
+              }
 
               {/* Enhanced Product Search */}
               <Card>
