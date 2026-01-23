@@ -62,14 +62,33 @@ class ProcessManager {
         this.state.status = `Processing batch ${batch + 1}${habitOffset > 0 ? ` (offset ${habitOffset})` : ''}...`;
         this.notify();
 
-        const response = await base44.functions.invoke(functionName, {
-          ...initialPayload,
-          batch,
-          habitOffset,
-          limit: BATCH_SIZE
-        });
+        let response;
+        let data;
+        let retries = 0;
+        const maxRetries = 3;
 
-        const data = response.data;
+        while (retries < maxRetries) {
+          response = await base44.functions.invoke(functionName, {
+            ...initialPayload,
+            batch,
+            habitOffset,
+            limit: BATCH_SIZE
+          });
+
+          data = response.data;
+
+          // Handle rate limit - wait and retry
+          if (data.error && data.error.includes('Rate limit')) {
+            retries++;
+            if (retries < maxRetries) {
+              this.state.status = `Rate limited, waiting 30s before retry ${retries}/${maxRetries}...`;
+              this.notify();
+              await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30s for rate limit to reset
+              continue;
+            }
+          }
+          break;
+        }
 
         if (data.error) throw new Error(data.error);
 

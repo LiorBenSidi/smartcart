@@ -23,7 +23,7 @@ export default function Admin() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [processState, setProcessState] = useState(processManager.getState());
-  const [batchDelay, setBatchDelay] = useState(2000); // ms delay between batches (entity_create_bulk: 50/60s)
+  const [batchDelay, setBatchDelay] = useState(15000); // ms delay between batches (needs time for rate limits to reset between users)
   const [maxHabitsPerBatch, setMaxHabitsPerBatch] = useState(25); // Max habits created per frontend call
 
   useEffect(() => {
