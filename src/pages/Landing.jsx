@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ScanLine, TrendingUp, Leaf, LogIn, UserPlus, MessageCircle } from "lucide-react";
+import { ArrowRight, ScanLine, LogIn, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
@@ -37,92 +37,90 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 flex flex-col">
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto w-full">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 flex flex-col">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-lg mx-auto w-full">
         
+        {/* Logo */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8 relative">
-
-          <div className="w-24 h-24 bg-indigo-600 rounded-3xl rotate-3 absolute -top-2 -left-2 opacity-20 blur-xl"></div>
-          <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl relative z-10 mx-auto rotate-12">
-            <ScanLine className="w-10 h-10 text-white" />
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="mb-10 relative">
+          <div className="absolute inset-0 w-24 h-24 bg-indigo-500/30 rounded-full blur-2xl mx-auto"></div>
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20 relative z-10 mx-auto">
+            <ScanLine className="w-10 h-10 text-white/90" />
           </div>
         </motion.div>
 
+        {/* Title */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="text-4xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
-
-          Smart Grocery <br />
-          <span className="text-indigo-600 dark:text-indigo-400">Assistant</span>
+          className="text-4xl font-bold text-white mb-4 tracking-tight leading-tight">
+          Your Personal <br />
+          <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Grocery Assistant</span>
         </motion.h1>
 
+        {/* Description */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="text-gray-500 dark:text-gray-400 text-lg mb-10 leading-relaxed">
-
-          Scan receipts, track spending, and get AI-powered insights to save money and eat healthier.
+          transition={{ delay: 0.35, duration: 0.6 }}
+          className="text-gray-400 text-base mb-12 leading-relaxed max-w-sm">
+          I'll help you track spending, find better prices, and make smarter shopping decisions — effortlessly.
         </motion.p>
 
+        {/* CTA Section */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="w-full space-y-4">
+          transition={{ delay: 0.5, duration: 0.6 }}
+          className="w-full space-y-5">
 
-          {!isLoading &&
-          <>
+          {!isLoading && (
+            <>
               {isAuthenticated ? (
-            <div className="w-full space-y-4">
-                {user && (
-                    <div className="bg-indigo-50 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-200 px-4 py-3 rounded-xl font-medium text-sm border border-indigo-100 dark:border-indigo-800">
-                        👋 Hello, {user.display_name || user.full_name || user.email}
+                <div className="w-full space-y-5">
+                  {user && (
+                    <div className="bg-gradient-to-r from-indigo-950/50 to-purple-950/50 text-indigo-200 px-5 py-4 rounded-2xl text-sm border border-indigo-800/50 backdrop-blur-sm">
+                      <span className="text-indigo-400">Welcome back,</span>{' '}
+                      <span className="font-medium text-white">{user.display_name || user.full_name || user.email}</span>
                     </div>
-                )}
-                <Button
-                onClick={handleNavigation}
-                className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all">
-
+                  )}
+                  <Button
+                    onClick={handleNavigation}
+                    className="w-full h-14 text-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 font-medium">
                     Get Started
                     <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-
-
-            </div>
-            ) :
-
-            <div className="space-y-3">
-                   <Button
-                onClick={handleAuth}
-                className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-200 transition-all">
-
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Button
+                    onClick={handleAuth}
+                    className="w-full h-14 text-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 font-medium">
                     <UserPlus className="mr-2 w-5 h-5" /> Sign Up
                   </Button>
                   <Button
-                onClick={handleAuth}
-                variant="outline"
-                className="w-full h-12 text-base border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950">
-
+                    onClick={handleAuth}
+                    variant="ghost"
+                    className="w-full h-12 text-base text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200">
                     <LogIn className="mr-2 w-4 h-4" /> Log In
                   </Button>
                 </div>
-            }
+              )}
             </>
-          }
+          )}
           
-          <p className="text-xs text-gray-400 mt-6">Demo • Powered by Gemini 3 Pro</p>
-          <p className="text-xs text-gray-400 mt-6">Lior Ben Sidi & Yarin Katan</p>
+          <div className="pt-8 space-y-1">
+            <p className="text-xs text-gray-600">Demo • Powered by Gemini 3 Pro</p>
+            <p className="text-xs text-gray-600">Lior Ben Sidi & Yarin Katan</p>
+          </div>
         </motion.div>
 
-
       </div>
-    </div>);
+    </div>
+  );
 
 }
