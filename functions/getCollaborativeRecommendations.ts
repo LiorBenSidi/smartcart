@@ -11,8 +11,8 @@ export default Deno.serve(async (req) => {
 
         const collaborativeSuggestions = [];
         
-        // Check for user vectors
-        const userVectors = await base44.entities.UserVectorSnapshot.filter({ created_by: user.email }, '-computed_at', 1).catch(() => []);
+        // Check for user vectors (stored by user_id field, not created_by)
+        const userVectors = await base44.entities.UserVectorSnapshot.filter({ user_id: user.email }, '-computed_at', 1).catch(() => []);
         console.log(`[CF] User ${user.email}: Found ${userVectors.length} vector snapshots`);
 
         if (userVectors.length === 0) {
@@ -24,7 +24,7 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        // Get similar users
+        // Get similar users (stored by user_id field, not created_by)
         const similarUsers = await base44.entities.SimilarUserEdge.filter(
             { user_id: user.email },
             '-similarity',
