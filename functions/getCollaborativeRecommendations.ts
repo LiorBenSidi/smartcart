@@ -92,6 +92,11 @@ export default Deno.serve(async (req) => {
                 ).catch(() => []);
             }
             console.log(`[CF] Neighbor ${neighborId} (similarity: ${similarity.toFixed(3)}): Found ${neighborHabits.length} habits`);
+            
+            // Debug: log first habit if exists
+            if (neighborHabits.length > 0) {
+                console.log(`[CF] Sample habit for ${neighborId}: product_id=${neighborHabits[0].product_id}, purchase_count=${neighborHabits[0].purchase_count}`);
+            }
 
             neighborHabits.forEach(habit => {
                 // Skip products the user has already purchased
