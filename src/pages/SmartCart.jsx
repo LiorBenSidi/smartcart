@@ -1351,31 +1351,39 @@ export default function SmartCart() {
                                                 chainId={chainId}
                                                 chainName={chainsInTable.find(c => c.id === chainId)?.name || 'Unknown'}
                                                 onClose={() => setAlternativeSelector(null)}
-                                                onSelect={(product) => {
+                                                onSelect={async (product) => {
                                                   // Update the cart's chainPrices for this item
-                                                  setSavedCarts(prev => prev.map(c => {
-                                                    if (c.id !== cart.id) return c;
+                                                  const updatedItems = cart.items.map(i => {
+                                                    if (i.gtin !== item.gtin) return i;
                                                     return {
-                                                      ...c,
-                                                      items: c.items.map(i => {
-                                                        if (i.gtin !== item.gtin) return i;
-                                                        return {
-                                                          ...i,
-                                                          chainPrices: {
-                                                            ...i.chainPrices,
-                                                            [chainId]: {
-                                                              price: product.current_price,
-                                                              chain_id: chainId,
-                                                              store_id: product.store_id,
-                                                              isAlternative: true,
-                                                              altName: product.canonical_name,
-                                                              altGtin: product.gtin
-                                                            }
-                                                          }
-                                                        };
-                                                      })
+                                                      ...i,
+                                                      chainPrices: {
+                                                        ...i.chainPrices,
+                                                        [chainId]: {
+                                                          price: product.current_price,
+                                                          chain_id: chainId,
+                                                          store_id: product.store_id,
+                                                          isAlternative: true,
+                                                          altName: product.canonical_name,
+                                                          altGtin: product.gtin
+                                                        }
+                                                      }
                                                     };
-                                                  }));
+                                                  });
+                                                  
+                                                  // Update local state
+                                                  setSavedCarts(prev => prev.map(c => 
+                                                    c.id === cart.id ? { ...c, items: updatedItems } : c
+                                                  ));
+                                                  
+                                                  // Persist to database
+                                                  try {
+                                                    await base44.entities.SavedCart.update(cart.id, { items: updatedItems });
+                                                    toast.success("Alternative saved");
+                                                  } catch (e) {
+                                                    console.error("Failed to save alternative", e);
+                                                  }
+                                                  
                                                   setAlternativeSelector(null);
                                                 }}
                                               />
