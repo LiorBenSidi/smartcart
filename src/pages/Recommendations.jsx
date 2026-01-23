@@ -303,18 +303,25 @@ export default function Recommendations() {
           await base44.functions.invoke('logSmartTipFeedback', { tip, action });
 
           if (action === 'like') {
-              toast.success("Thanks! We'll show more like this.");
-              refreshTips();
+              // Mark as liked visually
+              setSmartTips(prev => prev.map(t => 
+                  t === tip ? { ...t, liked: true } : t
+              ));
+              toast.success("תודה! נציג עוד טיפים דומים. הפידבק נשמר בפרופיל שלך.", {
+                  description: "הלייק עוזר לנו להבין מה מתאים לך"
+              });
           } else if (action === 'dislike') {
               // Remove the disliked tip immediately
               setSmartTips(prev => prev.filter(t => t !== tip));
-              toast.info("Tip hidden. Fetching a new one...");
+              toast.info("הטיפ הוסר. מחפשים טיפים מתאימים יותר...", {
+                  description: "הפידבק נשמר ועוזר לשפר את ההמלצות"
+              });
               // Fetch a new tip
               refreshTips();
           }
       } catch (e) {
           console.error(e);
-          toast.error("Failed to log feedback");
+          toast.error("שגיאה בשמירת הפידבק");
       }
   };
 
@@ -760,20 +767,28 @@ export default function Recommendations() {
                                         )}
                                     </div>
                                     <div className="flex flex-col gap-1 ml-auto shrink-0">
-                                        <button 
-                                            onClick={() => handleTipFeedback(tip, 'like')}
-                                            className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
-                                            title="Helpful"
-                                        >
-                                            <ThumbsUp className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                            onClick={() => handleTipFeedback(tip, 'dislike')}
-                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                            title="Not helpful"
-                                        >
-                                            <ThumbsDown className="w-4 h-4" />
-                                        </button>
+                                        {tip.liked ? (
+                                            <div className="p-1.5 bg-green-100 dark:bg-green-900/50 rounded text-green-600 dark:text-green-400">
+                                                <ThumbsUp className="w-4 h-4 fill-current" />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <button 
+                                                    onClick={() => handleTipFeedback(tip, 'like')}
+                                                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
+                                                    title="מועיל - נציג עוד כאלה"
+                                                >
+                                                    <ThumbsUp className="w-4 h-4" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleTipFeedback(tip, 'dislike')}
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                                                    title="לא מועיל - הסתר"
+                                                >
+                                                    <ThumbsDown className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
