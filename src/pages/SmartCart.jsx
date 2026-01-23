@@ -1180,33 +1180,64 @@ export default function SmartCart() {
                                   if (missingChains.length > 0 && item.name) {
                                     // Search by canonical_name containing the item name
                                     const nameWords = item.name.split(' ').slice(0, 3).join(' ');
-                                    const alternatives = await base44.entities.Product.filter({
+                                    let alternatives = await base44.entities.Product.filter({
                                       canonical_name: { $regex: nameWords, $options: 'i' },
                                       chain_id: { $in: missingChains },
                                       gtin: { $ne: item.gtin }
                                     }, 'current_price', 200);
                                     
                                     // Group by chain and pick cheapest for each missing chain
-                                    alternatives.forEach(alt => {
-                                      if (alt.chain_id && alt.current_price != null && alt.gtin !== item.gtin) {
-                                        if (!pricesByGtin[item.gtin]) {
-                                          pricesByGtin[item.gtin] = {};
+                                    const processAlternatives = (alts) => {
+                                      alts.forEach(alt => {
+                                        if (alt.chain_id && alt.current_price != null && alt.gtin !== item.gtin) {
+                                          if (!pricesByGtin[item.gtin]) {
+                                            pricesByGtin[item.gtin] = {};
+                                          }
+                                          // Only add if no price yet for this chain, or if this one is cheaper
+                                          if (!pricesByGtin[item.gtin][alt.chain_id] || 
+                                              (pricesByGtin[item.gtin][alt.chain_id].isAlternative && 
+                                               alt.current_price < pricesByGtin[item.gtin][alt.chain_id].price)) {
+                                            pricesByGtin[item.gtin][alt.chain_id] = {
+                                              price: alt.current_price,
+                                              chain_id: alt.chain_id,
+                                              store_id: alt.store_id,
+                                              isAlternative: true,
+                                              altName: alt.canonical_name,
+                                              altGtin: alt.gtin
+                                            };
+                                          }
                                         }
-                                        // Only add if no price yet for this chain, or if this one is cheaper
-                                        if (!pricesByGtin[item.gtin][alt.chain_id] || 
-                                            (pricesByGtin[item.gtin][alt.chain_id].isAlternative && 
-                                             alt.current_price < pricesByGtin[item.gtin][alt.chain_id].price)) {
-                                          pricesByGtin[item.gtin][alt.chain_id] = {
-                                            price: alt.current_price,
-                                            chain_id: alt.chain_id,
-                                            store_id: alt.store_id,
-                                            isAlternative: true,
-                                            altName: alt.canonical_name,
-                                            altGtin: alt.gtin
-                                          };
-                                        }
+                                      });
+                                    };
+                                    
+                                    processAlternatives(alternatives);
+                                    
+                                    // Check if still missing chains after first search
+                                    const stillMissingChains = missingChains.filter(chainId => 
+                                      !pricesByGtin[item.gtin]?.[chainId]
+                                    );
+                                    
+                                    // If still missing, try fuzzy search with 80% name match and same category
+                                    if (stillMissingChains.length > 0) {
+                                      // Get original product to find its category
+                                      const originalProducts = await base44.entities.Product.filter({
+                                        gtin: item.gtin
+                                      }, '-updated_date', 1);
+                                      const originalCategory = originalProducts[0]?.category;
+                                      
+                                      if (originalCategory) {
+                                        // Search with shorter name (first 2 words) and same category
+                                        const shorterName = item.name.split(' ').slice(0, 2).join(' ');
+                                        const fuzzyAlternatives = await base44.entities.Product.filter({
+                                          canonical_name: { $regex: shorterName, $options: 'i' },
+                                          category: originalCategory,
+                                          chain_id: { $in: stillMissingChains },
+                                          gtin: { $ne: item.gtin }
+                                        }, 'current_price', 100);
+                                        
+                                        processAlternatives(fuzzyAlternatives);
                                       }
-                                    });
+                                    }
                                   }
                                 }
                                 
