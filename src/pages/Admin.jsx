@@ -240,54 +240,6 @@ export default function Admin() {
             </Card>
         </div>
 
-        {/* Batch Delay Control */}
-        <Card className="border-none shadow-sm bg-white dark:bg-gray-800">
-            <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                    <Clock className="w-5 h-5 text-gray-500" />
-                    <div className="flex-1">
-                        <Label htmlFor="batchDelay" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Delay between batches (ms)
-                        </Label>
-                        <Input
-                            id="batchDelay"
-                            type="number"
-                            min="0"
-                            step="500"
-                            value={batchDelay}
-                            onChange={(e) => setBatchDelay(Number(e.target.value))}
-                            className="w-32 mt-1"
-                            disabled={processState.loading}
-                        />
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-                        Delay between batch API calls.
-                    </p>
-                </div>
-                <div className="border-l border-gray-200 dark:border-gray-700 pl-4 ml-4">
-                    <div className="flex-1">
-                        <Label htmlFor="maxHabitsPerBatch" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Habits per batch
-                        </Label>
-                        <Input
-                            id="maxHabitsPerBatch"
-                            type="number"
-                            min="10"
-                            max="200"
-                            step="10"
-                            value={maxHabitsPerBatch}
-                            onChange={(e) => setMaxHabitsPerBatch(Number(e.target.value))}
-                            className="w-32 mt-1"
-                            disabled={processState.loading}
-                        />
-                    </div>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-                    Max habits created per API call.
-                </p>
-            </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
                 <Link to={createPageUrl('CatalogAdmin')} className="w-full">
