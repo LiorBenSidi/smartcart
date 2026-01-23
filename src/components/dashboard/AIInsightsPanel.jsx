@@ -80,7 +80,12 @@ export default function AIInsightsPanel({ insights }) {
                                                 {rec.description}
                                             </p>
                                         </div>
-                                        {rec.potentialSavings > 0 && (
+                                        {rec.potentialSavings > 0 && rec.originalPrice > 0 && (
+                                            <Badge className="bg-green-600 text-white whitespace-nowrap">
+                                                Save {Math.round((rec.potentialSavings / rec.originalPrice) * 100)}%
+                                            </Badge>
+                                        )}
+                                        {rec.potentialSavings > 0 && !rec.originalPrice && (
                                             <Badge className="bg-green-600 text-white whitespace-nowrap">
                                                 Save ₪{rec.potentialSavings.toFixed(0)}
                                             </Badge>
