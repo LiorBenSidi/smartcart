@@ -51,7 +51,7 @@ export default Deno.serve(async (req) => {
             console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
             
             // Delete in batches with delays to avoid rate limits
-            const DELETE_BATCH_SIZE = 25;
+            const DELETE_BATCH_SIZE = 100;
             const DELAY_MS = internalDelayMs;
             
             for (let i = 0; i < existingHabits.length; i += DELETE_BATCH_SIZE) {
