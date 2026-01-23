@@ -10,7 +10,8 @@ const CONFIG = {
     MIN_PURCHASE_COUNT_FOR_HABIT: 2,
     // Limits
     MAX_SUGGESTED_ITEMS_PER_DAY: 12,
-    MIN_RECEIPTS_FOR_SUGGESTIONS: 6
+    MIN_RECEIPTS_FOR_SUGGESTIONS: 0, // Allow function to run even with 0 receipts
+    CF_ONLY_RECEIPT_THRESHOLD: 5 // Users with less than this many receipts will only get CF suggestions
 };
 
 function getMedian(values) {
@@ -108,13 +109,17 @@ export default Deno.serve(async (req) => {
 
             // 0) MINIMUM DATA GATING
             const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-            if (validReceipts.length < CONFIG.MIN_RECEIPTS_FOR_SUGGESTIONS) {
-                // Not enough data, stop here
-                await base44.entities.SuggestedCartDraft.update(draft.id, {
-                    items: [],
-                    note: "Not enough data yet."
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            
+            // For CF-only users, skip weekly patterns and proceed to collaborative filtering
+            if (isCFOnlyUser) {
+                return Response.json({ 
+                    hasMore: true, 
+                    progress: 25, 
+                    message: "Skipping weekly patterns (CF-only user)...",
+                    skipped: true,
+                    isCFOnlyUser: true
                 });
-                return Response.json({ hasMore: false, progress: 100, message: "Not enough data" });
             }
 
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
@@ -193,6 +198,19 @@ export default Deno.serve(async (req) => {
                 processing_status: 'processed' 
             }, '-purchased_at', 100);
             const validReceipts = receipts.filter(r => r.purchased_at || r.date);
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            
+            // For CF-only users, skip restock patterns and proceed to collaborative filtering
+            if (isCFOnlyUser) {
+                return Response.json({ 
+                    hasMore: true, 
+                    progress: 50, 
+                    message: "Skipping restock patterns (CF-only user)...",
+                    skipped: true,
+                    isCFOnlyUser: true
+                });
+            }
+            
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
             
             const restockSuggestions = [];
@@ -288,6 +306,14 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 3: FINALIZE ---
         if (batch === 3) {
+            // Check if CF-only user
+            const receipts = await base44.entities.Receipt.filter({ 
+                created_by: user.email, 
+                processing_status: 'processed' 
+            }, '-purchased_at', 100);
+            const validReceipts = receipts.filter(r => r.purchased_at || r.date);
+            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
+            
             // Need user preferences to filter
             const userPreferences = await base44.entities.UserProductPreference.filter({ 
                 created_by: user.email,
@@ -295,18 +321,16 @@ export default Deno.serve(async (req) => {
             }).catch(() => []);
             const dislikedGTINs = new Set(userPreferences.map(p => p.product_gtin));
 
-            // Need purchase history to filter Collaborative (if user already buys it)
-            // Ideally we'd have this passed or cached, but let's re-fetch receipts one last time
-            // Or just trust that we want to filter OUT anything the user buys regularly?
-            // Let's filter out anything that IS in Weekly/Restock from being "Collaborative" (handled by merge logic).
-            // But if user buys it but it's not suggested (e.g. not due), Collaborative shouldn't suggest it?
-            // Yes, standard collaborative logic filters out known user items.
-            // Let's assume getCollaborativeRecommendations already did that? 
-            // Usually yes.
-            // But we do need to filter out items already in CURRENT CART.
+            // Filter out items already in CURRENT CART.
             const cartItemSet = new Set(currentCartItems);
 
-            const allSuggestions = draft.items || [];
+            let allSuggestions = draft.items || [];
+            
+            // For CF-only users, ensure only collaborative suggestions are kept
+            if (isCFOnlyUser) {
+                allSuggestions = allSuggestions.filter(s => s.reason_type === "Collaborative");
+            }
+            
             const suggestionMap = new Map();
 
             // Merge Logic
