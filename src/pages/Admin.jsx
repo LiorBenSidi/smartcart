@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle, Brain, Clock } from 'lucide-react';
+import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle, Brain, Clock, Users } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from 'react-router-dom';
