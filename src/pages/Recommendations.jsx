@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
-import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
 
 export default function Recommendations() {
   const [loading, setLoading] = useState(true);
@@ -27,22 +26,6 @@ export default function Recommendations() {
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
-  const [aiInsights, setAiInsights] = useState(null);
-  const [loadingAiInsights, setLoadingAiInsights] = useState(false);
-
-  const fetchAIInsights = async () => {
-    setLoadingAiInsights(true);
-    try {
-      const response = await base44.functions.invoke('generateDashboardInsights', {});
-      if (response.data.success) {
-        setAiInsights(response.data.aiInsights);
-      }
-    } catch (error) {
-      console.error("Error fetching AI insights", error);
-    } finally {
-      setLoadingAiInsights(false);
-    }
-  };
 
   const refreshTips = async (currentCandidates = candidates) => {
       setTipsLoading(true);
@@ -50,6 +33,7 @@ export default function Recommendations() {
           const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
           if (tipRes.data && tipRes.data.tips) {
               setSmartTips(tipRes.data.tips);
+              toast.success("Tips refreshed!");
           }
       } catch (e) {
           console.error("Smart tips failed", e);
@@ -57,15 +41,6 @@ export default function Recommendations() {
       } finally {
           setTipsLoading(false);
       }
-  };
-
-  const refreshAll = async () => {
-      toast.info("Refreshing insights...");
-      await Promise.all([
-          fetchAIInsights(),
-          refreshTips()
-      ]);
-      toast.success("Insights refreshed!");
   };
 
   const handleTipFeedback = async (tip, action) => {
@@ -135,9 +110,6 @@ export default function Recommendations() {
             refreshTips(newCandidates);
         }
 
-        // Fetch AI Insights
-        fetchAIInsights();
-
         // 2. Fetch Insights
         const insightsRes = await base44.entities.Insight.filter({ 
             user_id: currentUser.email, 
@@ -206,7 +178,6 @@ export default function Recommendations() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      {/* Page Header - For You */}
       <div className="space-y-2">
         <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
@@ -280,45 +251,10 @@ export default function Recommendations() {
                     </DialogContent>
                 </Dialog>
             </div>
-            <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={refreshAll}
-                  disabled={loadingAiInsights || tipsLoading}
-                  className="gap-2"
-                >
-                  {(loadingAiInsights || tipsLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  Refresh All
-                </Button>
-                <RecommendationExplainer mode="general" />
-            </div>
+            <RecommendationExplainer mode="general" />
         </div>
-        <p className="text-gray-500 dark:text-gray-400">AI-powered insights, smart tips, and personalized recommendations based on your shopping habits.</p>
+        <p className="text-gray-500 dark:text-gray-400">Personalized picks based on people with similar taste.</p>
       </div>
-
-      {/* AI Insights Section */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-600" />
-          AI-Powered Insights
-        </h2>
-      </div>
-      
-      {loadingAiInsights && (
-        <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800 mb-8">
-          <CardContent className="p-6 flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
-          </CardContent>
-        </Card>
-      )}
-
-      {aiInsights && !loadingAiInsights && (
-        <div className="mb-8">
-          <AIInsightsPanel insights={aiInsights} />
-        </div>
-      )}
 
       {/* Smart Tips (AI Generated) */}
       {(smartTips.length > 0 || tipsLoading) && (
@@ -327,6 +263,16 @@ export default function Recommendations() {
                   <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200">
                       <Sparkles className="w-5 h-5 text-indigo-500" /> Smart Tips for You
                   </h2>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => refreshTips()}
+                    disabled={tipsLoading}
+                    className="text-gray-500 hover:text-indigo-600"
+                  >
+                      <RotateCcw className={`w-4 h-4 mr-2 ${tipsLoading ? 'animate-spin' : ''}`} />
+                      Refresh
+                  </Button>
               </div>
               
               {tipsLoading ? (
