@@ -405,10 +405,24 @@ export default function Recommendations() {
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 text-sm">
-                            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                                This page provides personalized insights and recommendations based on your shopping history. 
-                                Below you'll find technical details about how each section works and what data is used to generate your personalized content.
-                            </p>
+                            <div className="bg-slate-50 dark:bg-slate-900/20 p-3 rounded border border-slate-100 dark:border-slate-800">
+                                <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                                    <BarChart3 className="w-4 h-4" /> 
+                                    Analytics Dashboard
+                                </h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                    Displays your shopping statistics and spending patterns:
+                                </p>
+                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
+                                    <li><strong>Spent This Month:</strong> Total spending for the current calendar month with percentage change vs. last month.</li>
+                                    <li><strong>Total Receipts:</strong> Count of all uploaded receipts and how many were added this month.</li>
+                                    <li><strong>Avg Receipt:</strong> Your average spending per shopping trip.</li>
+                                    <li><strong>Last 30 Days:</strong> Rolling 30-day spending total for recent activity tracking.</li>
+                                    <li><strong>Top Categories:</strong> Pie chart showing your top 5 spending categories across all receipts.</li>
+                                    <li><strong>Frequent Items:</strong> Your most purchased products by frequency and total spend.</li>
+                                </ul>
+                            </div>
+
                             <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded border border-indigo-100 dark:border-indigo-800">
                                 <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
                                     <Sparkles className="w-4 h-4" /> 
