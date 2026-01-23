@@ -172,7 +172,8 @@ export default function Admin() {
 
   const handleRebuildUserHabits = async () => {
     try {
-        await processManager.startProcess('rebuildUserHabits', { limit: 1, maxHabitsPerBatch }, { delayMs: batchDelay });
+        // Use 60 second delay between users to avoid rate limits
+        await processManager.startProcess('rebuildUserHabits', { limit: 1, maxHabitsPerBatch }, { delayMs: 60000 });
     } catch (err) {
         console.error('Rebuild failed:', err);
     }
