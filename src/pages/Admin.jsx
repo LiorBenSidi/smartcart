@@ -834,82 +834,11 @@ export default function Admin() {
                             </Button>
                         </div>
                     </div>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {gtinDuplicates.map((dup, idx) => {
-                            const refProduct = dup.products.find(p => p.gtin === dup.bestGtin);
-                            return (
+                    <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                        {gtinDuplicates.map((dup, idx) => (
                             <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-amber-200 dark:border-amber-700">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{dup.displayName}</p>
-                                        
-                                        {/* Product details - highlight differences in red */}
-                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                            {refProduct?.category && (
-                                                <span className={`px-1.5 py-0.5 rounded ${
-                                                    dup.fieldDiffs?.category 
-                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
-                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
-                                                }`}>
-                                                    📁 {refProduct.category} {dup.fieldDiffs?.category && '⚠️'}
-                                                </span>
-                                            )}
-                                            {refProduct?.brand_name && (
-                                                <span className={`px-1.5 py-0.5 rounded ${
-                                                    dup.fieldDiffs?.brand_name 
-                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
-                                                        : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400'
-                                                }`}>
-                                                    🏷️ {refProduct.brand_name} {dup.fieldDiffs?.brand_name && '⚠️'}
-                                                </span>
-                                            )}
-                                            {refProduct?.kosher_level && refProduct.kosher_level !== 'none' && (
-                                                <span className={`px-1.5 py-0.5 rounded ${
-                                                    dup.fieldDiffs?.kosher_level 
-                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
-                                                        : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400'
-                                                }`}>
-                                                    ✡️ {refProduct.kosher_level} {dup.fieldDiffs?.kosher_level && '⚠️'}
-                                                </span>
-                                            )}
-                                            {refProduct?.allergen_tags && refProduct.allergen_tags.length > 0 && (
-                                                <span className={`px-1.5 py-0.5 rounded ${
-                                                    dup.fieldDiffs?.allergen_tags 
-                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
-                                                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400'
-                                                }`}>
-                                                    ⚠️ {refProduct.allergen_tags.join(', ')} {dup.fieldDiffs?.allergen_tags && '❗'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        
-                                        <div className="mt-2 space-y-1 text-xs">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-500">Current GTINs:</span>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {Object.entries(dup.gtinCounts).map(([gtin, count]) => (
-                                                        <span 
-                                                            key={gtin} 
-                                                            className={`px-1.5 py-0.5 rounded font-mono ${
-                                                                gtin === dup.bestGtin 
-                                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' 
-                                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
-                                                            }`}
-                                                        >
-                                                            {gtin} ({count})
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-500">Will merge to:</span>
-                                                <span className="px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 font-mono font-semibold">
-                                                    {dup.bestGtin}
-                                                </span>
-                                                <span className="text-gray-400">({dup.productsToUpdate.length} products to update)</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="font-semibold text-gray-900 dark:text-gray-100">{dup.displayName}</p>
                                     <div className="flex gap-2">
                                         <Button 
                                             size="sm" 
@@ -929,8 +858,69 @@ export default function Admin() {
                                         </Button>
                                     </div>
                                 </div>
+                                
+                                {/* Products table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-50 dark:bg-gray-900">
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">GTIN</th>
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Chain ID</th>
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Item Code</th>
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Category</th>
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Brand</th>
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Kosher</th>
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Allergens</th>
+                                                <th className="border border-gray-200 dark:border-gray-700 px-2 py-1 text-left">Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {dup.products.map((product, pIdx) => {
+                                                const isReference = product.gtin === dup.bestGtin;
+                                                const categories = [...new Set(dup.products.map(p => p.category || ''))];
+                                                const brands = [...new Set(dup.products.map(p => p.brand_name || ''))];
+                                                const koshers = [...new Set(dup.products.map(p => p.kosher_level || ''))];
+                                                const allergenSets = dup.products.map(p => JSON.stringify(p.allergen_tags || []));
+                                                const uniqueAllergens = [...new Set(allergenSets)];
+                                                
+                                                return (
+                                                    <tr key={pIdx} className={isReference ? 'bg-green-50 dark:bg-green-900/20' : ''}>
+                                                        <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1 font-mono ${isReference ? 'font-bold text-green-700 dark:text-green-400' : ''}`}>
+                                                            {product.gtin} {isReference && '✓'}
+                                                        </td>
+                                                        <td className="border border-gray-200 dark:border-gray-700 px-2 py-1 font-mono text-gray-600 dark:text-gray-400">
+                                                            {product.chain_id || '-'}
+                                                        </td>
+                                                        <td className="border border-gray-200 dark:border-gray-700 px-2 py-1 font-mono text-gray-600 dark:text-gray-400">
+                                                            {product.chain_item_code || '-'}
+                                                        </td>
+                                                        <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1 ${categories.length > 1 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : ''}`}>
+                                                            {product.category || '-'}
+                                                        </td>
+                                                        <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1 ${brands.length > 1 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : ''}`}>
+                                                            {product.brand_name || '-'}
+                                                        </td>
+                                                        <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1 ${koshers.length > 1 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : ''}`}>
+                                                            {product.kosher_level || '-'}
+                                                        </td>
+                                                        <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1 ${uniqueAllergens.length > 1 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : ''}`}>
+                                                            {product.allergen_tags?.join(', ') || '-'}
+                                                        </td>
+                                                        <td className="border border-gray-200 dark:border-gray-700 px-2 py-1">
+                                                            {product.current_price ? `₪${product.current_price}` : '-'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div className="mt-2 text-xs text-gray-500">
+                                    Will merge {dup.productsToUpdate.length} products to GTIN: <span className="font-mono font-bold text-green-600">{dup.bestGtin}</span>
+                                </div>
                             </div>
-                        )})}
+                        ))}
                     </div>
                 </CardContent>
             </Card>
