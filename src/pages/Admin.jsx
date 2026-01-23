@@ -189,8 +189,17 @@ export default function Admin() {
     setGtinMergeResults(null);
     setGtinDuplicates(null);
     try {
-      // Fetch all products
-      const allProducts = await base44.entities.Product.list('-updated_date', 10000);
+      // Fetch all products in batches of 5000
+      let allProducts = [];
+      let skip = 0;
+      const batchSize = 5000;
+      
+      while (true) {
+        const batch = await base44.entities.Product.filter({}, '-updated_date', batchSize, skip);
+        allProducts = [...allProducts, ...batch];
+        if (batch.length < batchSize) break;
+        skip += batchSize;
+      }
       
       // Group products by canonical_name
       const productsByName = {};
