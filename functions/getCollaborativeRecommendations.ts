@@ -11,8 +11,9 @@ export default Deno.serve(async (req) => {
 
         const collaborativeSuggestions = [];
         
+        // Use service role to access cross-user data (vectors and edges are created by service role)
         // Check for user vectors (stored by user_id field, not created_by)
-        const userVectors = await base44.entities.UserVectorSnapshot.filter({ user_id: user.email }, '-computed_at', 1).catch(() => []);
+        const userVectors = await base44.asServiceRole.entities.UserVectorSnapshot.filter({ user_id: user.email }, '-computed_at', 1).catch(() => []);
         console.log(`[CF] User ${user.email}: Found ${userVectors.length} vector snapshots`);
 
         if (userVectors.length === 0) {
@@ -24,8 +25,8 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        // Get similar users (stored by user_id field, not created_by)
-        const similarUsers = await base44.entities.SimilarUserEdge.filter(
+        // Get similar users (stored by user_id field, created by service role)
+        const similarUsers = await base44.asServiceRole.entities.SimilarUserEdge.filter(
             { user_id: user.email },
             '-similarity',
             10
@@ -41,14 +42,13 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        {
         const neighborIds = similarUsers.map(su => su.neighbor_user_id);
         console.log(`[CF] Processing ${neighborIds.length} neighbors: ${neighborIds.join(', ')}`);
 
-        // Get top products purchased by similar users
+        // Get top products purchased by similar users (habits are created by individual users)
         for (const neighborId of neighborIds) {
-            // UserProductHabit is stored by created_by (the user who created it)
-            const neighborHabits = await base44.entities.UserProductHabit.filter(
+            // UserProductHabit is created by users, use service role to access other users' habits
+            const neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
                 { created_by: neighborId },
                 '-purchase_count',
                 10
@@ -56,7 +56,7 @@ export default Deno.serve(async (req) => {
             
             // If no habits via created_by, also try user_id field
             if (neighborHabits.length === 0) {
-                const habitsByUserId = await base44.entities.UserProductHabit.filter(
+                const habitsByUserId = await base44.asServiceRole.entities.UserProductHabit.filter(
                     { user_id: neighborId },
                     '-purchase_count',
                     10
