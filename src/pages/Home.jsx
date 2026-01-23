@@ -5,13 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList, PieChart, Pie, Legend } from 'recharts';
-import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, Download, Loader2, AlertCircle, RefreshCw, Sparkles, TrendingDown } from 'lucide-react';
+import { ArrowUpRight, ShoppingBag, Calendar, ChevronRight, Plus, AlertCircle, Sparkles, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import Onboarding from '../components/Onboarding';
 import ReceiptFolderView from '../components/ReceiptFolderView';
 import SpendingTrendChart from '../components/dashboard/SpendingTrendChart';
 import FrequentItemsCard from '../components/dashboard/FrequentItemsCard';
-import AIInsightsPanel from '../components/dashboard/AIInsightsPanel';
+
 
 export default function Home() {
   const [receipts, setReceipts] = useState([]);
@@ -21,8 +21,6 @@ export default function Home() {
   const [displayCount, setDisplayCount] = useState(5);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
-  const [aiInsights, setAiInsights] = useState(null);
-  const [loadingInsights, setLoadingInsights] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
   const handleDeleteReceipt = async (receiptId) => {
@@ -118,9 +116,9 @@ export default function Home() {
             setShowOnboarding(true);
         }
 
-        // Fetch AI insights if user has receipts
+        // Fetch dashboard data if user has receipts
         if (data.length > 0) {
-            fetchAIInsights();
+            fetchDashboardData();
         }
       } catch (error) {
         console.error("Error fetching dashboard data", error);
@@ -131,18 +129,14 @@ export default function Home() {
     fetchData();
   }, []);
 
-  const fetchAIInsights = async () => {
-    setLoadingInsights(true);
+  const fetchDashboardData = async () => {
     try {
       const response = await base44.functions.invoke('generateDashboardInsights', {});
       if (response.data.success) {
-        setAiInsights(response.data.aiInsights);
         setDashboardData(response.data.rawData);
       }
     } catch (error) {
-      console.error("Error fetching AI insights", error);
-    } finally {
-      setLoadingInsights(false);
+      console.error("Error fetching dashboard data", error);
     }
   };
 
@@ -249,24 +243,12 @@ export default function Home() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 p-1 md:p-0">
       
-      {/* Header with Refresh */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">AI-powered insights from your shopping data</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your shopping data at a glance</p>
         </div>
-        {receipts.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchAIInsights}
-            disabled={loadingInsights}
-            className="gap-2"
-          >
-            {loadingInsights ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Refresh
-          </Button>
-        )}
       </div>
 
       {/* Overview Cards */}
@@ -383,21 +365,6 @@ export default function Home() {
           ) : null;
         })()}
       </section>
-
-      {/* AI Insights Loading State */}
-      {loadingInsights && (
-        <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
-          <CardContent className="p-6 flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">AI is analyzing your shopping patterns...</span>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* AI Insights Panel */}
-      {aiInsights && !loadingInsights && (
-        <AIInsightsPanel insights={aiInsights} />
-      )}
 
       {/* Top Insights Section */}
       {insights.length > 0 && (
