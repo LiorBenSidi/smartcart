@@ -48,34 +48,36 @@ class ProcessManager {
       let batch = 0;
       let hasMore = true;
       let allResults = [];
+      let habitOffset = 0; // For rebuildUserHabits chunked habit creation
       const BATCH_SIZE = initialPayload.limit || 5; // Use provided limit or default
 
       while (hasMore) {
         // Add delay between batches (skip first batch)
-        if (batch > 0 && delayMs > 0) {
-          this.state.status = `Waiting ${delayMs}ms before batch ${batch + 1}...`;
+        if ((batch > 0 || habitOffset > 0) && delayMs > 0) {
+          this.state.status = `Waiting ${delayMs}ms before next call...`;
           this.notify();
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
 
-        this.state.status = `Processing batch ${batch + 1}...`;
+        this.state.status = `Processing batch ${batch + 1}${habitOffset > 0 ? ` (offset ${habitOffset})` : ''}...`;
         this.notify();
 
         const response = await base44.functions.invoke(functionName, {
           ...initialPayload,
           batch,
+          habitOffset,
           limit: BATCH_SIZE
         });
 
         const data = response.data;
-        
+
         if (data.error) throw new Error(data.error);
 
         // Aggregate results if present
         if (data.results) {
             allResults = [...allResults, ...data.results];
         }
-        
+
         // Also capture other data if needed (like chainResults)
         if (data.chainResults) {
             // Append or merge? Usually chain results come at the end
@@ -90,13 +92,23 @@ class ProcessManager {
             // Fake progress if not provided
             this.state.progress = Math.min(90, (batch + 1) * 5);
         }
-        
+
         if (data.message) {
              this.state.status = data.message;
         }
 
         hasMore = data.hasMore;
-        batch++;
+
+        // Use nextBatch and nextHabitOffset if provided by backend
+        if (data.nextBatch !== undefined) {
+            batch = data.nextBatch;
+        } else {
+            batch++;
+        }
+
+        if (data.nextHabitOffset !== undefined) {
+            habitOffset = data.nextHabitOffset;
+        }
       }
 
       this.state = {
