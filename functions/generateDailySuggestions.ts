@@ -213,24 +213,18 @@ export default Deno.serve(async (req) => {
 
         // --- BATCH 1: RESTOCK PATTERNS ---
         if (batch === 1) {
-            const receipts = await base44.entities.Receipt.filter({ 
-                created_by: user.email, 
-                processing_status: 'processed' 
-            }, '-purchased_at', 100);
-            const validReceipts = receipts.filter(r => r.purchased_at || r.date);
-            const isCFOnlyUser = validReceipts.length < CONFIG.CF_ONLY_RECEIPT_THRESHOLD;
-            
-            // For CF-only users, skip restock patterns and proceed to collaborative filtering
-            if (isCFOnlyUser) {
+            // For Tier 1 users, skip restock patterns entirely
+            if (tierConfig.skipPatterns) {
                 return Response.json({ 
                     hasMore: true, 
                     progress: 50, 
-                    message: "Skipping restock patterns (CF-only user)...",
+                    message: `Tier ${userTier}: Skipping restock patterns...`,
                     skipped: true,
-                    isCFOnlyUser: true
+                    userTier,
+                    receiptCount
                 });
             }
-            
+
             const { productPurchases, productInfo } = parseReceipts(validReceipts);
             
             const restockSuggestions = [];
