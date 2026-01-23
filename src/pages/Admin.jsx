@@ -155,7 +155,7 @@ export default function Admin() {
 
   const handleAnalyzeSentiment = async () => {
     try {
-        await processManager.startProcess('analyzeStoreSentiment', { limit: 5 });
+        await processManager.startProcess('analyzeStoreSentiment', { limit: 5 }, { delayMs: batchDelay });
     } catch (err) {
         console.error('Sentiment analysis failed:', err);
     }
@@ -163,9 +163,7 @@ export default function Admin() {
 
   const handleRebuildUserVectors = async () => {
     try {
-        // Optional: clear existing vectors first if you want a clean slate
-        // But for now we just start the process which will overwrite/create new snapshots
-        await processManager.startProcess('buildUserVectors', { limit: 10 });
+        await processManager.startProcess('buildUserVectors', { limit: 10 }, { delayMs: batchDelay });
     } catch (err) {
         console.error('Vector rebuild failed:', err);
     }
@@ -173,7 +171,7 @@ export default function Admin() {
 
   const handleRebuildUserHabits = async () => {
     try {
-        await processManager.startProcess('rebuildUserHabits', { limit: 1 });
+        await processManager.startProcess('rebuildUserHabits', { limit: 1 }, { delayMs: batchDelay });
     } catch (err) {
         console.error('Rebuild failed:', err);
     }
