@@ -330,7 +330,7 @@ export default function SmartCart() {
       <div className="space-y-6">
 
       {/* Suggested for Today */}
-      {suggestions && suggestions.status === 'draft' && suggestions.items && suggestions.items.length > 0 &&
+      {(loadingSuggestions || (suggestions && suggestions.status === 'draft')) &&
           <TooltipProvider>
           <Card className="border-indigo-100 bg-indigo-50/30 dark:bg-indigo-900/10 dark:border-indigo-900">
               <CardHeader className="pb-3">
@@ -339,6 +339,7 @@ export default function SmartCart() {
                           <CardTitle className="text-lg flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
                               <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                               Suggested for Today
+                              {loadingSuggestions && <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />}
                           </CardTitle>
                           <Dialog>
                               <DialogTrigger asChild>
@@ -492,9 +493,11 @@ export default function SmartCart() {
                                   Refresh
                               </Button>
                           </div>
+                          {suggestions?.items?.length > 0 && (
                           <Badge variant="outline" className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
                               {suggestions.items.length} items
                           </Badge>
+                      )}
                       </div>
                   </div>
               </CardHeader>
@@ -600,11 +603,13 @@ export default function SmartCart() {
                                   </div>
                               </div>
                           </div>
-                  )}
-                  </div>
-                  
-                  <div className="mt-4 flex gap-3">
-                      <Button
+                          )}
+                          </div>
+                          )}
+
+                          {suggestions?.items?.length > 0 && (
+                          <div className="mt-4 flex gap-3">
+                              <Button
                     className="flex-1 bg-indigo-600 hover:bg-indigo-700"
                     onClick={() => {
                       suggestions.items.forEach((item) => {
@@ -651,6 +656,8 @@ export default function SmartCart() {
                           </button>
                       </div>
                 }
+                  </div>
+                  )}
               </CardContent>
               </Card>
               </TooltipProvider>
