@@ -166,6 +166,18 @@ export default function SmartCart() {
       });
       setStoreComparisons(response.data.topStores || []);
       setOptimizedCart(response.data.optimizedCart || null);
+      
+      // Extract prices for items from the best store (first comparison)
+      if (response.data.topStores?.length > 0) {
+        const bestStore = response.data.topStores[0];
+        const prices = {};
+        if (bestStore.itemPrices) {
+          bestStore.itemPrices.forEach(ip => {
+            prices[ip.gtin] = ip.price;
+          });
+        }
+        setItemPrices(prices);
+      }
     } catch (error) {
       console.error('Failed to load comparisons', error);
     } finally {
