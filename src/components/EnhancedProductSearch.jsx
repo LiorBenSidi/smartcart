@@ -108,27 +108,44 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                         { gtin: { $regex: searchTerm, $options: 'i' } },
                         { brand_name: { $regex: searchTerm, $options: 'i' } }
                     ]
-                }, undefined, 100);
+                }, undefined, 200);
                 
-                // If no filters are chosen, get top 3 cheapest from each chain
+                // Count unique chains per GTIN
+                const chainCountByGtin = {};
+                const bestProductByGtin = {};
+                results.forEach(product => {
+                    if (!product.gtin) return;
+                    if (!chainCountByGtin[product.gtin]) {
+                        chainCountByGtin[product.gtin] = new Set();
+                        bestProductByGtin[product.gtin] = product;
+                    }
+                    if (product.chain_id) {
+                        chainCountByGtin[product.gtin].add(product.chain_id);
+                    }
+                    // Keep the product with lowest price as representative
+                    if (product.current_price && (!bestProductByGtin[product.gtin].current_price || 
+                        product.current_price < bestProductByGtin[product.gtin].current_price)) {
+                        bestProductByGtin[product.gtin] = product;
+                    }
+                });
+                
+                // If no filters are chosen, prioritize by chain count then show best price per GTIN
                 let finalResults = results;
                 if (!hasActiveFilters) {
-                    const byChain = {};
-                    results.forEach(product => {
-                        if (product.chain_id && product.current_price) {
-                            if (!byChain[product.chain_id]) {
-                                byChain[product.chain_id] = [];
-                            }
-                            byChain[product.chain_id].push(product);
-                        }
+                    // Get unique products (one per GTIN), sorted by chain count desc, then price asc
+                    const uniqueProducts = Object.entries(bestProductByGtin).map(([gtin, product]) => ({
+                        ...product,
+                        chainCount: chainCountByGtin[gtin]?.size || 0
+                    }));
+                    
+                    uniqueProducts.sort((a, b) => {
+                        // First by chain count (descending)
+                        if (b.chainCount !== a.chainCount) return b.chainCount - a.chainCount;
+                        // Then by price (ascending)
+                        return (a.current_price || 999999) - (b.current_price || 999999);
                     });
                     
-                    // Get top 3 cheapest from each chain
-                    finalResults = [];
-                    Object.values(byChain).forEach(chainProducts => {
-                        const sorted = chainProducts.sort((a, b) => a.current_price - b.current_price);
-                        finalResults.push(...sorted.slice(0, 3));
-                    });
+                    finalResults = uniqueProducts;
                 } else {
                     // Apply filters and sorting
                     finalResults = applyFiltersAndSort(results);
