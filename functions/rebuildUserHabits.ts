@@ -24,13 +24,17 @@ export default Deno.serve(async (req) => {
         const results = [];
 
         for (const targetUser of batchUsers) {
+            console.log(`[rebuildUserHabits] Processing user: ${targetUser.email}`);
+            
             // 2. Fetch all receipts for this user, sorted by date
             // We use 'created_by' because receipts are owned by the user
+            console.log(`[rebuildUserHabits] Fetching receipts for ${targetUser.email}...`);
             const receipts = await svc.entities.Receipt.filter(
                 { created_by: targetUser.email }, 
                 'purchased_at', // sort by date ascending (oldest first)
                 1000 // limit per user
             );
+            console.log(`[rebuildUserHabits] Found ${receipts.length} receipts for ${targetUser.email}`);
 
             if (receipts.length === 0) {
                 results.push({ email: targetUser.email, status: 'no_receipts' });
@@ -41,10 +45,16 @@ export default Deno.serve(async (req) => {
             // We need to find them first.
             // Note: If habits table is huge, this might be slow.
             // Using filter by user_id if possible, or created_by
+            console.log(`[rebuildUserHabits] Fetching existing habits for ${targetUser.email}...`);
             const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
-            for (const h of existingHabits) {
+            console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
+            
+            for (let i = 0; i < existingHabits.length; i++) {
+                const h = existingHabits[i];
+                console.log(`[rebuildUserHabits] Deleting habit ${i + 1}/${existingHabits.length}: ${h.id}`);
                 await svc.entities.UserProductHabit.delete(h.id);
             }
+            console.log(`[rebuildUserHabits] Deleted all existing habits for ${targetUser.email}`);
 
             // 4. Re-calculate habits
             const habitsMap = new Map(); // productId -> habit data
