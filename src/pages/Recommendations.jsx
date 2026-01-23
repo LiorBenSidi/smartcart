@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Check } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-
+import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format } from 'date-fns';
@@ -219,27 +219,17 @@ export default function Recommendations() {
   const [runId, setRunId] = useState(null);
   const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
   const [insights, setInsights] = useState([]);
-  const [smartTips, setSmartTips] = useState(() => {
-    const saved = localStorage.getItem('smartTips');
-    return saved ? JSON.parse(saved) : [];
-  }); // New Smart Tips
+  const [smartTips, setSmartTips] = useState([]); // New Smart Tips
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
-  const [aiInsights, setAiInsights] = useState(() => {
-    const saved = localStorage.getItem('aiInsights');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [aiInsights, setAiInsights] = useState(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showAiInsights, setShowAiInsights] = useState(false);
   const [showSmartTips, setShowSmartTips] = useState(false);
-  const [dashboardData, setDashboardData] = useState(() => {
-    const saved = localStorage.getItem('dashboardData');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [dashboardData, setDashboardData] = useState(null);
   const [receipts, setReceipts] = useState([]);
-  const [smartTipsLoaded, setSmartTipsLoaded] = useState(false);
 
   const fetchAIInsights = async () => {
     setLoadingAiInsights(true);
@@ -248,8 +238,6 @@ export default function Recommendations() {
       if (response.data.success) {
         setAiInsights(response.data.aiInsights);
         setDashboardData(response.data.rawData);
-        localStorage.setItem('aiInsights', JSON.stringify(response.data.aiInsights));
-        localStorage.setItem('dashboardData', JSON.stringify(response.data.rawData));
       }
     } catch (error) {
       console.error("Error fetching AI insights", error);
@@ -278,14 +266,12 @@ export default function Recommendations() {
           const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
           if (tipRes.data && tipRes.data.tips) {
               setSmartTips(tipRes.data.tips);
-              localStorage.setItem('smartTips', JSON.stringify(tipRes.data.tips));
           }
       } catch (e) {
           console.error("Smart tips failed", e);
           toast.error("Failed to refresh tips");
       } finally {
-          setTipsLoading(true);
-          setSmartTipsLoaded(true);
+          setTipsLoading(false);
       }
   };
 
@@ -303,25 +289,18 @@ export default function Recommendations() {
           await base44.functions.invoke('logSmartTipFeedback', { tip, action });
 
           if (action === 'like') {
-              // Mark as liked visually
-              setSmartTips(prev => prev.map(t => 
-                  t === tip ? { ...t, liked: true } : t
-              ));
-              toast.success("תודה! נציג עוד טיפים דומים. הפידבק נשמר בפרופיל שלך.", {
-                  description: "הלייק עוזר לנו להבין מה מתאים לך"
-              });
+              toast.success("Thanks! We'll show more like this.");
+              refreshTips();
           } else if (action === 'dislike') {
               // Remove the disliked tip immediately
               setSmartTips(prev => prev.filter(t => t !== tip));
-              toast.info("הטיפ הוסר. מחפשים טיפים מתאימים יותר...", {
-                  description: "הפידבק נשמר ועוזר לשפר את ההמלצות"
-              });
+              toast.info("Tip hidden. Fetching a new one...");
               // Fetch a new tip
               refreshTips();
           }
       } catch (e) {
           console.error(e);
-          toast.error("שגיאה בשמירת הפידבק");
+          toast.error("Failed to log feedback");
       }
   };
 
@@ -368,19 +347,12 @@ export default function Recommendations() {
             };
             setCandidates(newCandidates);
 
-            // Generate Smart Tips only if not already loaded from localStorage
-            const savedTips = localStorage.getItem('smartTips');
-            if (!savedTips || JSON.parse(savedTips).length === 0) {
-                refreshTips(newCandidates);
-            } else {
-                setSmartTipsLoaded(true);
-            }
+            // Generate Smart Tips
+            refreshTips(newCandidates);
         }
 
-        // Fetch AI Insights only if not already cached
-        if (!aiInsights) {
-            fetchAIInsights();
-        }
+        // Fetch AI Insights
+        fetchAIInsights();
 
         // Fetch receipts for analytics
         const isAdmin = currentUser.role === 'admin';
@@ -628,7 +600,7 @@ export default function Recommendations() {
                   </div>
               ) : smartTips.length > 0 ? (
                   <div className="grid grid-cols-1 gap-3">
-                      {smartTips.slice(0, 3).map((tip, i) => {
+                      {smartTips.map((tip, i) => {
                           const isSaving = tip.type === 'money_saving';
                           const isHealth = tip.type === 'health_dietary';
                           
@@ -690,105 +662,26 @@ export default function Recommendations() {
                                             {tip.message}
                                         </p>
                                         {tip.related_entity_name && (
-                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                <span className="inline-block text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full font-medium border border-indigo-200 dark:border-indigo-700">
-                                                    🏷️ {tip.related_entity_name}
-                                                </span>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className={`h-7 text-xs gap-1 transition-all duration-300 ${
-                                                        tip.addedToCart 
-                                                            ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white' 
-                                                            : 'bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400'
-                                                    }`}
-                                                    onClick={async () => {
-                                                        // Small delay to avoid rate limiting
-                                                        await new Promise(resolve => setTimeout(resolve, 300));
-                                                        
-                                                        // Search for the product by name
-                                                        const products = await base44.entities.Product.filter({
-                                                            canonical_name: { $regex: tip.related_entity_name, $options: 'i' }
-                                                        }, 'current_price', 1);
-                                                        
-                                                        if (products.length > 0) {
-                                                            const product = products[0];
-                                                            // Get current cart from localStorage
-                                                            const savedCart = localStorage.getItem('smartCartItems');
-                                                            const cartItems = savedCart ? JSON.parse(savedCart) : [];
-                                                            
-                                                            // Check if already in cart
-                                                            const existing = cartItems.find(item => item.gtin === product.gtin);
-                                                            if (existing) {
-                                                                existing.quantity += 1;
-                                                            } else {
-                                                                cartItems.push({
-                                                                    gtin: product.gtin,
-                                                                    name: product.canonical_name,
-                                                                    quantity: 1,
-                                                                    fromSuggestion: true
-                                                                });
-                                                            }
-                                                            
-                                                            // Save back to localStorage
-                                                            localStorage.setItem('smartCartItems', JSON.stringify(cartItems));
-                                                            
-                                                            // Update UI to show added
-                                                            setSmartTips(prev => prev.map(t => 
-                                                                t === tip ? { ...t, addedToCart: true } : t
-                                                            ));
-                                                            
-                                                            toast.success(`Added ${product.canonical_name} to cart`);
-                                                            
-                                                            // Reset after 2 seconds
-                                                            setTimeout(() => {
-                                                                setSmartTips(prev => prev.map(t => 
-                                                                    t.related_entity_name === tip.related_entity_name ? { ...t, addedToCart: false } : t
-                                                                ));
-                                                            }, 2000);
-                                                        } else {
-                                                            toast.error("Product not found");
-                                                        }
-                                                    }}
-                                                >
-                                                    {tip.addedToCart ? (
-                                                        <>
-                                                            <Check className="w-3 h-3" />
-                                                            Added!
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <ShoppingCart className="w-3 h-3" />
-                                                            Add to Cart
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </div>
+                                            <span className="inline-block mt-2 text-xs bg-white/80 px-2 py-1 rounded border shadow-sm">
+                                                Related: {tip.related_entity_name}
+                                            </span>
                                         )}
                                     </div>
                                     <div className="flex flex-col gap-1 ml-auto shrink-0">
-                                        {tip.liked ? (
-                                            <div className="p-1.5 bg-green-100 dark:bg-green-900/50 rounded text-green-600 dark:text-green-400">
-                                                <ThumbsUp className="w-4 h-4 fill-current" />
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <button 
-                                                    onClick={() => handleTipFeedback(tip, 'like')}
-                                                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
-                                                    title="מועיל - נציג עוד כאלה"
-                                                >
-                                                    <ThumbsUp className="w-4 h-4" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleTipFeedback(tip, 'dislike')}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                                                    title="לא מועיל - הסתר"
-                                                >
-                                                    <ThumbsDown className="w-4 h-4" />
-                                                </button>
-                                            </>
-                                        )}
+                                        <button 
+                                            onClick={() => handleTipFeedback(tip, 'like')}
+                                            className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                                            title="Helpful"
+                                        >
+                                            <ThumbsUp className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleTipFeedback(tip, 'dislike')}
+                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                            title="Not helpful"
+                                        >
+                                            <ThumbsDown className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -826,6 +719,8 @@ export default function Recommendations() {
               </div>
           </section>
       )}
+
+      <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />
 
 
 
