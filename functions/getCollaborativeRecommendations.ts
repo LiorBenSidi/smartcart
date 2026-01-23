@@ -42,33 +42,31 @@ export default Deno.serve(async (req) => {
         }
 
         {
-                const neighborIds = similarUsers.map(su => su.neighbor_user_id);
+        const neighborIds = similarUsers.map(su => su.neighbor_user_id);
+        console.log(`[CF] Processing ${neighborIds.length} neighbors: ${neighborIds.join(', ')}`);
 
-                // Get top products purchased by similar users
-                // We'll process each neighbor
-                for (const neighborId of neighborIds) {
-                    const neighborHabits = await base44.entities.UserProductHabit.filter(
-                        { created_by: neighborId },
-                        '-purchase_count',
-                        10
-                    ).catch(() => []);
+        // Get top products purchased by similar users
+        for (const neighborId of neighborIds) {
+            const neighborHabits = await base44.entities.UserProductHabit.filter(
+                { created_by: neighborId },
+                '-purchase_count',
+                10
+            ).catch(() => []);
+            console.log(`[CF] Neighbor ${neighborId}: Found ${neighborHabits.length} habits`);
 
-                    neighborHabits.forEach(habit => {
-                        collaborativeSuggestions.push({
-                            product_id: habit.product_id,
-                            product_name: habit.product_name,
-                            suggested_qty: Math.round(habit.avg_quantity) || 1,
-                            reason_type: "Collaborative",
-                            // Base confidence dampened, will be boosted if multiple neighbors recommend
-                            confidence: 0.5 * (habit.confidence_score || 0.5), 
-                            evidence: {
-                                similar_users_count: 1,
-                                source: "similar_neighbors"
-                            }
-                        });
-                    });
-                }
-            }
+            neighborHabits.forEach(habit => {
+                collaborativeSuggestions.push({
+                    product_id: habit.product_id,
+                    product_name: habit.product_name,
+                    suggested_qty: Math.round(habit.avg_quantity) || 1,
+                    reason_type: "Collaborative",
+                    confidence: 0.5 * (habit.confidence_score || 0.5), 
+                    evidence: {
+                        similar_users_count: 1,
+                        source: "similar_neighbors"
+                    }
+                });
+            });
         }
 
         // Aggregate by product_id to remove duplicates and boost confidence
