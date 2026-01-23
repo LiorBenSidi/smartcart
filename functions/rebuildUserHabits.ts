@@ -49,10 +49,22 @@ export default Deno.serve(async (req) => {
             const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
             console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
             
-            for (let i = 0; i < existingHabits.length; i++) {
-                const h = existingHabits[i];
-                console.log(`[rebuildUserHabits] Deleting habit ${i + 1}/${existingHabits.length}: ${h.id}`);
-                await svc.entities.UserProductHabit.delete(h.id);
+            // Delete in batches with delays to avoid rate limits
+            const DELETE_BATCH_SIZE = 10;
+            const DELAY_MS = 500;
+            
+            for (let i = 0; i < existingHabits.length; i += DELETE_BATCH_SIZE) {
+                const batch = existingHabits.slice(i, i + DELETE_BATCH_SIZE);
+                console.log(`[rebuildUserHabits] Deleting habits ${i + 1}-${Math.min(i + DELETE_BATCH_SIZE, existingHabits.length)}/${existingHabits.length}`);
+                
+                // Delete batch in parallel
+                await Promise.all(batch.map(h => svc.entities.UserProductHabit.delete(h.id)));
+                
+                // Add delay between batches if more to come
+                if (i + DELETE_BATCH_SIZE < existingHabits.length) {
+                    console.log(`[rebuildUserHabits] Waiting ${DELAY_MS}ms before next delete batch...`);
+                    await new Promise(resolve => setTimeout(resolve, DELAY_MS));
+                }
             }
             console.log(`[rebuildUserHabits] Deleted all existing habits for ${targetUser.email}`);
 
