@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -17,6 +17,164 @@ import {
 import { Badge } from "@/components/ui/badge";
 import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import FrequentItemsCard from '../components/dashboard/FrequentItemsCard';
+
+const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
+
+function AnalyticsDashboard({ receipts, dashboardData }) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
+
+  const thisMonthReceipts = receipts.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const lastMonthReceipts = receipts.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+  });
+
+  const thisMonthTotal = thisMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const lastMonthTotal = lastMonthReceipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  const totalSpent = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+
+  let percentChange = 0;
+  let showTrend = false;
+
+  if (lastMonthTotal > 0) {
+    percentChange = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+    showTrend = true;
+  }
+
+  // Calculate category data from ALL receipts
+  const allCategoryTotals = receipts.reduce((acc, receipt) => {
+    if (receipt.items && Array.isArray(receipt.items)) {
+      receipt.items.forEach(item => {
+        const cat = item.category || 'Other';
+        acc[cat] = (acc[cat] || 0) + (item.total || item.price || 0);
+      });
+    }
+    return acc;
+  }, {});
+  
+  const categoryData = Object.entries(allCategoryTotals)
+    .filter(([_, amount]) => amount > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, amount]) => ({ name, amount }));
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Overview Cards */}
+      <section className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <Card className="bg-indigo-600 text-white border-none shadow-lg shadow-indigo-200">
+          <CardContent className="p-5">
+            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Spent This Month</p>
+            <h2 className="text-2xl font-bold mt-1">₪{thisMonthTotal.toFixed(2)}</h2>
+            {showTrend ? (
+              <div className="flex items-center mt-2 text-indigo-200 text-xs">
+                <ArrowUpRight className={`w-3 h-3 mr-1 ${percentChange < 0 ? 'rotate-180' : ''}`} />
+                <span>{percentChange > 0 ? '+' : ''}{percentChange.toFixed(0)}% vs last month</span>
+              </div>
+            ) : (
+              <div className="h-6"></div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
+          <CardContent className="p-5">
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total Receipts</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{receipts.length}</h2>
+            <div className="flex items-center mt-2 text-gray-400 text-xs">
+              <Plus className="w-3 h-3 mr-1" />
+              <span>{thisMonthReceipts.length} new this month</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
+          <CardContent className="p-5">
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Avg Receipt</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+              ₪{dashboardData?.avgReceiptValue || (receipts.length > 0 ? (totalSpent / receipts.length).toFixed(2) : '0.00')}
+            </h2>
+            <div className="flex items-center mt-2 text-gray-400 text-xs">
+              <ShoppingBag className="w-3 h-3 mr-1" />
+              <span>Per shopping trip</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-none shadow-sm">
+          <CardContent className="p-5">
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Last 30 Days</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+              ₪{dashboardData?.last30DaysTotal || '0.00'}
+            </h2>
+            <div className="flex items-center mt-2 text-gray-400 text-xs">
+              <Calendar className="w-3 h-3 mr-1" />
+              <span>Recent spending</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Categories Pie Chart */}
+        {categoryData.length > 0 && (
+          <Card className="border-none shadow-sm col-span-2 lg:col-span-2">
+            <CardContent className="p-5 h-full flex flex-col">
+              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">Top Categories</p>
+              <div className="flex-1 min-h-[80px]">
+                <ResponsiveContainer width="100%" height={80}>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      dataKey="amount"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={35}
+                      label={false}
+                      labelLine={false}
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => `₪${value.toFixed(2)}`}
+                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                {categoryData.map((cat, idx) => (
+                  <span key={idx} className="text-[10px] flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
+                    {cat.name}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      {/* Frequent Items */}
+      {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && (
+        <FrequentItemsCard items={dashboardData.frequentItems} />
+      )}
+    </div>
+  );
+}
 
 export default function Recommendations() {
   const [loading, setLoading] = useState(true);
@@ -29,6 +187,9 @@ export default function Recommendations() {
   const [selectedStore, setSelectedStore] = useState(null);
   const [aiInsights, setAiInsights] = useState(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [receipts, setReceipts] = useState([]);
 
   const fetchAIInsights = async () => {
     setLoadingAiInsights(true);
@@ -36,11 +197,26 @@ export default function Recommendations() {
       const response = await base44.functions.invoke('generateDashboardInsights', {});
       if (response.data.success) {
         setAiInsights(response.data.aiInsights);
+        setDashboardData(response.data.rawData);
       }
     } catch (error) {
       console.error("Error fetching AI insights", error);
     } finally {
       setLoadingAiInsights(false);
+    }
+  };
+
+  const fetchReceipts = async (userEmail, isAdmin) => {
+    try {
+      let data;
+      if (isAdmin) {
+        data = await base44.entities.Receipt.list('-date', 100);
+      } else {
+        data = await base44.entities.Receipt.filter({ created_by: userEmail }, '-date', 100);
+      }
+      setReceipts(data);
+    } catch (error) {
+      console.error("Error fetching receipts", error);
     }
   };
 
@@ -138,6 +314,10 @@ export default function Recommendations() {
         // Fetch AI Insights
         fetchAIInsights();
 
+        // Fetch receipts for analytics
+        const isAdmin = currentUser.role === 'admin';
+        fetchReceipts(currentUser.email, isAdmin);
+
         // 2. Fetch Insights
         const insightsRes = await base44.entities.Insight.filter({ 
             user_id: currentUser.email, 
@@ -225,6 +405,10 @@ export default function Recommendations() {
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 text-sm">
+                            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                                This page provides personalized insights and recommendations based on your shopping history. 
+                                Below you'll find technical details about how each section works and what data is used to generate your personalized content.
+                            </p>
                             <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded border border-indigo-100 dark:border-indigo-800">
                                 <h4 className="font-semibold mb-2 text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
                                     <Sparkles className="w-4 h-4" /> 
@@ -287,6 +471,24 @@ export default function Recommendations() {
         </div>
         <p className="text-gray-500 dark:text-gray-400">AI-powered insights, smart tips, and personalized recommendations based on your shopping habits.</p>
       </div>
+
+      {/* Analytics Dashboard Toggle */}
+      <Button
+        variant="outline"
+        onClick={() => setShowAnalytics(!showAnalytics)}
+        className="w-full justify-between"
+      >
+        <span className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4" />
+          Analytics Dashboard
+        </span>
+        {showAnalytics ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </Button>
+
+      {/* Analytics Dashboard Content */}
+      {showAnalytics && (
+        <AnalyticsDashboard receipts={receipts} dashboardData={dashboardData} />
+      )}
 
       {/* AI Insights Section */}
       <div className="flex items-center justify-between mb-4">
