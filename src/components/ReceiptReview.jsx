@@ -81,6 +81,19 @@ export default function ReceiptReview({ receipt, onConfirm }) {
       // Update DB
       await base44.entities.Receipt.update(receipt.id, payload);
 
+      // Trigger incremental habit and vector updates (sequential: habits first, then vectors)
+      const userId = receipt.created_by;
+      if (userId) {
+        console.log("Starting incremental updates for user:", userId);
+        base44.functions.invoke('rebuildUserHabits', { userId, mode: 'incremental' })
+          .then(res => {
+            console.log("Incremental habit rebuild completed", res.data);
+            return base44.functions.invoke('buildUserVectors', { userId, mode: 'incremental' });
+          })
+          .then(res => console.log("Incremental vector rebuild completed", res.data))
+          .catch(e => console.error("Incremental update failed", e));
+      }
+
       // Include the original receipt's created_by in the callback
       if (onConfirm) onConfirm({ ...payload, created_by: receipt.created_by });
     } catch (error) {
