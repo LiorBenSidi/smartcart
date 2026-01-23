@@ -74,6 +74,14 @@ export default function Receipt() {
     } catch (e) {
       console.error("Analysis failed", e);
     }
+
+    // Trigger incremental habit and vector updates in the background
+    const userId = confirmedReceipt.created_by;
+    if (userId) {
+      // Fire and forget - don't await to avoid blocking UI
+      base44.functions.invoke('rebuildUserHabits', { userId, mode: 'incremental' }).catch(e => console.error("Incremental habit rebuild failed", e));
+      base44.functions.invoke('buildUserVectors', { userId, mode: 'incremental' }).catch(e => console.error("Incremental vector rebuild failed", e));
+    }
   };
 
   const handleItemChange = (index, field, value) => {
