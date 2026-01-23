@@ -37,6 +37,7 @@ export default Deno.serve(async (req) => {
         // Admin or Service Role required for bulk operations
         // If userId is provided, we can allow user to rebuild their own
         const payload = await req.json().catch(() => ({}));
+        const mode = payload.mode || 'full'; // 'full' = rebuild from scratch, 'incremental' = update based on recent changes
         
         let targetUsers = [];
         let hasMore = false;
@@ -69,6 +70,45 @@ export default Deno.serve(async (req) => {
         for (const targetUser of targetUsers) {
             const userId = targetUser.email;
             try {
+                // INCREMENTAL MODE: Check if we can skip based on recent changes
+                if (mode === 'incremental') {
+                    // Get the latest vector snapshot for this user
+                    const existingSnapshots = await base44.asServiceRole.entities.UserVectorSnapshot.filter(
+                        { user_id: userId },
+                        '-computed_at',
+                        1
+                    );
+                    const lastSnapshot = existingSnapshots[0];
+                    const lastComputedAt = lastSnapshot ? new Date(lastSnapshot.computed_at) : null;
+                    
+                    if (lastComputedAt) {
+                        // Check if there are new receipts, habits, or feedback since last computation
+                        const [newReceipts, newHabits, newFeedback] = await Promise.all([
+                            base44.asServiceRole.entities.Receipt.filter({ created_by: userId }, '-created_date', 1),
+                            base44.asServiceRole.entities.UserProductHabit.filter({ created_by: userId }, '-last_calculated_at', 1),
+                            base44.asServiceRole.entities.RecommendationFeedback.filter({ user_id: userId }, '-created_at', 1)
+                        ]);
+                        
+                        const latestReceiptDate = newReceipts[0] ? new Date(newReceipts[0].created_date) : null;
+                        const latestHabitDate = newHabits[0] ? new Date(newHabits[0].last_calculated_at) : null;
+                        const latestFeedbackDate = newFeedback[0] ? new Date(newFeedback[0].created_at) : null;
+                        
+                        const hasNewData = 
+                            (latestReceiptDate && latestReceiptDate > lastComputedAt) ||
+                            (latestHabitDate && latestHabitDate > lastComputedAt) ||
+                            (latestFeedbackDate && latestFeedbackDate > lastComputedAt);
+                        
+                        if (!hasNewData) {
+                            console.log(`[buildUserVectors] INCREMENTAL: No new data for ${userId} since ${lastComputedAt.toISOString()}, skipping`);
+                            results.push({ userId, status: 'skipped', mode: 'incremental', reason: 'no_new_data' });
+                            continue;
+                        }
+                        console.log(`[buildUserVectors] INCREMENTAL: Found new data for ${userId}, rebuilding vectors`);
+                    } else {
+                        console.log(`[buildUserVectors] INCREMENTAL: No existing snapshot for ${userId}, building from scratch`);
+                    }
+                }
+                
                 // 1. Build Profile Vector
                 // Use service role to access profiles created by other users if needed
                 const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: userId });
@@ -195,10 +235,10 @@ export default Deno.serve(async (req) => {
                     computed_at: new Date().toISOString()
                 });
 
-                results.push({ userId, status: 'success' });
+                results.push({ userId, status: 'success', mode });
             } catch (err) {
                 console.error(`Error building vector for ${userId}:`, err);
-                results.push({ userId, status: 'error', error: err.message });
+                results.push({ userId, status: 'error', error: err.message, mode });
             }
         }
 
@@ -281,7 +321,8 @@ export default Deno.serve(async (req) => {
             success: true,
             hasMore: hasMore,
             results: results,
-            message: `Processed ${targetUsers.length} users`
+            message: `Processed ${targetUsers.length} users`,
+            mode
         });
 
     } catch (error) {

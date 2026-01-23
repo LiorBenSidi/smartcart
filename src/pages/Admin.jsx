@@ -171,7 +171,7 @@ export default function Admin() {
 
   const handleRebuildUserVectors = async () => {
     try {
-        await processManager.startProcess('buildUserVectors', { limit: 10 }, { delayMs: batchDelay });
+        await processManager.startProcess('buildUserVectors', { limit: 10, mode: 'full' }, { delayMs: batchDelay });
     } catch (err) {
         console.error('Vector rebuild failed:', err);
     }
@@ -180,7 +180,7 @@ export default function Admin() {
   const handleRebuildUserHabits = async () => {
     try {
         // Use 60 second delay between users to avoid rate limits
-        await processManager.startProcess('rebuildUserHabits', { limit: 1, maxHabitsPerBatch }, { delayMs: 60000 });
+        await processManager.startProcess('rebuildUserHabits', { limit: 1, maxHabitsPerBatch, mode: 'full' }, { delayMs: 60000 });
     } catch (err) {
         console.error('Rebuild failed:', err);
     }
