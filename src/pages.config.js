@@ -6,7 +6,6 @@ import NearbyStores from './pages/NearbyStores';
 import PriceComparison from './pages/PriceComparison';
 import Profile from './pages/Profile';
 import Receipt from './pages/Receipt';
-import Recommendations from './pages/Recommendations';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
 import Main from './pages/Main';
@@ -22,7 +21,6 @@ export const PAGES = {
     "PriceComparison": PriceComparison,
     "Profile": Profile,
     "Receipt": Receipt,
-    "Recommendations": Recommendations,
     "SmartCart": SmartCart,
     "Upload": Upload,
     "Main": Main,
