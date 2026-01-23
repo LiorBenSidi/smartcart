@@ -36,7 +36,6 @@ export default function SmartCart() {
   const [weeklyWeight, setWeeklyWeight] = useState(0.5);
   const [collaborativeWeight, setCollaborativeWeight] = useState(0.5);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
-  const [recentlyAdded, setRecentlyAdded] = useState(new Set());
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -587,19 +586,12 @@ export default function SmartCart() {
                                   <div className="flex flex-col gap-2 items-center">
                                       <Button
                           size="sm"
-                          className={`h-8 w-8 p-0 mb-1 transition-all ${recentlyAdded.has(item.product_id) ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                          className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 mb-1"
                           onClick={() => {
                             addToCart({ gtin: item.product_id, canonical_name: item.product_name });
-                            setRecentlyAdded(prev => new Set([...prev, item.product_id]));
-                            setTimeout(() => {
-                              setRecentlyAdded(prev => {
-                                const next = new Set(prev);
-                                next.delete(item.product_id);
-                                return next;
-                              });
-                            }, 2000);
                           }}>
-                                          {recentlyAdded.has(item.product_id) ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+
+                                          <Plus className="w-4 h-4" />
                                       </Button>
                                       <div className="flex gap-1">
                                           <Button
