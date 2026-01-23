@@ -1143,6 +1143,7 @@ export default function SmartCart() {
                             if (needsPrices) {
                               const gtins = cart.items.map(item => item.gtin);
                               try {
+                                // First fetch by GTIN
                                 const allProducts = await base44.entities.Product.filter({
                                   gtin: { $in: gtins }
                                 }, '-updated_date', 500);
@@ -1158,11 +1159,50 @@ export default function SmartCart() {
                                       pricesByGtin[product.gtin][product.chain_id] = {
                                         price: product.current_price,
                                         chain_id: product.chain_id,
-                                        store_id: product.store_id
+                                        store_id: product.store_id,
+                                        isAlternative: false
                                       };
                                     }
                                   }
                                 });
+                                
+                                // For items missing prices in some chains, search by name
+                                const allChainIds = new Set();
+                                Object.values(pricesByGtin).forEach(prices => {
+                                  Object.keys(prices).forEach(chainId => allChainIds.add(chainId));
+                                });
+                                
+                                // Search alternatives by name for missing chain prices
+                                for (const item of cart.items) {
+                                  const itemPrices = pricesByGtin[item.gtin] || {};
+                                  const missingChains = [...allChainIds].filter(chainId => !itemPrices[chainId]);
+                                  
+                                  if (missingChains.length > 0 && item.name) {
+                                    // Search by canonical_name containing the item name
+                                    const nameWords = item.name.split(' ').slice(0, 3).join(' ');
+                                    const alternatives = await base44.entities.Product.filter({
+                                      canonical_name: { $regex: nameWords, $options: 'i' },
+                                      chain_id: { $in: missingChains }
+                                    }, '-updated_date', 100);
+                                    
+                                    alternatives.forEach(alt => {
+                                      if (alt.chain_id && alt.current_price != null) {
+                                        if (!pricesByGtin[item.gtin]) {
+                                          pricesByGtin[item.gtin] = {};
+                                        }
+                                        if (!pricesByGtin[item.gtin][alt.chain_id]) {
+                                          pricesByGtin[item.gtin][alt.chain_id] = {
+                                            price: alt.current_price,
+                                            chain_id: alt.chain_id,
+                                            store_id: alt.store_id,
+                                            isAlternative: true,
+                                            altName: alt.canonical_name
+                                          };
+                                        }
+                                      }
+                                    });
+                                  }
+                                }
                                 
                                 // Update the cart in state with fetched prices
                                 const updatedItems = cart.items.map(item => ({
@@ -1239,20 +1279,30 @@ export default function SmartCart() {
                                       </td>
                                       <td className="text-center p-1.5 text-gray-300">{item.quantity}</td>
                                       {chainIds.map(chainId => {
-                                        const price = itemChainPrices[chainId]?.price;
+                                        const priceData = itemChainPrices[chainId];
+                                        const price = priceData?.price;
+                                        const isAlternative = priceData?.isAlternative;
                                         const isMin = price != null && price === minPrice && minPrice !== maxPrice;
                                         const isMax = price != null && price === maxPrice && minPrice !== maxPrice;
 
                                         return (
                                           <td 
                                             key={chainId} 
-                                            className={`text-center p-1.5 font-medium ${
-                                              isMin ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 
-                                              isMax ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' : 
-                                              'text-gray-600 dark:text-gray-400'
-                                            }`}
+                                            className={`text-center p-1.5 font-medium relative ${
+                                              isMin ? 'bg-green-900/60 text-green-400' : 
+                                              isMax ? 'bg-red-900/60 text-red-400' : 
+                                              'text-gray-400'
+                                            } ${isAlternative ? 'border-2 border-dashed border-yellow-500' : ''}`}
+                                            title={isAlternative ? `Alternative: ${priceData.altName}` : ''}
                                           >
-                                            {price != null ? `₪${price.toFixed(2)}` : '-'}
+                                            {price != null ? (
+                                              <span className="flex flex-col items-center">
+                                                <span>₪{price.toFixed(2)}</span>
+                                                {isAlternative && (
+                                                  <span className="text-[8px] text-yellow-400 font-normal">~alt</span>
+                                                )}
+                                              </span>
+                                            ) : '-'}
                                           </td>
                                         );
                                       })}
