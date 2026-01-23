@@ -88,8 +88,9 @@ export default function AIInsightsPanel({ insights }) {
                                 </div>
                             </div>
                         ))}
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
             )}
         </div>
     );
