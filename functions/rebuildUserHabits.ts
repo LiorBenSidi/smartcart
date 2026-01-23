@@ -47,13 +47,13 @@ export default Deno.serve(async (req) => {
         const results = [];
 
         for (const targetUser of batchUsers) {
-            // 2. Fetch all receipts for this user, sorted by date
-            // We use 'created_by' because receipts are owned by the user
-            const receipts = await svc.entities.Receipt.filter(
+            // 2. Fetch all receipts for this user, sorted by date (with retry)
+            await delay(200); // Small delay before fetching receipts
+            const receipts = await withRetry(() => svc.entities.Receipt.filter(
                 { created_by: targetUser.email }, 
                 'purchased_at', // sort by date ascending (oldest first)
                 1000 // limit per user
-            );
+            ));
 
             if (receipts.length === 0) {
                 results.push({ email: targetUser.email, status: 'no_receipts' });
