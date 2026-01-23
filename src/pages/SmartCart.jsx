@@ -879,6 +879,120 @@ export default function SmartCart() {
                 </div>
               </div>
             )}
+
+            {/* Price Comparison Table */}
+            {cartItems.length > 0 && Object.keys(cartItemPrices).length > 0 && (() => {
+              // Get all unique chain IDs that have prices for any cart item
+              const allChainIds = new Set();
+              Object.values(cartItemPrices).forEach(prices => {
+                Object.keys(prices).forEach(chainId => allChainIds.add(chainId));
+              });
+              const chainIds = Array.from(allChainIds);
+              const chainsInTable = chainIds.map(id => chains.find(c => c.id === id)).filter(Boolean);
+
+              if (chainsInTable.length === 0) return null;
+
+              return (
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="text-left p-2 font-semibold text-gray-700 sticky left-0 bg-gray-50">Product</th>
+                          {chainsInTable.map(chain => (
+                            <th key={chain.id} className="text-center p-2 font-semibold text-gray-700 min-w-[80px]">
+                              {chain.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cartItems.map((item, idx) => {
+                          const itemPricesForGtin = cartItemPrices[item.gtin] || {};
+                          const prices = chainIds.map(chainId => itemPricesForGtin[chainId]?.price);
+                          const validPrices = prices.filter(p => p != null);
+                          const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : null;
+                          const maxPrice = validPrices.length > 0 ? Math.max(...validPrices) : null;
+
+                          return (
+                            <tr key={item.gtin} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="p-2 font-medium text-gray-900 sticky left-0 bg-inherit max-w-[150px] truncate" title={item.name}>
+                                {item.name}
+                                {item.quantity > 1 && <span className="text-gray-500 text-xs ml-1">×{item.quantity}</span>}
+                              </td>
+                              {chainIds.map(chainId => {
+                                const price = itemPricesForGtin[chainId]?.price;
+                                const isMin = price != null && price === minPrice && minPrice !== maxPrice;
+                                const isMax = price != null && price === maxPrice && minPrice !== maxPrice;
+
+                                return (
+                                  <td 
+                                    key={chainId} 
+                                    className={`text-center p-2 font-medium ${
+                                      isMin ? 'bg-green-100 text-green-700' : 
+                                      isMax ? 'bg-red-100 text-red-700' : 
+                                      'text-gray-600'
+                                    }`}
+                                  >
+                                    {price != null ? `₪${price.toFixed(2)}` : '-'}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                        {/* Total Row */}
+                        <tr className="border-t-2 border-gray-300 bg-gray-100 font-bold">
+                          <td className="p-2 text-gray-900 sticky left-0 bg-gray-100">Total</td>
+                          {chainIds.map(chainId => {
+                            let total = 0;
+                            let hasAllItems = true;
+                            cartItems.forEach(item => {
+                              const price = cartItemPrices[item.gtin]?.[chainId]?.price;
+                              if (price != null) {
+                                total += price * item.quantity;
+                              } else {
+                                hasAllItems = false;
+                              }
+                            });
+
+                            const allTotals = chainIds.map(cid => {
+                              let t = 0;
+                              let valid = true;
+                              cartItems.forEach(item => {
+                                const p = cartItemPrices[item.gtin]?.[cid]?.price;
+                                if (p != null) t += p * item.quantity;
+                                else valid = false;
+                              });
+                              return valid ? t : null;
+                            }).filter(t => t != null);
+
+                            const minTotal = allTotals.length > 0 ? Math.min(...allTotals) : null;
+                            const maxTotal = allTotals.length > 0 ? Math.max(...allTotals) : null;
+                            const isMinTotal = hasAllItems && total === minTotal && minTotal !== maxTotal;
+                            const isMaxTotal = hasAllItems && total === maxTotal && minTotal !== maxTotal;
+
+                            return (
+                              <td 
+                                key={chainId} 
+                                className={`text-center p-2 ${
+                                  isMinTotal ? 'bg-green-200 text-green-800' : 
+                                  isMaxTotal ? 'bg-red-200 text-red-800' : 
+                                  'text-gray-700'
+                                }`}
+                              >
+                                {hasAllItems ? `₪${total.toFixed(2)}` : '-'}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowSaveDialog(false); setEditingCartId(null); setCartName(''); }}>
                 Cancel
