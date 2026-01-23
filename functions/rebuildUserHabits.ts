@@ -1,5 +1,8 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 
+// Helper to add delay between API calls to avoid rate limiting
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
