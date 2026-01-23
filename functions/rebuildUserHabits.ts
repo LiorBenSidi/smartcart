@@ -52,12 +52,12 @@ export default Deno.serve(async (req) => {
             console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
             
             // Only delete on first chunk for this user (habitOffset === 0)
-            if ((payload.habitOffset || 0) === 0) {
-                for (const h of existingHabits) {
-                    await svc.entities.UserProductHabit.delete(h.id);
-                }
-                console.log(`[rebuildUserHabits] Deleted all existing habits for ${targetUser.email}`);
-            } else {
+            if ((payload.habitOffset || 0) === 0 && existingHabits.length > 0) {
+                // Use bulkDelete to avoid hitting entity_delete rate limit (100/30s)
+                const idsToDelete = existingHabits.map(h => h.id);
+                await svc.entities.UserProductHabit.bulkDelete(idsToDelete);
+                console.log(`[rebuildUserHabits] Bulk deleted ${existingHabits.length} existing habits for ${targetUser.email}`);
+            } else if ((payload.habitOffset || 0) > 0) {
                 console.log(`[rebuildUserHabits] Skipping delete (continuing habit creation from offset ${payload.habitOffset})`);
             }
 
