@@ -320,7 +320,7 @@ export default function Receipt() {
     return (
       <div className="mx-auto min-h-screen max-w-6xl">
               <div className="flex items-center gap-2 mb-6">
-                <Link to={createPageUrl('Home')}>
+                <Link to={createPageUrl('Upload')}>
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                     <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </Button>
@@ -351,7 +351,7 @@ export default function Receipt() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-4">
-          <Link to={createPageUrl('Home')}>
+          <Link to={createPageUrl('Upload')}>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </Button>
@@ -384,7 +384,7 @@ export default function Receipt() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-4">
-          <Link to={createPageUrl('Home')}>
+          <Link to={createPageUrl('Upload')}>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </Button>
@@ -434,7 +434,7 @@ export default function Receipt() {
     <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-                <Link to={createPageUrl('Home')}>
+                <Link to={createPageUrl('Upload')}>
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </Button>
