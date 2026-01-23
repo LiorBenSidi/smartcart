@@ -257,17 +257,6 @@ export default function Recommendations() {
                                 </div>
                             </div>
                             
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Recommendation Engine</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Products, categories, and stores are recommended using:</p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li><strong>Location Context:</strong> Your GPS coordinates (if permitted) are used to find nearby store inventory.</li>
-                                        <li><strong>Lookback Period:</strong> Analyzes your past 90 days of shopping behavior.</li>
-                                        <li><strong>Shopper Twins:</strong> Finds users with similar profiles and suggests what they purchase.</li>
-                                    </ul>
-                                </div>
-                            </div>
                             
                             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
                                 <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Your Feedback Matters</h4>
@@ -529,71 +518,7 @@ export default function Recommendations() {
         </DialogContent>
       </Dialog>
 
-      {/* 2. Categories */}
-      {candidates.categories.length > 0 && (
-          <section>
-              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  <Tag className="w-5 h-5 text-pink-500" /> Categories to Explore
-              </h2>
-              <div className="flex flex-wrap gap-3">
-                  {candidates.categories.map((c, i) => (
-                      <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 flex items-center gap-3 shadow-sm hover:shadow-md transition-all">
-                          <span className="font-medium text-sm">{c.category}</span>
-                          <button onClick={() => handleFeedback(c, 'dismiss')} className="text-gray-400 hover:text-red-500">
-                              <X className="w-4 h-4" />
-                          </button>
-                      </div>
-                  ))}
-              </div>
-          </section>
-      )}
 
-      {/* 3. Items */}
-      {candidates.products.length > 0 && (
-          <section>
-              <h2 className="flex items-center gap-2 text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  <Package className="w-5 h-5 text-emerald-500" /> Recommended Items
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {candidates.products.map((c, i) => (
-                      <Card key={i} className="group relative overflow-hidden border-gray-100 dark:border-gray-700">
-                          <CardContent className="p-4 flex items-start justify-between gap-3">
-                              <div className="flex items-start gap-3 flex-1">
-                                  {c.image_url && <img src={c.image_url} alt={c.name} className="w-12 h-12 object-contain rounded bg-white border border-gray-100" />}
-                                  <div>
-                                      <h3 className="font-bold text-gray-900 dark:text-gray-100 line-clamp-2">{c.name || `Product #${c.canonical_product_id}`}</h3>
-                                      <p className="text-xs text-gray-500 mt-1">Based on purchase history of similar users</p>
-                                      
-                                      <div className="flex gap-2 mt-2">
-                                          <button onClick={() => handleFeedback(c, 'thumbs_up')} className="text-gray-400 hover:text-green-600 transition-colors">
-                                              <ThumbsUp className="w-4 h-4" />
-                                          </button>
-                                          <button onClick={() => handleFeedback(c, 'thumbs_down')} className="text-gray-400 hover:text-red-500 transition-colors">
-                                              <ThumbsDown className="w-4 h-4" />
-                                          </button>
-                                          <DataCorrectionDialog 
-                                              entityType="product" 
-                                              entityId={c.canonical_product_id} 
-                                              entityName={c.name}
-                                              defaultIssueType="price"
-                                          />
-                                      </div>
-                                  </div>
-                              </div>
-                              <div className="flex flex-col gap-2 flex-shrink-0">
-                                  <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50" onClick={() => handleFeedback(c, 'add_to_cart')}>
-                                      <ShoppingCart className="w-4 h-4 mr-1" /> Add
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="text-gray-400 hover:text-red-500 h-8" onClick={() => handleFeedback(c, 'dismiss')}>
-                                      Dismiss
-                                  </Button>
-                              </div>
-                          </CardContent>
-                      </Card>
-                  ))}
-              </div>
-          </section>
-      )}
     </div>
   );
 }
