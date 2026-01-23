@@ -4,15 +4,12 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Retry wrapper with exponential backoff
-const withRetry = async (fn, maxRetries = 5, baseDelay = 1000) => {
+const withRetry = async (fn, maxRetries = 3, baseDelay = 500) => {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             return await fn();
         } catch (error) {
-            const isRateLimit = error.status === 429 || 
-                (error.message && error.message.toLowerCase().includes('rate limit'));
-            
-            if (isRateLimit && attempt < maxRetries - 1) {
+            if (error.status === 429 && attempt < maxRetries - 1) {
                 const waitTime = baseDelay * Math.pow(2, attempt);
                 console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}...`);
                 await delay(waitTime);
@@ -39,21 +36,21 @@ export default Deno.serve(async (req) => {
         const batch = payload.batch || 0;
         const skip = batch * limit;
 
-        // 1. Fetch Users (with retry)
-        const users = await withRetry(() => svc.entities.User.list('created_date', 1000));
+        // 1. Fetch Users
+        const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
         // Manual pagination since list params might vary
         const batchUsers = users.slice(skip, skip + limit);
         
         const results = [];
 
         for (const targetUser of batchUsers) {
-            // 2. Fetch all receipts for this user, sorted by date (with retry)
-            await delay(200); // Small delay before fetching receipts
-            const receipts = await withRetry(() => svc.entities.Receipt.filter(
+            // 2. Fetch all receipts for this user, sorted by date
+            // We use 'created_by' because receipts are owned by the user
+            const receipts = await svc.entities.Receipt.filter(
                 { created_by: targetUser.email }, 
                 'purchased_at', // sort by date ascending (oldest first)
                 1000 // limit per user
-            ));
+            );
 
             if (receipts.length === 0) {
                 results.push({ email: targetUser.email, status: 'no_receipts' });
@@ -61,16 +58,18 @@ export default Deno.serve(async (req) => {
             }
 
             // 3. Wipe existing habits for this user to ensure clean rebuild
-            await delay(300);
+            // We need to find them first.
             const existingHabits = await withRetry(() => 
                 svc.entities.UserProductHabit.filter({ created_by: targetUser.email })
             );
             
-            // Delete in smaller batches with longer delays to avoid rate limiting
+            // Delete in smaller batches with delays and retries to avoid rate limiting
             for (let i = 0; i < existingHabits.length; i++) {
                 await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
-                // Add delay after every delete to avoid rate limits
-                await delay(150);
+                // Add delay every 5 deletes to avoid rate limits
+                if ((i + 1) % 5 === 0) {
+                    await delay(200);
+                }
             }
 
             // 4. Re-calculate habits
@@ -153,11 +152,11 @@ export default Deno.serve(async (req) => {
 
             if (habitsToCreate.length > 0) {
                 // Bulk create in smaller chunks with delays and retries to avoid rate limiting
-                for (let i = 0; i < habitsToCreate.length; i += 5) {
-                    const chunk = habitsToCreate.slice(i, i + 5);
+                for (let i = 0; i < habitsToCreate.length; i += 10) {
+                    const chunk = habitsToCreate.slice(i, i + 10);
                     await withRetry(() => svc.entities.UserProductHabit.bulkCreate(chunk));
-                    // Add longer delay between chunks to avoid rate limits
-                    await delay(500);
+                    // Add delay between chunks to avoid rate limits
+                    await delay(300);
                 }
             }
 
