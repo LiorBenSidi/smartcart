@@ -696,6 +696,9 @@ export default function Recommendations() {
                                                             : 'bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400'
                                                     }`}
                                                     onClick={async () => {
+                                                        // Small delay to avoid rate limiting
+                                                        await new Promise(resolve => setTimeout(resolve, 300));
+                                                        
                                                         // Search for the product by name
                                                         const products = await base44.entities.Product.filter({
                                                             canonical_name: { $regex: tip.related_entity_name, $options: 'i' }
