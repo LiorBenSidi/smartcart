@@ -509,14 +509,61 @@ export default function Admin() {
             </div>
 
             <div className="relative">
-                <Button 
-                    onClick={handleRebuildUserHabits}
-                    disabled={processState.loading}
-                    className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
-                >
-                    <Database className="w-4 h-4 mr-2" />
-                    {processState.loading && processState.activeProcess === 'rebuildUserHabits' ? 'Processing...' : 'Rebuild User Habits'}
-                </Button>
+                <div className="flex gap-1">
+                    <Button 
+                        onClick={handleRebuildUserHabits}
+                        disabled={processState.loading}
+                        className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
+                    >
+                        <Database className="w-4 h-4 mr-2" />
+                        {processState.loading && processState.activeProcess === 'rebuildUserHabits' ? 'Processing...' : 'Rebuild User Habits'}
+                    </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button 
+                                size="icon" 
+                                variant="outline"
+                                className="shrink-0"
+                                disabled={processState.loading}
+                            >
+                                <Settings className="w-4 h-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3 space-y-3">
+                            <div>
+                                <Label htmlFor="batchDelay" className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Delay between batches (ms)
+                                </Label>
+                                <Input
+                                    id="batchDelay"
+                                    type="number"
+                                    min="0"
+                                    step="500"
+                                    value={batchDelay}
+                                    onChange={(e) => setBatchDelay(Number(e.target.value))}
+                                    className="w-full mt-1"
+                                    disabled={processState.loading}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="maxHabitsPerBatch" className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Habits per batch
+                                </Label>
+                                <Input
+                                    id="maxHabitsPerBatch"
+                                    type="number"
+                                    min="10"
+                                    max="200"
+                                    step="10"
+                                    value={maxHabitsPerBatch}
+                                    onChange={(e) => setMaxHabitsPerBatch(Number(e.target.value))}
+                                    className="w-full mt-1"
+                                    disabled={processState.loading}
+                                />
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button 
