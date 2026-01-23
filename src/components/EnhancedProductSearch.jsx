@@ -129,27 +129,36 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                     }
                 });
                 
-                // If no filters are chosen, prioritize by chain count, require at least 3 chains
-                let finalResults = results;
-                if (!hasActiveFilters) {
-                    // Get unique products (one per GTIN), sorted by chain count desc
-                    const uniqueProducts = Object.entries(bestProductByGtin).map(([gtin, product]) => ({
-                        ...product,
-                        chainCount: chainCountByGtin[gtin]?.size || 0
-                    }));
-                    
-                    // Filter to only products available in at least 3 chains
-                    const filteredProducts = uniqueProducts.filter(p => p.chainCount >= 3);
-                    
-                    // Sort by chain count descending
-                    filteredProducts.sort((a, b) => b.chainCount - a.chainCount);
-                    
-                    // Limit to 10 results max
-                    finalResults = filteredProducts.slice(0, 10);
+                // Get unique products (one per GTIN) with chain count
+                const uniqueProducts = Object.entries(bestProductByGtin).map(([gtin, product]) => ({
+                    ...product,
+                    chainCount: chainCountByGtin[gtin]?.size || 0
+                }));
+                
+                // Filter to only products available in at least 3 chains
+                let finalResults = uniqueProducts.filter(p => p.chainCount >= 3);
+                
+                // Apply sorting based on sortBy state
+                if (sortBy === 'price_asc') {
+                    finalResults.sort((a, b) => (a.current_price || 999999) - (b.current_price || 999999));
+                } else if (sortBy === 'price_desc') {
+                    finalResults.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+                } else if (sortBy === 'name_asc') {
+                    finalResults.sort((a, b) => (a.canonical_name || '').localeCompare(b.canonical_name || ''));
+                } else if (sortBy === 'name_desc') {
+                    finalResults.sort((a, b) => (b.canonical_name || '').localeCompare(a.canonical_name || ''));
                 } else {
-                    // Apply filters and sorting
-                    finalResults = applyFiltersAndSort(results);
+                    // Default: relevance = sort by chain count descending
+                    finalResults.sort((a, b) => b.chainCount - a.chainCount);
                 }
+                
+                // Apply additional filters if any are active
+                if (hasActiveFilters) {
+                    finalResults = applyFiltersAndSort(finalResults);
+                }
+                
+                // Limit to 10 results max
+                finalResults = finalResults.slice(0, 10);
                 
                 // Show top 5 as suggestions
                 setSuggestions(finalResults.slice(0, 5));
