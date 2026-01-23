@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle, Brain, Clock, Settings } from 'lucide-react';
+import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle, Brain, Clock, Settings, GitMerge } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from 'react-router-dom';
@@ -26,6 +26,8 @@ export default function Admin() {
   const [processState, setProcessState] = useState(processManager.getState());
   const [batchDelay, setBatchDelay] = useState(15000); // ms delay between batches (needs time for rate limits to reset between users)
   const [maxHabitsPerBatch, setMaxHabitsPerBatch] = useState(25); // Max habits created per frontend call
+  const [isMergingGtins, setIsMergingGtins] = useState(false);
+  const [gtinMergeResults, setGtinMergeResults] = useState(null);
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -180,6 +182,94 @@ export default function Admin() {
     }
   };
 
+  const handleMergeGtinDuplicates = async () => {
+    setIsMergingGtins(true);
+    setGtinMergeResults(null);
+    try {
+      // Fetch all products
+      const allProducts = await base44.entities.Product.list('-updated_date', 10000);
+      
+      // Group products by canonical_name
+      const productsByName = {};
+      allProducts.forEach(product => {
+        const name = product.canonical_name?.trim().toLowerCase();
+        if (name) {
+          if (!productsByName[name]) {
+            productsByName[name] = [];
+          }
+          productsByName[name].push(product);
+        }
+      });
+      
+      // Find duplicates (products with same name but different GTINs)
+      const duplicates = [];
+      for (const [name, products] of Object.entries(productsByName)) {
+        const uniqueGtins = [...new Set(products.map(p => p.gtin))];
+        if (uniqueGtins.length > 1) {
+          duplicates.push({ name, products, gtins: uniqueGtins });
+        }
+      }
+      
+      if (duplicates.length === 0) {
+        setGtinMergeResults({ message: "No duplicates found!", updated: 0 });
+        return;
+      }
+      
+      // Process each duplicate group
+      let totalUpdated = 0;
+      const details = [];
+      
+      for (const group of duplicates) {
+        // Count occurrences of each GTIN
+        const gtinCounts = {};
+        group.products.forEach(p => {
+          gtinCounts[p.gtin] = (gtinCounts[p.gtin] || 0) + 1;
+        });
+        
+        // Find the best GTIN
+        const sortedGtins = Object.entries(gtinCounts).sort((a, b) => {
+          // First by count (most common)
+          if (b[1] !== a[1]) return b[1] - a[1];
+          // If tie, by length (more digits)
+          if (b[0].length !== a[0].length) return b[0].length - a[0].length;
+          // If same length, by value (higher number)
+          return b[0].localeCompare(a[0], undefined, { numeric: true });
+        });
+        
+        const bestGtin = sortedGtins[0][0];
+        
+        // Update products with wrong GTINs
+        const productsToUpdate = group.products.filter(p => p.gtin !== bestGtin);
+        
+        for (const product of productsToUpdate) {
+          await base44.entities.Product.update(product.id, { gtin: bestGtin });
+          totalUpdated++;
+        }
+        
+        if (productsToUpdate.length > 0) {
+          details.push({
+            name: group.name,
+            oldGtins: group.gtins.filter(g => g !== bestGtin),
+            newGtin: bestGtin,
+            updatedCount: productsToUpdate.length
+          });
+        }
+      }
+      
+      setGtinMergeResults({
+        message: `Updated ${totalUpdated} products across ${details.length} product groups`,
+        updated: totalUpdated,
+        details
+      });
+      
+    } catch (error) {
+      console.error('Failed to merge GTINs', error);
+      setGtinMergeResults({ message: "Error: " + error.message, updated: 0 });
+    } finally {
+      setIsMergingGtins(false);
+    }
+  };
+
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
@@ -240,7 +330,7 @@ export default function Admin() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
                 <Link to={createPageUrl('CatalogAdmin')} className="w-full">
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
@@ -509,6 +599,49 @@ export default function Admin() {
             </div>
 
             <div className="relative">
+                <Button 
+                    onClick={handleMergeGtinDuplicates}
+                    disabled={isMergingGtins || processState.loading}
+                    className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-50"
+                >
+                    <GitMerge className="w-4 h-4 mr-2" />
+                    {isMergingGtins ? 'Merging...' : 'Merge GTIN Duplicates'}
+                </Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                            <HelpCircle className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <GitMerge className="w-5 h-5 text-teal-600" />
+                                Merge GTIN Duplicates
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm">
+                            <p className="text-gray-700 dark:text-gray-300">
+                                Finds products with the same name but different GTINs and unifies them.
+                            </p>
+                            <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-teal-900 dark:text-teal-200">Selection Logic:</h4>
+                                <ol className="list-decimal list-inside text-xs text-gray-700 dark:text-gray-300 space-y-1">
+                                    <li>Choose the most common GTIN</li>
+                                    <li>If tie: Choose the GTIN with more digits</li>
+                                    <li>If same length: Choose the higher number (e.g., 800 vs 100)</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="relative">
                 <div className="flex gap-1">
                     <Button 
                         onClick={handleRebuildUserHabits}
@@ -618,6 +751,51 @@ export default function Admin() {
                 </Dialog>
             </div>
         </div>
+
+        {/* GTIN Merge Results */}
+        {gtinMergeResults && (
+            <Card className="border-teal-200 bg-teal-50 dark:bg-teal-900/20 dark:border-teal-800">
+                <CardContent className="p-4">
+                    <h3 className="font-bold text-teal-900 dark:text-teal-200 mb-2 flex items-center gap-2">
+                        <GitMerge className="w-4 h-4" />
+                        GTIN Merge Results
+                    </h3>
+                    <p className="text-sm text-teal-700 dark:text-teal-300 mb-3">{gtinMergeResults.message}</p>
+                    {gtinMergeResults.details && gtinMergeResults.details.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 max-h-64 overflow-y-auto">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                                        <th className="text-left p-1 font-semibold">Product Name</th>
+                                        <th className="text-left p-1 font-semibold">Old GTINs</th>
+                                        <th className="text-left p-1 font-semibold">New GTIN</th>
+                                        <th className="text-right p-1 font-semibold">Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {gtinMergeResults.details.map((detail, idx) => (
+                                        <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                            <td className="p-1 truncate max-w-[150px]" title={detail.name}>{detail.name}</td>
+                                            <td className="p-1 text-red-600 dark:text-red-400">{detail.oldGtins.join(', ')}</td>
+                                            <td className="p-1 text-green-600 dark:text-green-400 font-mono">{detail.newGtin}</td>
+                                            <td className="p-1 text-right">{detail.updatedCount}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-3"
+                        onClick={() => setGtinMergeResults(null)}
+                    >
+                        Dismiss
+                    </Button>
+                </CardContent>
+            </Card>
+        )}
 
         <SystemValidationPanel />
 
