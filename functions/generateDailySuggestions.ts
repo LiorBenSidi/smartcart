@@ -77,14 +77,28 @@ export default Deno.serve(async (req) => {
         const body = await req.json().catch(() => ({}));
         const { 
             batch = 0, 
-            currentCartItems = [], 
-            weeklyWeight = 0.5, 
-            collaborativeWeight = 0.5 
+            currentCartItems = []
         } = body;
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         const currentWeekday = today.getDay(); // 0 = Sunday
+
+        // Fetch receipts once to determine user tier
+        const allReceipts = await base44.entities.Receipt.filter({ 
+            created_by: user.email, 
+            processing_status: 'processed' 
+        }, '-purchased_at', 200);
+        const validReceipts = allReceipts.filter(r => r.purchased_at || r.date);
+        const receiptCount = validReceipts.length;
+
+        // Determine user tier and get config
+        const userTier = getUserTier(receiptCount);
+        const tierConfig = TIER_CONFIG[userTier];
+        const weeklyWeight = tierConfig.weeklyWeight;
+        const collaborativeWeight = tierConfig.collaborativeWeight;
+
+        console.log(`User tier: ${userTier} (${receiptCount} receipts), weights: weekly=${weeklyWeight}, collab=${collaborativeWeight}`);
 
         // Get or Create Draft
         let draft;
