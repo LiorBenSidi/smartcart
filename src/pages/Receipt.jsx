@@ -76,7 +76,9 @@ export default function Receipt() {
     }
 
     // Trigger incremental habit and vector updates in the background (sequential)
-    const userId = confirmedReceipt.created_by;
+    // Use confirmedReceipt.created_by or fall back to the original receipt's created_by
+    const userId = confirmedReceipt.created_by || receipt.created_by;
+    console.log("Receipt created_by:", confirmedReceipt.created_by, "Original receipt created_by:", receipt.created_by);
     if (userId) {
       console.log("Starting incremental updates for user:", userId);
       
