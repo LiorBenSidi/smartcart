@@ -316,19 +316,15 @@ export default function Admin() {
       // Remove from pending list
       setGtinDuplicates(prev => prev.filter(d => d.name !== duplicate.name));
       
-      const targetGtin = selectedTargetGtin[duplicate.name] || duplicate.bestGtin;
-      const selected = selectedProducts[duplicate.name] || {};
-      const mergedCount = duplicate.products.filter(p => selected[p.id] && p.gtin !== targetGtin).length;
-      
       // Update results
       setGtinMergeResults(prev => ({
-        message: `Merged ${(prev?.updated || 0) + mergedCount} products`,
-        updated: (prev?.updated || 0) + mergedCount,
+        message: `Merged ${(prev?.updated || 0) + productsToMerge.length} products`,
+        updated: (prev?.updated || 0) + productsToMerge.length,
         details: [...(prev?.details || []), {
           name: duplicate.displayName,
           oldGtins: duplicate.gtins.filter(g => g !== targetGtin),
           newGtin: targetGtin,
-          updatedCount: mergedCount
+          updatedCount: productsToMerge.length
         }]
       }));
     } catch (error) {
