@@ -858,14 +858,7 @@ export default function SmartCart() {
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 dark:text-gray-100">{cart.name}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {cart.store_name && <><StoreIcon className="w-3 h-3 inline mr-1" />{cart.store_name} • </>}
-                        {new Date(cart.created_date).toLocaleDateString()}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 flex items-center gap-2">
-                        <span>{cart.total_items} items</span>
-                        {cart.total_amount > 0 && (
-                          <span className="font-semibold text-green-700 dark:text-green-400">₪{cart.total_amount?.toFixed(2)}</span>
-                        )}
+                        {cart.total_items} items • Created {new Date(cart.created_date).toLocaleDateString()}
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -882,8 +875,53 @@ export default function SmartCart() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Price comparison for this saved cart */}
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    {!savedCartComparisons[cart.id] ? (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full text-xs"
+                        onClick={() => fetchSavedCartComparison(cart)}
+                        disabled={loadingCartComparison === cart.id}
+                      >
+                        {loadingCartComparison === cart.id ? (
+                          <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Comparing prices...</>
+                        ) : (
+                          <><TrendingDown className="w-3 h-3 mr-1" /> Compare Prices</>
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                          <TrendingDown className="w-3 h-3 text-green-600" /> Best Prices Today:
+                        </div>
+                        {savedCartComparisons[cart.id].slice(0, 3).map((comparison, idx) => (
+                          <div 
+                            key={idx} 
+                            className={`flex items-center justify-between p-2 rounded-lg text-xs ${
+                              idx === 0 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {idx === 0 && <Badge className="bg-green-600 text-white text-[10px] px-1">Best</Badge>}
+                              <span className="font-medium">{comparison.chain?.name || comparison.store?.name}</span>
+                            </div>
+                            <span className={`font-bold ${idx === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                              ₪{comparison.totalCost?.toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                        {savedCartComparisons[cart.id].length === 0 && (
+                          <div className="text-xs text-gray-400 text-center py-2">No price data available</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
                   {/* Show items preview */}
-                  <div className="text-xs text-gray-500 mt-2 flex flex-wrap gap-1">
+                  <div className="text-xs text-gray-500 mt-3 flex flex-wrap gap-1">
                     {cart.items?.slice(0, 5).map((item, i) => (
                       <Badge key={i} variant="outline" className="text-[10px] py-0 bg-white dark:bg-gray-700">
                         {item.name?.substring(0, 20)}{item.name?.length > 20 ? '...' : ''}
