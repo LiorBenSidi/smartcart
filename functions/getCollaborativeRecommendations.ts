@@ -47,11 +47,22 @@ export default Deno.serve(async (req) => {
 
         // Get top products purchased by similar users
         for (const neighborId of neighborIds) {
+            // UserProductHabit is stored by created_by (the user who created it)
             const neighborHabits = await base44.entities.UserProductHabit.filter(
                 { created_by: neighborId },
                 '-purchase_count',
                 10
             ).catch(() => []);
+            
+            // If no habits via created_by, also try user_id field
+            if (neighborHabits.length === 0) {
+                const habitsByUserId = await base44.entities.UserProductHabit.filter(
+                    { user_id: neighborId },
+                    '-purchase_count',
+                    10
+                ).catch(() => []);
+                neighborHabits.push(...habitsByUserId);
+            }
             console.log(`[CF] Neighbor ${neighborId}: Found ${neighborHabits.length} habits`);
 
             neighborHabits.forEach(habit => {
