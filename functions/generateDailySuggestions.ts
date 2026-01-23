@@ -331,12 +331,12 @@ export default Deno.serve(async (req) => {
             const cartItemSet = new Set(currentCartItems);
 
             let allSuggestions = draft.items || [];
-            
-            // For CF-only users, ensure only collaborative suggestions are kept
-            if (isCFOnlyUser) {
+
+            // For Tier 1 users, ensure only collaborative suggestions are kept
+            if (tierConfig.skipPatterns) {
                 allSuggestions = allSuggestions.filter(s => s.reason_type === "Collaborative");
             }
-            
+
             const suggestionMap = new Map();
 
             // Merge Logic
