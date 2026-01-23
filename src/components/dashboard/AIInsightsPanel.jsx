@@ -35,7 +35,7 @@ export default function AIInsightsPanel({ insights }) {
         <div className="space-y-4">
             <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
                 <CardContent className="pt-6 space-y-4">
-                    {allInsights.map((insight, idx) => (
+                    {allInsights.slice(0, 3).map((insight, idx) => (
                         <div 
                             key={idx} 
                             className={`p-4 rounded-xl border ${getSeverityColor(insight.severity)}`}
