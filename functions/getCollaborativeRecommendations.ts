@@ -98,9 +98,13 @@ export default Deno.serve(async (req) => {
                 console.log(`[CF] Sample habit for ${neighborId}: product_id=${neighborHabits[0].product_id}, purchase_count=${neighborHabits[0].purchase_count}`);
             }
 
+            let skippedCount = 0;
             neighborHabits.forEach(habit => {
                 // Skip products the user has already purchased
-                if (userPurchasedProducts.has(habit.product_id)) return;
+                if (userPurchasedProducts.has(habit.product_id)) {
+                    skippedCount++;
+                    return;
+                }
                 
                 // Confidence = neighbor_similarity * habit_confidence * purchase_frequency_factor
                 const purchaseFrequencyFactor = Math.min(1, (habit.purchase_count || 1) / 5); // Normalize by 5 purchases
