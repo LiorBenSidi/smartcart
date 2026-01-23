@@ -254,7 +254,7 @@ export default Deno.serve(async (req) => {
                 let confidence = 1 / (1 + cv);
                 if (confidence > 1) confidence = 1;
 
-                if (confidence >= CONFIG.MIN_HABIT_CONFIDENCE) {
+                if (confidence >= tierConfig.minHabitConfidence) {
                     const daysSinceLast = Math.floor((today - lastPurchase) / (1000 * 60 * 60 * 24));
                     const dueScore = daysSinceLast / (avgCadence || 1);
 
