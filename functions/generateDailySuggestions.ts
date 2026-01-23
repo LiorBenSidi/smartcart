@@ -165,7 +165,7 @@ export default Deno.serve(async (req) => {
 
             for (const [pid, purchases] of Object.entries(productPurchases)) {
                 purchases.sort((a, b) => b.date - a.date);
-                
+
                 let weekdayMatches = 0;
                 const quantitiesOnWeekday = [];
                 const datesOnWeekday = [];
@@ -180,7 +180,7 @@ export default Deno.serve(async (req) => {
 
                 if (total_weeks > 0 && weekdayMatches >= CONFIG.MIN_WEEKDAY_OCCURRENCES_K) {
                     const confidence = weekdayMatches / total_weeks;
-                    if (confidence >= CONFIG.MIN_WEEKLY_CONFIDENCE) {
+                    if (confidence >= tierConfig.minWeeklyConfidence) {
                         weeklySuggestions.push({
                             product_id: pid,
                             product_name: productInfo[pid].name,
