@@ -35,33 +35,41 @@ Deno.serve(async (req) => {
     const profile = profiles.length > 0 ? profiles[0] : null;
 
     // Load all necessary data
-    const [allProducts, allPrices, allStores, allChains] = await Promise.all([
+    // Note: Product entity contains prices directly (current_price, chain_id, store_id)
+    const [allProducts, allStores, allChains] = await Promise.all([
       svc.entities.Product.list(),
-      svc.entities.ProductPrice.list(),
       svc.entities.Store.list(),
       svc.entities.Chain.list()
     ]);
 
     // Create lookup maps
-    const productsByGtin = new Map(allProducts.map(p => [p.gtin, p]));
+    const productsByGtin = new Map();
     const storesById = new Map(allStores.map(s => [s.id, s]));
     const chainsById = new Map(allChains.map(c => [c.id, c]));
     
-    // Group prices by store and chain
+    // Group products (which contain prices) by store and chain
     const pricesByStore = new Map();
     const pricesByChain = new Map();
     
-    for (const price of allPrices) {
-      if (price.store_id) {
-        if (!pricesByStore.has(price.store_id)) {
-          pricesByStore.set(price.store_id, new Map());
+    for (const product of allProducts) {
+      // Index by gtin for quick lookup
+      if (!productsByGtin.has(product.gtin)) {
+        productsByGtin.set(product.gtin, product);
+      }
+      
+      // Products have chain_id and optional store_id with current_price
+      if (product.current_price) {
+        if (product.store_id) {
+          if (!pricesByStore.has(product.store_id)) {
+            pricesByStore.set(product.store_id, new Map());
+          }
+          pricesByStore.get(product.store_id).set(product.gtin, product);
+        } else if (product.chain_id) {
+          if (!pricesByChain.has(product.chain_id)) {
+            pricesByChain.set(product.chain_id, new Map());
+          }
+          pricesByChain.get(product.chain_id).set(product.gtin, product);
         }
-        pricesByStore.get(price.store_id).set(price.gtin, price);
-      } else if (price.chain_id) {
-        if (!pricesByChain.has(price.chain_id)) {
-          pricesByChain.set(price.chain_id, new Map());
-        }
-        pricesByChain.get(price.chain_id).set(price.gtin, price);
       }
     }
 
