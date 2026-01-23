@@ -36,11 +36,20 @@ Deno.serve(async (req) => {
 
     // Load all necessary data
     // Note: Product entity contains prices directly (current_price, chain_id, store_id)
-    const [allProducts, allStores, allChains] = await Promise.all([
-      svc.entities.Product.list(),
+    // For products, we only need to fetch those matching the cart items
+    const cartGtins = cartItems.map(item => item.gtin);
+    
+    // Fetch products for the specific GTINs in the cart (can have multiple per gtin from different chains)
+    const productPromises = cartGtins.map(gtin => svc.entities.Product.filter({ gtin }));
+    
+    const [productResults, allStores, allChains] = await Promise.all([
+      Promise.all(productPromises),
       svc.entities.Store.list(),
       svc.entities.Chain.list()
     ]);
+    
+    // Flatten product results
+    const allProducts = productResults.flat();
 
     // Create lookup maps
     const productsByGtin = new Map();
