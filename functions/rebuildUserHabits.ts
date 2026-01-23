@@ -63,20 +63,29 @@ export default Deno.serve(async (req) => {
                 svc.entities.UserProductHabit.filter({ created_by: targetUser.email })
             );
             
-            // Delete existing habits if any
+            // Delete existing habits using deleteMany for efficiency
             if (existingHabits.length > 0) {
-                // Rate limit: 100 deletes per 30 seconds = ~3.3/sec, so delay ~350ms per delete
-                for (let i = 0; i < existingHabits.length; i++) {
-                    try {
-                        await withRetry(() => svc.entities.UserProductHabit.delete(existingHabits[i].id));
-                    } catch (err) {
-                        // Ignore "not found" errors - habit may have been deleted already
-                        if (!err.message?.includes('not found')) {
-                            throw err;
+                // Use filter-based delete instead of individual deletes
+                try {
+                    await withRetry(() => 
+                        svc.entities.UserProductHabit.deleteMany({ created_by: targetUser.email })
+                    );
+                } catch (err) {
+                    // If deleteMany fails, fall back to individual deletes
+                    console.log("deleteMany failed, falling back to individual deletes");
+                    for (let i = 0; i < existingHabits.length; i++) {
+                        try {
+                            await svc.entities.UserProductHabit.delete(existingHabits[i].id);
+                        } catch (delErr) {
+                            // Ignore "not found" errors
+                            if (!delErr.message?.includes('not found')) {
+                                console.log(`Delete error for ${existingHabits[i].id}: ${delErr.message}`);
+                            }
                         }
+                        if ((i + 1) % 3 === 0) await delay(350);
                     }
-                    await delay(350); // ~350ms per delete to stay under rate limit
                 }
+                await delay(600); // Wait after bulk delete
             }
 
             // 4. Re-calculate habits
