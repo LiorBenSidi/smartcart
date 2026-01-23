@@ -24,8 +24,7 @@ export default function Admin() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [processState, setProcessState] = useState(processManager.getState());
   const [batchDelay, setBatchDelay] = useState(1000); // Default 1 second delay
-  const [internalDelay, setInternalDelay] = useState(5000); // Default 5 seconds for internal operations
-  const [createBatchSize, setCreateBatchSize] = useState(25); // Default 25 habits per batch
+  const [maxHabitsPerBatch, setMaxHabitsPerBatch] = useState(50); // Max habits created per frontend call
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -173,7 +172,7 @@ export default function Admin() {
 
   const handleRebuildUserHabits = async () => {
     try {
-        await processManager.startProcess('rebuildUserHabits', { limit: 1, internalDelayMs: internalDelay, createBatchSize }, { delayMs: batchDelay });
+        await processManager.startProcess('rebuildUserHabits', { limit: 1, maxHabitsPerBatch }, { delayMs: batchDelay });
     } catch (err) {
         console.error('Rebuild failed:', err);
     }
@@ -265,44 +264,24 @@ export default function Admin() {
                 </div>
                 <div className="border-l border-gray-200 dark:border-gray-700 pl-4 ml-4">
                     <div className="flex-1">
-                        <Label htmlFor="internalDelay" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Internal delay (ms)
+                        <Label htmlFor="maxHabitsPerBatch" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Habits per batch
                         </Label>
                         <Input
-                            id="internalDelay"
+                            id="maxHabitsPerBatch"
                             type="number"
-                            min="0"
-                            step="1000"
-                            value={internalDelay}
-                            onChange={(e) => setInternalDelay(Number(e.target.value))}
+                            min="10"
+                            max="200"
+                            step="10"
+                            value={maxHabitsPerBatch}
+                            onChange={(e) => setMaxHabitsPerBatch(Number(e.target.value))}
                             className="w-32 mt-1"
                             disabled={processState.loading}
                         />
                     </div>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-                    Delay inside function (e.g., between deletes/creates).
-                </p>
-                <div className="border-l border-gray-200 dark:border-gray-700 pl-4 ml-4">
-                    <div className="flex-1">
-                        <Label htmlFor="createBatchSize" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Create batch size
-                        </Label>
-                        <Input
-                            id="createBatchSize"
-                            type="number"
-                            min="1"
-                            max="100"
-                            step="5"
-                            value={createBatchSize}
-                            onChange={(e) => setCreateBatchSize(Number(e.target.value))}
-                            className="w-32 mt-1"
-                            disabled={processState.loading}
-                        />
-                    </div>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-                    Habits created per batch. Lower = slower but safer.
+                    Max habits created per API call.
                 </p>
             </CardContent>
         </Card>

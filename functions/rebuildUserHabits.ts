@@ -15,6 +15,7 @@ export default Deno.serve(async (req) => {
         const limit = payload.limit || 1; // Process 1 user per batch by default to avoid timeouts
         const batch = payload.batch || 0;
         const skip = batch * limit;
+        const maxHabitsPerBatch = payload.maxHabitsPerBatch || 50; // Max habits to create per frontend call
 
 
         // 1. Fetch Users
@@ -50,11 +51,15 @@ export default Deno.serve(async (req) => {
             const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
             console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
             
-            // Delete all existing habits sequentially
-            for (const h of existingHabits) {
-                await svc.entities.UserProductHabit.delete(h.id);
+            // Only delete on first chunk for this user (habitOffset === 0)
+            if ((payload.habitOffset || 0) === 0) {
+                for (const h of existingHabits) {
+                    await svc.entities.UserProductHabit.delete(h.id);
+                }
+                console.log(`[rebuildUserHabits] Deleted all existing habits for ${targetUser.email}`);
+            } else {
+                console.log(`[rebuildUserHabits] Skipping delete (continuing habit creation from offset ${payload.habitOffset})`);
             }
-            console.log(`[rebuildUserHabits] Deleted all existing habits for ${targetUser.email}`);
 
             // 4. Re-calculate habits
             const habitsMap = new Map(); // productId -> habit data
@@ -135,25 +140,46 @@ export default Deno.serve(async (req) => {
             });
 
             console.log(`[rebuildUserHabits] Creating ${habitsToCreate.length} habits for ${targetUser.email}`);
-            if (habitsToCreate.length > 0) {
-                await svc.entities.UserProductHabit.bulkCreate(habitsToCreate);
+            
+            // Create habits in chunks, return hasMore if more chunks needed
+            const habitOffset = payload.habitOffset || 0;
+            const habitsChunk = habitsToCreate.slice(habitOffset, habitOffset + maxHabitsPerBatch);
+            
+            if (habitsChunk.length > 0) {
+                await svc.entities.UserProductHabit.bulkCreate(habitsChunk);
             }
-            console.log(`[rebuildUserHabits] Done processing ${targetUser.email}`);
+            
+            const habitsRemaining = habitsToCreate.length - habitOffset - habitsChunk.length;
+            const userHasMore = habitsRemaining > 0;
+            
+            console.log(`[rebuildUserHabits] Created ${habitsChunk.length} habits (offset ${habitOffset}, ${habitsRemaining} remaining)`);
 
             results.push({ 
                 email: targetUser.email, 
                 receiptsProcessed: receipts.length, 
-                habitsCreated: habitsToCreate.length 
+                habitsCreatedThisBatch: habitsChunk.length,
+                totalHabits: habitsToCreate.length,
+                habitOffset,
+                userHasMore
             });
         }
 
-        const hasMore = (skip + limit) < users.length;
+        // Check if current user still has more habits to create
+        const currentUserHasMore = results.length > 0 && results[0].userHasMore;
+        const hasMoreUsers = (skip + limit) < users.length;
+        const hasMore = currentUserHasMore || hasMoreUsers;
+        
+        // Return next habitOffset if user has more, otherwise reset for next user
+        const nextHabitOffset = currentUserHasMore ? (payload.habitOffset || 0) + maxHabitsPerBatch : 0;
+        const nextBatch = currentUserHasMore ? batch : batch + 1;
 
         return Response.json({ 
             success: true, 
             message: `Processed batch ${batch}.`,
             results,
-            hasMore
+            hasMore,
+            nextBatch,
+            nextHabitOffset
         });
 
     } catch (error) {
