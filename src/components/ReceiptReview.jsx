@@ -81,7 +81,8 @@ export default function ReceiptReview({ receipt, onConfirm }) {
       // Update DB
       await base44.entities.Receipt.update(receipt.id, payload);
 
-      if (onConfirm) onConfirm(payload);
+      // Include the original receipt's created_by in the callback
+      if (onConfirm) onConfirm({ ...payload, created_by: receipt.created_by });
     } catch (error) {
       console.error("Failed to confirm receipt", error);
       alert("Failed to save confirmation. Please try again.");
