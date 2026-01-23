@@ -1070,32 +1070,73 @@ export default function SmartCart() {
               <CardTitle className="text-lg">Your Cart Items</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {cartItems.map((item) =>
-              <div key={item.gtin} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                      {item.quantity}
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{item.gtin}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.gtin)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                  <DataCorrectionDialog
-                    entityType="product"
-                    entityId={item.gtin}
-                    entityName={item.name}
-                    defaultIssueType="price" />
+              {cartItems.map((item) => {
+                const itemChainPrices = cartItemPrices[item.gtin] || {};
+                const priceEntries = Object.entries(itemChainPrices)
+                  .map(([chainId, data]) => ({
+                    chainId,
+                    chain: chains.find(c => c.id === chainId),
+                    price: data.price
+                  }))
+                  .sort((a, b) => a.price - b.price);
+                const cheapestPrice = priceEntries.length > 0 ? priceEntries[0].price : null;
 
+                return (
+                  <div key={item.gtin} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                          {item.quantity}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{item.gtin}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, -1)}>-</Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.gtin, 1)}>+</Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.gtin)}>
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                        <DataCorrectionDialog
+                          entityType="product"
+                          entityId={item.gtin}
+                          entityName={item.name}
+                          defaultIssueType="price" />
+                      </div>
+                    </div>
+
+                    {/* Prices from different chains */}
+                    {priceEntries.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div className="text-xs text-gray-500 mb-1">Prices by chain:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {priceEntries.slice(0, 5).map((entry, idx) => (
+                            <Badge 
+                              key={entry.chainId} 
+                              variant="outline" 
+                              className={`text-[10px] px-2 py-0.5 ${
+                                idx === 0 
+                                  ? 'bg-green-50 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-400' 
+                                  : 'bg-white dark:bg-gray-700'
+                              }`}
+                            >
+                              {entry.chain?.name || 'Unknown'}: ₪{entry.price.toFixed(2)}
+                              {idx === 0 && ' ✓'}
+                            </Badge>
+                          ))}
+                          {priceEntries.length > 5 && (
+                            <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                              +{priceEntries.length - 5} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  </div>
-              )}
+                );
+              })}
             </CardContent>
           </Card>
 
