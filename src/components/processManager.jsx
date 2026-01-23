@@ -51,13 +51,16 @@ class ProcessManager {
       let habitOffset = 0; // For rebuildUserHabits chunked habit creation
       const BATCH_SIZE = initialPayload.limit || 5; // Use provided limit or default
 
+      let isFirstCall = true;
+      
       while (hasMore) {
-        // Add delay between batches (skip first batch)
-        if ((batch > 0 || habitOffset > 0) && delayMs > 0) {
-          this.state.status = `Waiting ${delayMs}ms before next call...`;
+        // Add delay between ALL calls except the very first one
+        if (!isFirstCall && delayMs > 0) {
+          this.state.status = `Waiting ${delayMs / 1000}s before next call...`;
           this.notify();
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
+        isFirstCall = false;
 
         this.state.status = `Processing batch ${batch + 1}${habitOffset > 0 ? ` (offset ${habitOffset})` : ''}...`;
         this.notify();
