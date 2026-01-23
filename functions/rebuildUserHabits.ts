@@ -45,8 +45,14 @@ export default Deno.serve(async (req) => {
             // Note: If habits table is huge, this might be slow.
             // Using filter by user_id if possible, or created_by
             const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
-            for (const h of existingHabits) {
-                await svc.entities.UserProductHabit.delete(h.id);
+            
+            // Delete in smaller batches with delays to avoid rate limiting
+            for (let i = 0; i < existingHabits.length; i++) {
+                await svc.entities.UserProductHabit.delete(existingHabits[i].id);
+                // Add small delay every 10 deletes to avoid rate limits
+                if ((i + 1) % 10 === 0) {
+                    await delay(100);
+                }
             }
 
             // 4. Re-calculate habits
