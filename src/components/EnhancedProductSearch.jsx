@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Loader2, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle } from 'lucide-react';
 
 export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices }) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -11,6 +11,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     const [suggestions, setSuggestions] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const [addedItems, setAddedItems] = useState(new Set());
     
     // Filter states
     const [filters, setFilters] = useState({
@@ -460,10 +461,24 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                                     </div>
                                     <Button
                                         size="sm"
-                                        className={`flex-shrink-0 h-8 w-8 p-0 ${isCheapest ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                                        onClick={() => handleAddProduct(product)}
+                                        className={`flex-shrink-0 h-8 w-8 p-0 transition-all duration-300 ${
+                                            addedItems.has(product.id)
+                                                ? 'bg-green-500 hover:bg-green-600 scale-110'
+                                                : isCheapest ? 'bg-green-600 hover:bg-green-700' : ''
+                                        }`}
+                                        onClick={() => {
+                                            handleAddProduct(product);
+                                            setAddedItems(prev => new Set([...prev, product.id]));
+                                            setTimeout(() => {
+                                                setAddedItems(prev => {
+                                                    const next = new Set(prev);
+                                                    next.delete(product.id);
+                                                    return next;
+                                                });
+                                            }, 1500);
+                                        }}
                                     >
-                                        <Plus className="w-4 h-4" />
+                                        {addedItems.has(product.id) ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                                     </Button>
                                 </div>
                             );
