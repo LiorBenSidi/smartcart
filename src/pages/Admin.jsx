@@ -852,26 +852,42 @@ export default function Admin() {
                                     <div className="flex-1 min-w-0">
                                         <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{dup.displayName}</p>
                                         
-                                        {/* Product details */}
+                                        {/* Product details - highlight differences in red */}
                                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
                                             {refProduct?.category && (
-                                                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                                                    📁 {refProduct.category}
+                                                <span className={`px-1.5 py-0.5 rounded ${
+                                                    dup.fieldDiffs?.category 
+                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
+                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                                                }`}>
+                                                    📁 {refProduct.category} {dup.fieldDiffs?.category && '⚠️'}
                                                 </span>
                                             )}
                                             {refProduct?.brand_name && (
-                                                <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400">
-                                                    🏷️ {refProduct.brand_name}
+                                                <span className={`px-1.5 py-0.5 rounded ${
+                                                    dup.fieldDiffs?.brand_name 
+                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
+                                                        : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400'
+                                                }`}>
+                                                    🏷️ {refProduct.brand_name} {dup.fieldDiffs?.brand_name && '⚠️'}
                                                 </span>
                                             )}
                                             {refProduct?.kosher_level && refProduct.kosher_level !== 'none' && (
-                                                <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400">
-                                                    ✡️ {refProduct.kosher_level}
+                                                <span className={`px-1.5 py-0.5 rounded ${
+                                                    dup.fieldDiffs?.kosher_level 
+                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
+                                                        : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400'
+                                                }`}>
+                                                    ✡️ {refProduct.kosher_level} {dup.fieldDiffs?.kosher_level && '⚠️'}
                                                 </span>
                                             )}
                                             {refProduct?.allergen_tags && refProduct.allergen_tags.length > 0 && (
-                                                <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
-                                                    ⚠️ {refProduct.allergen_tags.join(', ')}
+                                                <span className={`px-1.5 py-0.5 rounded ${
+                                                    dup.fieldDiffs?.allergen_tags 
+                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-300' 
+                                                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400'
+                                                }`}>
+                                                    ⚠️ {refProduct.allergen_tags.join(', ')} {dup.fieldDiffs?.allergen_tags && '❗'}
                                                 </span>
                                             )}
                                         </div>
