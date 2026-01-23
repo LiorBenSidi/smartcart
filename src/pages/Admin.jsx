@@ -24,6 +24,7 @@ export default function Admin() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [processState, setProcessState] = useState(processManager.getState());
   const [batchDelay, setBatchDelay] = useState(1000); // Default 1 second delay
+  const [internalDelay, setInternalDelay] = useState(5000); // Default 5 seconds for internal operations
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -171,7 +172,7 @@ export default function Admin() {
 
   const handleRebuildUserHabits = async () => {
     try {
-        await processManager.startProcess('rebuildUserHabits', { limit: 1 }, { delayMs: batchDelay });
+        await processManager.startProcess('rebuildUserHabits', { limit: 1, internalDelayMs: internalDelay }, { delayMs: batchDelay });
     } catch (err) {
         console.error('Rebuild failed:', err);
     }
@@ -258,9 +259,29 @@ export default function Admin() {
                         />
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-                        Increase delay to avoid rate limits. Recommended: 1000-2000ms for heavy operations.
+                        Delay between batch API calls.
                     </p>
                 </div>
+                <div className="border-l border-gray-200 dark:border-gray-700 pl-4 ml-4">
+                    <div className="flex-1">
+                        <Label htmlFor="internalDelay" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Internal delay (ms)
+                        </Label>
+                        <Input
+                            id="internalDelay"
+                            type="number"
+                            min="0"
+                            step="1000"
+                            value={internalDelay}
+                            onChange={(e) => setInternalDelay(Number(e.target.value))}
+                            className="w-32 mt-1"
+                            disabled={processState.loading}
+                        />
+                    </div>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
+                    Delay inside function (e.g., between deletes/creates). Increase to 5000+ to avoid rate limits.
+                </p>
             </CardContent>
         </Card>
 
