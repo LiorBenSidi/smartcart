@@ -75,16 +75,7 @@ export default Deno.serve(async (req) => {
             // INCREMENTAL MODE: Only process new receipts since last habit update
             if (mode === 'incremental') {
                 console.log(`[rebuildUserHabits] INCREMENTAL mode for ${targetUser.email}`);
-
-                // FIRST: Fix any habits with wrong user_id (app ID instead of email)
-                const wrongIdHabits = await svc.entities.UserProductHabit.filter({ user_id: "69330b1ba1b4842cb79a70d6" });
-                if (wrongIdHabits.length > 0) {
-                    console.log(`[rebuildUserHabits] Found ${wrongIdHabits.length} habits with wrong user_id, fixing...`);
-                    for (const h of wrongIdHabits) {
-                        await svc.entities.UserProductHabit.update(h.id, { user_id: targetUser.email });
-                    }
-                }
-
+                
                 // Fetch existing habits - use user_id field (email) not created_by
                 const existingHabits = await svc.entities.UserProductHabit.filter({ user_id: targetUser.email });
                 const habitsMap = new Map();
