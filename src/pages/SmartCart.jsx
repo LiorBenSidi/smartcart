@@ -503,7 +503,191 @@ export default function SmartCart() {
   return (
     <div className="space-y-6 pb-24">
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-2xl shadow-lg relative">
-        <div className="absolute top-6 right-6">
+        <div className="absolute top-6 right-6 flex items-center gap-2">
+             <Dialog>
+                 <DialogTrigger asChild>
+                     <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20 hover:text-white">
+                         <HelpCircle className="h-5 w-5" />
+                     </Button>
+                 </DialogTrigger>
+                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto dark:bg-gray-900">
+                     <DialogHeader>
+                         <DialogTitle className="flex items-center gap-2 text-xl">
+                             <BookOpen className="w-5 h-5 text-indigo-600" />
+                             Smart Cart Guide
+                         </DialogTitle>
+                     </DialogHeader>
+                     <p className="text-sm text-gray-600 dark:text-gray-400 -mt-1 mb-4">
+                         Everything you need to know about using Smart Cart effectively.
+                     </p>
+                     <div className="space-y-4 text-sm dark:text-gray-200">
+                         
+                         {/* Adding Items */}
+                         <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                             <h4 className="font-semibold mb-2 text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+                                 <PackagePlus className="w-4 h-4 text-emerald-600" />
+                                 Adding Items to Your Cart
+                             </h4>
+                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                 Build your shopping list by adding products manually or from suggestions.
+                             </p>
+                             <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-emerald-500 mt-0.5">✓</span>
+                                     <span><strong>Search Products</strong> — Use the search bar to find any product by name or barcode</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-emerald-500 mt-0.5">✓</span>
+                                     <span><strong>AI Suggestions</strong> — Add items from "Suggested for Today" with one tap</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-emerald-500 mt-0.5">✓</span>
+                                     <span><strong>Adjust Quantities</strong> — Use +/- buttons to change item quantities</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-emerald-500 mt-0.5">✓</span>
+                                     <span><strong>Remove Items</strong> — Click the trash icon to remove items from your cart</span>
+                                 </li>
+                             </ul>
+                         </div>
+
+                         {/* Saving Carts */}
+                         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                             <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                                 <Save className="w-4 h-4 text-blue-600" />
+                                 Saving & Managing Cart Lists
+                             </h4>
+                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                 Save your cart for later or create multiple shopping lists.
+                             </p>
+                             <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-blue-500 mt-0.5">✓</span>
+                                     <span><strong>Save Cart</strong> — Click "Save Cart" and give it a name (e.g., "Weekly Groceries")</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-blue-500 mt-0.5">✓</span>
+                                     <span><strong>My Lists</strong> — Access all your saved carts from the "My Lists" button</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-blue-500 mt-0.5">✓</span>
+                                     <span><strong>Load Cart</strong> — Reload a saved cart to edit or shop again</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-blue-500 mt-0.5">✓</span>
+                                     <span><strong>Edit Cart</strong> — Click ✏️ to modify a saved cart and update it</span>
+                                 </li>
+                             </ul>
+                         </div>
+
+                         {/* Chain Comparison */}
+                         <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                             <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                                 <TrendingDown className="w-4 h-4 text-amber-600" />
+                                 Price Comparison Across Chains
+                             </h4>
+                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                 See which supermarket chain offers the best total price for your cart.
+                             </p>
+                             <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-amber-500 mt-0.5">✓</span>
+                                     <span><strong>Auto Compare</strong> — Prices are compared automatically as you add items</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-amber-500 mt-0.5">✓</span>
+                                     <span><strong>Top 3 Stores</strong> — See the 3 cheapest stores for your entire cart</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-amber-500 mt-0.5">✓</span>
+                                     <span><strong>Compare Button</strong> — Click "Compare" on saved carts to see a detailed price table</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-amber-500 mt-0.5">✓</span>
+                                     <span><strong>Color Coded</strong> — Green = cheapest, Red = most expensive for each item</span>
+                                 </li>
+                             </ul>
+                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                 💡 The comparison table shows individual item prices AND total cart cost per chain.
+                             </p>
+                         </div>
+
+                         {/* Alternative Items */}
+                         <div className="bg-violet-50 dark:bg-violet-900/20 p-4 rounded-lg border border-violet-100 dark:border-violet-800">
+                             <h4 className="font-semibold mb-2 text-violet-900 dark:text-violet-200 flex items-center gap-2">
+                                 <ArrowLeftRight className="w-4 h-4 text-violet-600" />
+                                 Choosing Alternative Items
+                             </h4>
+                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                 When a product isn't available at a chain, find a substitute with the same name.
+                             </p>
+                             <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-violet-500 mt-0.5">✓</span>
+                                     <span><strong>Missing Items</strong> — Cells show "-" when an item isn't available at that chain</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-violet-500 mt-0.5">✓</span>
+                                     <span><strong>Click to Add</strong> — Click any cell (even "-") to search for alternatives</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-violet-500 mt-0.5">✓</span>
+                                     <span><strong>~alt Marker</strong> — Cells with dashed yellow border show an alternative product</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-violet-500 mt-0.5">✓</span>
+                                     <span><strong>Auto-Saved</strong> — Your alternative selections are saved to the cart automatically</span>
+                                 </li>
+                             </ul>
+                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                 💡 Different chains may have different GTINs for the same product — alternatives help complete your comparison.
+                             </p>
+                         </div>
+
+                         {/* Smart Split */}
+                         <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg border border-pink-100 dark:border-pink-800">
+                             <h4 className="font-semibold mb-2 text-pink-900 dark:text-pink-200 flex items-center gap-2">
+                                 <Split className="w-4 h-4 text-pink-600" />
+                                 Smart Cart Split
+                             </h4>
+                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                 Save even more by splitting your cart across multiple stores.
+                             </p>
+                             <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-pink-500 mt-0.5">✓</span>
+                                     <span><strong>Optimization</strong> — We calculate the cheapest store for each item</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-pink-500 mt-0.5">✓</span>
+                                     <span><strong>Split Strategy</strong> — Shows which items to buy at which store</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-pink-500 mt-0.5">✓</span>
+                                     <span><strong>Apply Cart</strong> — Click "Apply Optimized Cart" to use the split strategy</span>
+                                 </li>
+                             </ul>
+                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                 💡 Split suggestions appear when savings exceed 5% vs single-store shopping.
+                             </p>
+                         </div>
+
+                         {/* Tips */}
+                         <div className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                             <h4 className="font-semibold mb-2 text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                                 <Sparkles className="w-4 h-4 text-slate-600" />
+                                 Pro Tips
+                             </h4>
+                             <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                 <li>• <strong>Location:</strong> Allow location access to see nearest store branches</li>
+                                 <li>• <strong>Suggestions:</strong> Use 👍👎 to personalize your AI suggestions</li>
+                                 <li>• <strong>Report Issues:</strong> Use the flag icon to report incorrect prices</li>
+                                 <li>• <strong>Refresh:</strong> Click "Refresh" on suggestions to get updated recommendations</li>
+                             </ul>
+                         </div>
+                     </div>
+                 </DialogContent>
+             </Dialog>
              <RecommendationExplainer mode="smart_cart" className="text-white hover:bg-white/20 hover:text-white" />
         </div>
         <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
