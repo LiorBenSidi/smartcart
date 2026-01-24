@@ -11,30 +11,42 @@ export default Deno.serve(async (req) => {
 
         const svc = base44.asServiceRole;
 
-        // Fetch all products with prices
-        const products = await svc.entities.Product.list('-updated_date', 5000);
+        // Fetch products in smaller batches to avoid memory issues
+        let allProducts = [];
+        let skip = 0;
+        const batchSize = 1000;
         
-        if (!products || products.length === 0) {
+        while (true) {
+            const batch = await svc.entities.Product.filter({}, '-updated_date', batchSize, skip);
+            if (!batch || batch.length === 0) break;
+            allProducts = allProducts.concat(batch);
+            console.log(`[generateBenchmarks] Fetched batch ${skip / batchSize + 1}, got ${batch.length} products, total: ${allProducts.length}`);
+            if (batch.length < batchSize) break;
+            skip += batchSize;
+            // Safety limit
+            if (allProducts.length > 50000) break;
+        }
+
+        console.log(`[generateBenchmarks] Total products fetched: ${allProducts.length}`);
+        
+        if (!allProducts || allProducts.length === 0) {
             return Response.json({ success: false, error: "No products found" });
         }
 
-        console.log(`[generateBenchmarks] Found ${products.length} products`);
+        // Log sample to debug structure
+        if (allProducts.length > 0) {
+            const sample = allProducts[0];
+            console.log(`[generateBenchmarks] Sample product: gtin=${sample.gtin}, current_price=${sample.current_price}`);
+        }
 
         // Group products by GTIN to calculate min/avg prices
         const pricesByGtin = new Map();
         
-        // Log first product to debug structure
-        if (products.length > 0) {
-            console.log("[generateBenchmarks] Sample product keys:", Object.keys(products[0]));
-            console.log("[generateBenchmarks] Sample product:", JSON.stringify(products[0]).substring(0, 500));
-        }
-        
-        for (const product of products) {
-            // Try multiple ways to access the data
-            const gtin = product.gtin ?? product.data?.gtin;
-            const price = product.current_price ?? product.data?.current_price;
+        for (const product of allProducts) {
+            const gtin = product.gtin;
+            const price = product.current_price;
             
-            if (!gtin || price === undefined || price === null) continue;
+            if (!gtin || price === undefined || price === null || price === 0) continue;
             
             if (!pricesByGtin.has(gtin)) {
                 pricesByGtin.set(gtin, []);
@@ -43,6 +55,10 @@ export default Deno.serve(async (req) => {
         }
 
         console.log(`[generateBenchmarks] Found ${pricesByGtin.size} unique GTINs with prices`);
+
+        if (pricesByGtin.size === 0) {
+            return Response.json({ success: false, error: "No products with prices found" });
+        }
 
         // Create benchmarks
         const today = new Date().toISOString().split('T')[0];
@@ -60,10 +76,6 @@ export default Deno.serve(async (req) => {
                 source: "product_catalog",
                 updated_at: new Date().toISOString()
             });
-        }
-
-        if (benchmarks.length === 0) {
-            return Response.json({ success: false, error: "No products with prices found" });
         }
 
         // Delete existing benchmarks for today to avoid duplicates
