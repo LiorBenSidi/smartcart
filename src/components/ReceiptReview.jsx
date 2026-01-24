@@ -182,26 +182,54 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                 </div>
             </div>
 
+            {/* Sticky Mini Summary */}
+            {reviewCount > 0 && (
+                <div className="sticky top-0 z-10 bg-gray-900/95 dark:bg-gray-950/95 backdrop-blur-sm border border-gray-700/50 rounded-xl p-3 flex items-center justify-between shadow-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                            <AlertCircle className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-200">
+                            Review {reviewCount} item{reviewCount !== 1 ? 's' : ''} → Confirm & continue
+                        </span>
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Image Panel */}
-                <div className="bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-800 sticky top-4 h-[80vh]">
-                    {data.raw_receipt_image_url?.toLowerCase().includes('.pdf') ?
-          <iframe
-            src={`https://docs.google.com/viewer?url=${encodeURIComponent(data.raw_receipt_image_url)}&embedded=true`}
-            className="w-full h-full"
-            title="Receipt PDF" /> :
-
-
-          <img
-            src={data.raw_receipt_image_url}
-            alt="Receipt"
-            className="w-full h-full object-contain" />
-
-          }
+                <div className="lg:block">
+                    {/* Mobile Toggle */}
+                    <button 
+                        onClick={() => setShowReceiptImage(!showReceiptImage)}
+                        className="lg:hidden w-full flex items-center justify-between p-3 bg-gray-800/50 border border-gray-700/50 rounded-xl mb-3"
+                    >
+                        <div className="flex items-center gap-2 text-gray-300">
+                            <Image className="w-4 h-4" />
+                            <span className="text-sm font-medium">Receipt Image</span>
+                        </div>
+                        {showReceiptImage ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    </button>
+                    
+                    <div className={`bg-gray-800/30 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-700/50 dark:border-gray-800 sticky top-16 ${showReceiptImage ? 'block' : 'hidden lg:block'}`} style={{ maxHeight: '75vh' }}>
+                        {data.raw_receipt_image_url?.toLowerCase().includes('.pdf') ? (
+                            <iframe
+                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(data.raw_receipt_image_url)}&embedded=true`}
+                                className="w-full h-[70vh]"
+                                title="Receipt PDF" 
+                            />
+                        ) : (
+                            <img
+                                src={data.raw_receipt_image_url}
+                                alt="Receipt"
+                                className="w-full h-auto max-h-[70vh] object-contain" 
+                            />
+                        )}
+                    </div>
                 </div>
 
                 {/* Form Panel */}
-                <div className="space-y-6 overflow-y-auto h-[80vh] pr-2 text-gray-900 dark:text-gray-100">
+                <div className="space-y-5 overflow-y-auto lg:max-h-[80vh] pr-1 text-gray-900 dark:text-gray-100">
                     
                     {/* Metadata Section */}
                     <Card className={`${metadataWarning ? "border-amber-300 dark:border-amber-700 shadow-amber-50 dark:shadow-none" : "dark:border-gray-700"} dark:bg-gray-800`}>
