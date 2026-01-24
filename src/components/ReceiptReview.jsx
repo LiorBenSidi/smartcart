@@ -396,7 +396,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                             style={{ gridTemplateColumns: '20px 1fr 72px 88px 40px' }}
                                         >
                                             <div></div>
-                                            <div className="text-left">Item</div>
+                                            <div className="text-left pl-2">Item</div>
                                             <div className="text-right pr-8">Qty</div>
                                             <div className="text-right pr-8">Price</div>
                                             <div></div>
