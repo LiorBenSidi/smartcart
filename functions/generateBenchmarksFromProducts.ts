@@ -24,12 +24,15 @@ export default Deno.serve(async (req) => {
         const pricesByGtin = new Map();
         
         for (const product of products) {
-            if (!product.gtin || !product.current_price) continue;
+            const gtin = product.gtin || product.data?.gtin;
+            const price = product.current_price || product.data?.current_price;
             
-            if (!pricesByGtin.has(product.gtin)) {
-                pricesByGtin.set(product.gtin, []);
+            if (!gtin || !price) continue;
+            
+            if (!pricesByGtin.has(gtin)) {
+                pricesByGtin.set(gtin, []);
             }
-            pricesByGtin.get(product.gtin).push(product.current_price);
+            pricesByGtin.get(gtin).push(price);
         }
 
         console.log(`[generateBenchmarks] Found ${pricesByGtin.size} unique GTINs with prices`);
