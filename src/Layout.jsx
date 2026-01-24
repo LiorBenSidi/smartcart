@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { NAV_ITEMS } from '@/components/mockData';
-import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun, Loader2 } from 'lucide-react';
+import { ShieldCheck, LogIn, Monitor, Smartphone, Moon, Sun, Loader2, ArrowLeft } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { storeManager } from "@/components/storeManager";
 import { processManager } from "@/components/processManager";
@@ -118,6 +118,15 @@ export default function Layout({ children, currentPageName }) {
           }
 
         <main className="pt-6 pr-6 pb-32 pl-6">
+          {currentPageName === 'CatalogAdmin' && (
+            <Link 
+              to={createPageUrl('Admin')} 
+              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Admin
+            </Link>
+          )}
           {children}
         </main>
 
