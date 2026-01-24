@@ -2075,12 +2075,7 @@ export default function SmartCart() {
 
                   </div> :
 
-          <Card>
-              <CardContent className="p-10 text-center text-gray-400">
-                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No price data available for comparison</p>
-              </CardContent>
-            </Card>
+
           }
         </>
         }
