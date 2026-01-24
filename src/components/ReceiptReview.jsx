@@ -460,34 +460,40 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                         <Plus className="w-4 h-4 mr-2" /> Add Item
                     </Button>
 
-                                                        {hasMismatch &&
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
-                                                        <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                                                        <div className="flex-1">
-                                                        <h4 className="text-sm font-bold text-red-900 dark:text-red-200">Total Amount Mismatch</h4>
-                                                        <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                                                        The sum of item prices (₪{calculatedSum.toFixed(2)}) does not match the receipt total (₪{(parseFloat(data.totalAmount) || 0).toFixed(2)}).
-                                                        </p>
-                                                        </div>
-                                                        <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
-              onClick={() => handleMetadataChange('totalAmount', calculatedSum)}>
+                                                        {hasMismatch && (
+                        <div className="bg-amber-500/10 dark:bg-amber-900/20 border border-amber-500/30 dark:border-amber-700/50 rounded-xl p-4 flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-amber-200">Total doesn't match items</h4>
+                                <p className="text-xs text-amber-300/80 mt-1">
+                                    Items sum to ₪{calculatedSum.toFixed(2)}, but receipt shows ₪{(parseFloat(data.totalAmount) || 0).toFixed(2)}.
+                                </p>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
+                                onClick={() => handleMetadataChange('totalAmount', calculatedSum)}
+                            >
+                                Use ₪{calculatedSum.toFixed(2)}
+                            </Button>
+                        </div>
+                    )}
 
-                                                        Fix Total
-                                                        </Button>
-                                                        </div>
-          }
-
-                    <Button
-            onClick={handleConfirmAll}
-            disabled={isSaving}
-            className="w-full h-12 text-lg bg-green-600 hover:bg-green-700">
-
-                        <Save className="mr-2 h-5 w-5" />
-                        {isSaving ? "Saving..." : "Confirm & Continue"}
-                    </Button>
+                    {/* Confirm CTA */}
+                    <div className="space-y-2 pt-2">
+                        <Button
+                            onClick={handleConfirmAll}
+                            disabled={isSaving}
+                            className="w-full h-12 text-base font-semibold bg-green-600 hover:bg-green-500 rounded-xl shadow-lg shadow-green-900/30"
+                        >
+                            <ShieldCheck className="mr-2 h-5 w-5" />
+                            {isSaving ? "Saving..." : "Confirm & Continue"}
+                        </Button>
+                        <p className="text-xs text-gray-500 text-center">
+                            You can edit this receipt later if needed.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>);
