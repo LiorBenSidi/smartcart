@@ -247,40 +247,36 @@ Example output format:
                                                 </div>
                                             )}
                                             <div className="flex gap-2">
-                                                <DialogClose asChild>
-                                                    <Button 
-                                                        size="sm" 
-                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 h-10"
-                                                        onClick={() => handleAddToPlan(rec, idx)}
-                                                        disabled={addingToPlan[idx] || addedToPlan[idx]}
-                                                    >
-                                                        {addingToPlan[idx] ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : addedToPlan[idx] ? (
-                                                            <>
-                                                                <Check className="w-4 h-4 mr-1" />
-                                                                Added
-                                                            </>
-                                                        ) : (
-                                                            "Add to plan"
-                                                        )}
-                                                    </Button>
-                                                </DialogClose>
-                                                <DialogClose asChild>
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="outline" 
-                                                        className="border-gray-600 text-gray-300 hover:bg-gray-800 flex-1 h-10"
-                                                        onClick={() => handleRemindMe(rec, idx)}
-                                                        disabled={settingReminder[idx]}
-                                                    >
-                                                        {settingReminder[idx] ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            "Remind me"
-                                                        )}
-                                                    </Button>
-                                                </DialogClose>
+                                                <Button 
+                                                    size="sm" 
+                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 h-10"
+                                                    onClick={() => handleAddToPlan(rec, `focus-${idx}`)}
+                                                    disabled={addingToPlan[`focus-${idx}`] || addedToPlan[`focus-${idx}`]}
+                                                >
+                                                    {addingToPlan[`focus-${idx}`] ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : addedToPlan[`focus-${idx}`] ? (
+                                                        <>
+                                                            <Check className="w-4 h-4 mr-1" />
+                                                            Added!
+                                                        </>
+                                                    ) : (
+                                                        "Add to plan"
+                                                    )}
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    className="border-gray-600 text-gray-300 hover:bg-gray-800 flex-1 h-10"
+                                                    onClick={() => handleRemindMe(rec, `focus-${idx}`)}
+                                                    disabled={settingReminder[`focus-${idx}`] || addedToPlan[`focus-${idx}`]}
+                                                >
+                                                    {settingReminder[`focus-${idx}`] ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        "Remind me"
+                                                    )}
+                                                </Button>
                                             </div>
                                             </div>
                                             </DialogContent>
@@ -389,40 +385,36 @@ Example output format:
                                                             </div>
                                                         )}
                                                         <div className="flex gap-2">
-                                                            <DialogClose asChild>
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                                                                    onClick={() => handleAddToPlan(rec, idx)}
-                                                                    disabled={addingToPlan[idx] || addedToPlan[idx]}
-                                                                >
-                                                                    {addingToPlan[idx] ? (
-                                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                                    ) : addedToPlan[idx] ? (
-                                                                        <>
-                                                                            <Check className="w-4 h-4 mr-1" />
-                                                                            Added
-                                                                        </>
-                                                                    ) : (
-                                                                        "Add to plan"
-                                                                    )}
-                                                                </Button>
-                                                            </DialogClose>
-                                                            <DialogClose asChild>
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    variant="outline" 
-                                                                    className="border-gray-600 text-gray-300 hover:bg-gray-700 flex-1"
-                                                                    onClick={() => handleRemindMe(rec, idx)}
-                                                                    disabled={settingReminder[idx]}
-                                                                >
-                                                                    {settingReminder[idx] ? (
-                                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                                    ) : (
-                                                                        "Remind me"
-                                                                    )}
-                                                                </Button>
-                                                            </DialogClose>
+                                                            <Button 
+                                                                size="sm" 
+                                                                className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                                                                onClick={() => handleAddToPlan(rec, `list-${idx}`)}
+                                                                disabled={addingToPlan[`list-${idx}`] || addedToPlan[`list-${idx}`]}
+                                                            >
+                                                                {addingToPlan[`list-${idx}`] ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                ) : addedToPlan[`list-${idx}`] ? (
+                                                                    <>
+                                                                        <Check className="w-4 h-4 mr-1" />
+                                                                        Added!
+                                                                    </>
+                                                                ) : (
+                                                                    "Add to plan"
+                                                                )}
+                                                            </Button>
+                                                            <Button 
+                                                                size="sm" 
+                                                                variant="outline" 
+                                                                className="border-gray-600 text-gray-300 hover:bg-gray-700 flex-1"
+                                                                onClick={() => handleRemindMe(rec, `list-${idx}`)}
+                                                                disabled={settingReminder[`list-${idx}`] || addedToPlan[`list-${idx}`]}
+                                                            >
+                                                                {settingReminder[`list-${idx}`] ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                ) : (
+                                                                    "Remind me"
+                                                                )}
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 </DialogContent>
