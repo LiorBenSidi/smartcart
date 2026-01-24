@@ -14,12 +14,39 @@ import {
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 
-export default function AIInsightsPanel({ insights, focusMode = false }) {
+export default function AIInsightsPanel({ insights, focusMode = false, onPlanUpdated }) {
     const [selectedRec, setSelectedRec] = useState(null);
     const [addingToPlan, setAddingToPlan] = useState({});
     const [settingReminder, setSettingReminder] = useState({});
     const [addedToPlan, setAddedToPlan] = useState({});
     const [emojiMap, setEmojiMap] = useState({});
+    const [savedInsights, setSavedInsights] = useState([]);
+
+    // Load saved insights on mount
+    React.useEffect(() => {
+        const loadSavedInsights = async () => {
+            try {
+                const saved = await base44.entities.Insight.filter({ 
+                    type: 'savings_plan',
+                    status: 'active'
+                });
+                setSavedInsights(saved);
+                // Mark already saved items
+                const savedTitles = new Set(saved.map(s => s.title));
+                const alreadyAdded = {};
+                insights?.topRecommendations?.forEach((rec, idx) => {
+                    if (savedTitles.has(rec.title)) {
+                        alreadyAdded[`focus-${idx}`] = true;
+                        alreadyAdded[`list-${idx}`] = true;
+                    }
+                });
+                setAddedToPlan(alreadyAdded);
+            } catch (error) {
+                console.error("Failed to load saved insights:", error);
+            }
+        };
+        loadSavedInsights();
+    }, [insights?.topRecommendations]);
 
     // Fetch emojis via LLM for recommendations
     React.useEffect(() => {
@@ -65,15 +92,21 @@ Example output format:
         setAddingToPlan(prev => ({ ...prev, [idx]: true }));
         try {
             // Save as an Insight entity for tracking
-            await base44.entities.Insight.create({
+            const newInsight = await base44.entities.Insight.create({
                 title: rec.title,
                 message: rec.description,
                 type: 'savings_plan',
                 status: 'active',
                 potential_savings: rec.potentialSavings || 0,
+                metrics_json: { 
+                    originalRec: rec,
+                    addedAt: new Date().toISOString()
+                }
             });
             setAddedToPlan(prev => ({ ...prev, [idx]: true }));
+            setSavedInsights(prev => [...prev, newInsight]);
             toast.success("Added to your savings plan!");
+            if (onPlanUpdated) onPlanUpdated();
         } catch (error) {
             console.error("Failed to add to plan:", error);
             toast.error("Failed to add to plan");
@@ -161,10 +194,96 @@ Example output format:
     const recommendationsCount = insights.topRecommendations?.length || 0;
     const displayedRecs = focusMode ? insights.topRecommendations?.slice(0, 3) : insights.topRecommendations?.slice(0, 3);
 
+    const handleRemoveFromPlan = async (insightId) => {
+        try {
+            await base44.entities.Insight.update(insightId, { status: 'dismissed' });
+            setSavedInsights(prev => prev.filter(i => i.id !== insightId));
+            // Reset the addedToPlan state for matching titles
+            const removed = savedInsights.find(i => i.id === insightId);
+            if (removed) {
+                const newAddedToPlan = { ...addedToPlan };
+                insights?.topRecommendations?.forEach((rec, idx) => {
+                    if (rec.title === removed.title) {
+                        delete newAddedToPlan[`focus-${idx}`];
+                        delete newAddedToPlan[`list-${idx}`];
+                    }
+                });
+                setAddedToPlan(newAddedToPlan);
+            }
+            toast.success("Removed from plan");
+            if (onPlanUpdated) onPlanUpdated();
+        } catch (error) {
+            console.error("Failed to remove from plan:", error);
+            toast.error("Failed to remove");
+        }
+    };
+
+    const handleMarkComplete = async (insightId) => {
+        try {
+            await base44.entities.Insight.update(insightId, { status: 'completed' });
+            setSavedInsights(prev => prev.filter(i => i.id !== insightId));
+            toast.success("Marked as complete! 🎉");
+            if (onPlanUpdated) onPlanUpdated();
+        } catch (error) {
+            console.error("Failed to mark complete:", error);
+            toast.error("Failed to update");
+        }
+    };
+
     // Focus Mode UI
     if (focusMode) {
         return (
             <div className="space-y-5">
+                {/* My Saved Actions */}
+                {savedInsights.length > 0 && (
+                    <div className="space-y-3">
+                        <p className="text-xs text-emerald-400 uppercase tracking-wider font-medium px-1 flex items-center gap-2">
+                            <Check className="w-3 h-3" />
+                            My Savings Plan ({savedInsights.length})
+                        </p>
+                        <div className="space-y-2">
+                            {savedInsights.map((insight) => (
+                                <div key={insight.id} className="relative overflow-hidden rounded-xl">
+                                    <div className="absolute inset-0 bg-emerald-900/30 backdrop-blur-sm border border-emerald-700/50 rounded-xl" />
+                                    <div className="relative p-4 flex items-center gap-4">
+                                        <span className="text-2xl shrink-0">{getEmoji(insight.title, insight.message)}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-gray-100 text-sm font-medium truncate">
+                                                {insight.title}
+                                            </p>
+                                            {insight.potential_savings > 0 && (
+                                                <p className="text-emerald-400 text-xs">
+                                                    Save ₪{insight.potential_savings.toFixed(0)}/mo
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 w-8 p-0 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/50"
+                                                onClick={() => handleMarkComplete(insight.id)}
+                                                title="Mark as complete"
+                                            >
+                                                <Check className="w-4 h-4" />
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 w-8 p-0 text-gray-500 hover:text-red-400 hover:bg-red-900/30"
+                                                onClick={() => handleRemoveFromPlan(insight.id)}
+                                                title="Remove from plan"
+                                            >
+                                                ×
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Hero Savings Card - Glassmorphism */}
                 {totalSavings > 0 && (
                     <div className="relative overflow-hidden rounded-2xl">
