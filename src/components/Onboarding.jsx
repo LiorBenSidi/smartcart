@@ -180,6 +180,17 @@ export default function Onboarding({ onComplete }) {
       // Create user profile
       await base44.entities.UserProfile.create(profile);
 
+      // Build user vectors after profile creation
+      const currentUser = await base44.auth.me();
+      if (currentUser?.email) {
+          try {
+              await base44.functions.invoke('buildUserVectors', { userId: currentUser.email, mode: 'incremental' });
+              console.log("User vectors updated after onboarding profile save.");
+          } catch (e) {
+              console.error("Failed to update user vectors after onboarding:", e);
+          }
+      }
+
       // Generate recommendations using AI with hybrid approach including sentiment
       const stores = await base44.entities.Store.list('', 50);
 
@@ -204,9 +215,23 @@ export default function Onboarding({ onComplete }) {
           `${s.name} (Sentiment: ${s.sentiment?.overall_sentiment || 'neutral'}, Rating: ${s.average_rating || 'N/A'}/5)`
       ).join('\n');
 
-      //const prompt = `Generate personalized shopping recommendations for a new user based on their detailed profile and store sentiment analysis. Prioritize practical, actionable advice.\n\nUser Profile:\n- Budget Focus: ${finalAnswers.budget} (monthly target: ₪${profile.monthly_budget || 'not specified'})\n- Dietary Restrictions: ${finalAnswers.restrictions.join(', ')}\n${profile.kashrut_level && profile.kashrut_level !== 'none' ? `- Kashrut Level: ${profile.kashrut_level}\n` : ''}\n${profile.allergen_avoid_list && profile.allergen_avoid_list.length > 0 ? `- Allergies: ${profile.allergen_avoid_list.join(', ')}\n` : ''}\n- Shopping Style: ${finalAnswers.style}\n- Household Size: ${profile.household_size}\n${profile.age_range ? `- Age Range: ${profile.age_range}\n` : ''}\n${profile.user_role ? `- User Role: ${profile.user_role}\n` : ''}\n\nStore Options with Sentiment Analysis:\n${storeInfo}\n\nProvide concise, data-driven recommendations in JSON format:\n1. Best store recommendation from the available list, with a specific, compelling reason that considers user preferences AND store sentiment/ratings.\n2. Two specific product categories the user should focus on for their shopping, with clear reasons aligning to their preferences.\n3. A brief, encouraging, and helpful overall summary (2-3 sentences) that ties together the recommendations and persona.`;
-      
-      const prompt = `You are an AI assistant specialized in personalized shopping recommendations, focusing on user preferences for budget, diet, and lifestyle. Your goal is to provide practical and actionable advice for a new user.\\n\\nUser Profile Details:\\n- Budget Focus: ${finalAnswers.budget} (monthly target: ₪${profile.monthly_budget || 'not specified'})\\n- Dietary Restrictions: ${finalAnswers.restrictions.join(', ')}\\n${profile.kashrut_level && profile.kashrut_level !== 'none' ? `- Kashrut Level: ${profile.kashrut_level}\\n` : ''}\\n${profile.allergen_avoid_list && profile.allergen_avoid_list.length > 0 ? `- Allergies: ${profile.allergen_avoid_list.join(', ')}\\n` : ''}\\n- Shopping Style: ${finalAnswers.style}\\n- Household Size: ${profile.household_size}\\n${profile.age_range ? `- Age Range: ${profile.age_range}\\n` : ''}\\n${profile.user_role ? `- User Role: ${profile.user_role}\\n` : ''}\\n\\nAvailable Store Information (including sentiment and ratings):\\n${storeInfo}\\n\\nTask:\\n1. Recommend the best store from the 'Available Store Information' list. Provide a specific, compelling reason that explicitly connects the user's profile preferences with the store's sentiment and ratings.\\n2. Suggest two specific product categories the user should prioritize for their shopping, with clear reasons that align directly with their stated preferences (e.g., budget, diet, household size).\\n3. Write a brief (2-3 sentences), encouraging, and helpful overall summary that ties together the recommendations and a concise shopping persona for the user.\\n\\nRespond ONLY in JSON format.`;
+      const prompt = `You are an AI assistant specialized in personalized shopping recommendations. Your advice should be highly practical and actionable, taking into account the user's explicit preferences (budget, dietary needs, shopping style) and also leveraging insights derived from patterns of similar shoppers through collaborative filtering. Your goal is to provide a comprehensive recommendation package including store suggestions, product categories, and actionable shopping tips.
+
+      User Profile Details:
+      - Budget Focus: ${finalAnswers.budget} (monthly target: ₪${profile.monthly_budget || 'not specified'})
+      - Dietary Restrictions: ${finalAnswers.restrictions.join(', ')}
+      ${profile.kashrut_level && profile.kashrut_level !== 'none' ? `- Kashrut Level: ${profile.kashrut_level}\n` : ''}${profile.allergen_avoid_list && profile.allergen_avoid_list.length > 0 ? `- Allergies: ${profile.allergen_avoid_list.join(', ')}\n` : ''}- Shopping Style: ${finalAnswers.style}
+      - Household Size: ${profile.household_size}
+      ${profile.age_range ? `- Age Range: ${profile.age_range}\n` : ''}${profile.user_role ? `- User Role: ${profile.user_role}\n` : ''}
+      Available Store Information (including sentiment and ratings for context):
+      ${storeInfo}
+
+      Task:
+      1. Recommend the best store from the 'Available Store Information' list. Provide a specific, compelling reason that explicitly connects the user's profile preferences, store sentiment/ratings, AND potential collaborative filtering insights (i.e., this store is popular among users with similar profiles).
+      2. Suggest two specific product categories the user should prioritize for their shopping. Provide clear reasons that align directly with their stated preferences and also highlight how these categories are favored by users with similar profiles.
+      3. Write a brief (2-3 sentences), encouraging, and helpful overall summary. This summary should incorporate a concise shopping persona for the user and include one or two actionable shopping tips, informed by both their direct preferences and collaborative filtering.
+
+      Respond ONLY in JSON format.`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
