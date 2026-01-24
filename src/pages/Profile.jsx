@@ -350,18 +350,6 @@ export default function Profile() {
         </h3>
 
         <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                <div className="flex items-center gap-2">
-                    {darkMode ? <Moon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> : <Sun className="w-4 h-4 text-orange-500" />}
-                    <Label htmlFor="dark-mode" className="cursor-pointer font-medium text-gray-700 dark:text-gray-200">Dark Mode</Label>
-                </div>
-                <Switch
-              id="dark-mode"
-              checked={darkMode}
-              onCheckedChange={setDarkMode} />
-
-            </div>
-
             <div className="space-y-2">
                 <Label>Monthly Budget (₪)</Label>
                 <Input
