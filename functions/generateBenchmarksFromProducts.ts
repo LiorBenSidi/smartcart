@@ -71,16 +71,16 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        // Check for existing benchmarks for these GTINs today and delete them
-        for (const benchmark of benchmarks) {
-            const existing = await svc.entities.BenchmarkPrice.filter({ 
-                product_id: benchmark.product_id, 
-                date: today 
-            });
-            for (const e of existing) {
-                await svc.entities.BenchmarkPrice.delete(e.id);
-            }
-        }
+        // Check for existing benchmarks for these GTINs today and skip them
+        const existingBenchmarks = await svc.entities.BenchmarkPrice.filter({ date: today }, '', 5000);
+        const existingProductIds = new Set(existingBenchmarks.map(b => b.product_id));
+        
+        // Filter out benchmarks that already exist
+        const newBenchmarks = benchmarks.filter(b => !existingProductIds.has(b.product_id));
+        
+        console.log(`[generateBenchmarks] Skipping ${benchmarks.length - newBenchmarks.length} existing benchmarks`);
+        
+        benchmarks = newBenchmarks;
 
         // Bulk create benchmarks
         if (benchmarks.length > 0) {
