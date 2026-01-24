@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import confetti from 'canvas-confetti';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check, Loader2 } from 'lucide-react';
@@ -204,6 +205,14 @@ Example output format:
         try {
             await base44.entities.Insight.update(insightId, { status: 'completed' });
             setSavedInsights(prev => prev.filter(i => i.id !== insightId));
+            
+            // Celebration confetti animation
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+            
             toast.success("Marked as complete! 🎉");
             if (onPlanUpdated) onPlanUpdated();
         } catch (error) {
