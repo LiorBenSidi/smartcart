@@ -241,10 +241,14 @@ Before returning the response, verify that:
                             properties: {
                                 title: { type: "string" },
                                 description: { type: "string" },
-                                potentialSavings: { type: "number" }
+                                potentialSavings: { type: "number" },
+                                potentialSavingsPercentage: { type: "string" },
+                                rationale: { type: "string" }
                             }
                         }
-                    }
+                    },
+                    total_potential_monthly_savings_nis: { type: "number" },
+                    total_potential_monthly_savings_percentage: { type: "string" }
                 }
             }
         });
