@@ -43,12 +43,28 @@ export default Deno.serve(async (req) => {
             console.log(`[rebuildUserHabits] Processing user: ${targetUser.email}, habitOffset: ${habitOffset}`);
             
             // 2. Fetch all receipts for this user, sorted by date
+            // Try user_email first (new field), fallback to created_by for older receipts
             console.log(`[rebuildUserHabits] Fetching receipts for ${targetUser.email}...`);
-            const receipts = await svc.entities.Receipt.filter(
-                { created_by: targetUser.email }, 
+            let receipts = await svc.entities.Receipt.filter(
+                { user_email: targetUser.email }, 
                 'purchased_at', // sort by date ascending (oldest first)
                 1000 // limit per user
             );
+            // Fallback: also check created_by for older receipts that don't have user_email
+            const legacyReceipts = await svc.entities.Receipt.filter(
+                { created_by: targetUser.email }, 
+                'purchased_at',
+                1000
+            );
+            // Merge and dedupe by id
+            const receiptIds = new Set(receipts.map(r => r.id));
+            for (const r of legacyReceipts) {
+                if (!receiptIds.has(r.id)) {
+                    receipts.push(r);
+                }
+            }
+            // Re-sort by purchased_at
+            receipts.sort((a, b) => new Date(a.purchased_at || a.created_date) - new Date(b.purchased_at || b.created_date));
             console.log(`[rebuildUserHabits] Found ${receipts.length} receipts for ${targetUser.email}`);
 
             if (receipts.length === 0) {
