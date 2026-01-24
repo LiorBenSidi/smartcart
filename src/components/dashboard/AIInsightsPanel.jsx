@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check, Loader2, ChevronDown } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -22,6 +22,7 @@ export default function AIInsightsPanel({ insights, focusMode = false, onPlanUpd
     const [addedToPlan, setAddedToPlan] = useState({});
     const [emojiMap, setEmojiMap] = useState({});
     const [savedInsights, setSavedInsights] = useState([]);
+    const [planExpanded, setPlanExpanded] = useState(false);
 
     // Load saved insights on mount
     React.useEffect(() => {
@@ -228,11 +229,14 @@ Example output format:
                 {/* My Saved Actions */}
                 {savedInsights.length > 0 && (
                     <div className="space-y-3">
-                        <p className="text-xs text-emerald-400 uppercase tracking-wider font-medium px-1 flex items-center gap-2">
-                            <Check className="w-3 h-3" />
+                        <button 
+                            onClick={() => setPlanExpanded(!planExpanded)}
+                            className="text-xs text-emerald-400 uppercase tracking-wider font-medium px-1 flex items-center gap-2 hover:text-emerald-300 transition-colors w-full"
+                        >
+                            <ChevronDown className={`w-3 h-3 transition-transform ${planExpanded ? '' : '-rotate-90'}`} />
                             My Savings Plan ({savedInsights.length})
-                        </p>
-                        <div className="space-y-2">
+                        </button>
+                        {planExpanded && <div className="space-y-2">
                             {savedInsights.map((insight) => (
                                 <div key={insight.id} className="relative overflow-hidden rounded-xl">
                                     <div className="absolute inset-0 bg-emerald-900/30 backdrop-blur-sm border border-emerald-700/50 rounded-xl" />
@@ -271,7 +275,7 @@ Example output format:
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                        </div>}
                     </div>
                 )}
 
