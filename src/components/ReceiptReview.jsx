@@ -91,7 +91,8 @@ export default function ReceiptReview({ receipt, onConfirm }) {
         console.log("Starting incremental updates for user email:", userEmail);
         base44.functions.invoke('fixHabitUserIds', {})
           .then(res => {
-            console.log("Fixed habit user IDs", res.data);
+            console.log("[ReceiptReview] fixHabitUserIds result:", res.data);
+            console.log("[ReceiptReview] Fixed count:", res.data?.fixed || 0);
             return base44.functions.invoke('rebuildUserHabits', { userId: userEmail, mode: 'incremental' });
           })
           .then(res => {
