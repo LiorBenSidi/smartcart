@@ -401,13 +401,25 @@ export default function Upload() {
 
       {/* Action Button - Prominent */}
       {preview && !isUploading && (
-        <Button 
-          onClick={uploadAndProcess} 
-          disabled={!file}
-          className="w-full h-12 text-base font-semibold bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 disabled:opacity-50 transition-all"
-        >
-          <ScanLine className="mr-2 w-5 h-5" /> Analyze Receipt
-        </Button>
+        <div className="space-y-2">
+          {!selectedChain && (
+            <div className="flex items-center gap-2 text-amber-400 text-sm bg-amber-900/20 border border-amber-700/50 rounded-lg p-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Please select a chain before analyzing</span>
+            </div>
+          )}
+          <Button 
+            onClick={uploadAndProcess} 
+            disabled={!file || !selectedChain}
+            className={`w-full h-12 text-base font-semibold shadow-lg transition-all ${
+              selectedChain 
+                ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20' 
+                : 'bg-gray-700 hover:bg-gray-600 shadow-none cursor-not-allowed'
+            } disabled:opacity-50`}
+          >
+            <ScanLine className="mr-2 w-5 h-5" /> Analyze Receipt
+          </Button>
+        </div>
       )}
 
       {isUploading && (
@@ -420,19 +432,23 @@ export default function Upload() {
       <div className="space-y-3">
         <button 
           onClick={() => setShowChainSelector(!showChainSelector)}
-          className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-800/30 border border-gray-700/50 hover:bg-gray-800/50 transition-colors text-left"
+          className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
+            selectedChain 
+              ? 'bg-indigo-900/20 border-indigo-600/50 hover:bg-indigo-900/30' 
+              : 'bg-amber-900/20 border-amber-600/50 hover:bg-amber-900/30'
+          }`}
         >
           <div className="flex items-center gap-3">
-            <Store className="w-4 h-4 text-gray-500" />
+            <Store className={`w-4 h-4 ${selectedChain ? 'text-indigo-400' : 'text-amber-400'}`} />
             <div>
-              <p className="text-sm text-gray-300">
-                {selectedChain ? selectedChain.name : 'Select chain'}
-                {selectedStore && <span className="text-gray-500"> • {selectedStore.city || selectedStore.name}</span>}
+              <p className={`text-sm ${selectedChain ? 'text-indigo-200' : 'text-amber-200'}`}>
+                {selectedChain ? selectedChain.name : 'Select chain *'}
+                {selectedStore && <span className="text-indigo-400/70"> • {selectedStore.city || selectedStore.name}</span>}
               </p>
-              <p className="text-[10px] text-gray-500">Optional — helps improve categorization</p>
+              <p className="text-[10px] text-gray-500">Required — helps improve categorization</p>
             </div>
           </div>
-          <ChevronsUpDown className="w-4 h-4 text-gray-500" />
+          <ChevronsUpDown className={`w-4 h-4 ${selectedChain ? 'text-indigo-400' : 'text-amber-400'}`} />
         </button>
 
         {showChainSelector && (
