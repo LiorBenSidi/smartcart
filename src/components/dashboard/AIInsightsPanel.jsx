@@ -102,11 +102,7 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            {rec.potentialSavings > 0 && (
-                                                <span className="text-green-400 font-bold text-sm">
-                                                    Save ₪{rec.potentialSavings.toFixed(0)}
-                                                </span>
-                                            )}
+
                                             <Dialog>
                                                 <DialogTrigger asChild>
                                                     <Button 
