@@ -86,10 +86,14 @@ export default function ReceiptReview({ receipt, onConfirm }) {
       const userEmail = currentUser?.email;
       console.log("userEmail: ", userEmail)
       
-      // Trigger incremental habit and vector updates (sequential: habits first, then vectors)
+      // Trigger incremental habit and vector updates (sequential: fix IDs, habits, then vectors)
       if (userEmail) {
         console.log("Starting incremental updates for user email:", userEmail);
-        base44.functions.invoke('rebuildUserHabits', { userId: userEmail, mode: 'incremental' })
+        base44.functions.invoke('fixHabitUserIds', {})
+          .then(res => {
+            console.log("Fixed habit user IDs", res.data);
+            return base44.functions.invoke('rebuildUserHabits', { userId: userEmail, mode: 'incremental' });
+          })
           .then(res => {
             console.log("Incremental habit rebuild completed", res.data);
             console.log("Now invoking buildUserVectors for:", userEmail);
