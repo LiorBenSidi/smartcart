@@ -232,7 +232,7 @@ Example output format:
                                     <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border-gray-700/50">
                                         <DialogHeader>
                                             <DialogTitle className="flex items-center gap-3 text-gray-100">
-                                                <span className="text-2xl">{getCategoryEmoji(rec.title, rec.description)}</span>
+                                                <span className="text-2xl">{getEmoji(rec.title, rec.description)}</span>
                                                 {rec.title}
                                             </DialogTitle>
                                         </DialogHeader>
