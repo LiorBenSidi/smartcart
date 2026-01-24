@@ -441,43 +441,50 @@ export default function Admin() {
                             <div>
                                 <h4 className="font-semibold mb-2">Process Overview:</h4>
                                 <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                                    <li>Uploads compressed XML catalog file (.gz format)</li>
-                                    <li>Decompresses and parses XML to extract product data</li>
-                                    <li>Creates/updates Chain and Store records</li>
-                                    <li>Bulk creates/updates Product entities (batches of 1000)</li>
-                                    <li>Marks new products with enrichment_status='pending'</li>
-                                    <li>Background job processes pending products for AI enrichment</li>
+                                    <li>Upload compressed XML catalog file (.gz format)</li>
+                                    <li>Decompress using fflate and parse XML with fast-xml-parser</li>
+                                    <li>Extract ChainId, StoreId, SubChainId from XML root</li>
+                                    <li>Create/update Chain record (with web search for new chains)</li>
+                                    <li>Create/update Store record linked to chain</li>
+                                    <li>Bulk create new products or update existing (batches of 1000)</li>
+                                    <li>Mark new/uncategorized products with enrichment_status='pending'</li>
                                 </ol>
                             </div>
 
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">AI Enrichment (Background Job):</h4>
-                                <p className="mb-2 text-gray-700 dark:text-gray-300">Products with enrichment_status='pending' are processed in batches of 50:</p>
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
-                                    <p className="font-semibold mb-1">LLM Prompt:</p>
-                                    <p className="text-gray-600 dark:text-gray-400">"Analyze these grocery products and provide:"</p>
-                                    <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
-                                        <li>Category (Dairy, Meat, Produce, etc.)</li>
-                                        <li>Kosher Level (none, basic_kosher, strict_kosher, glatt_kosher, mehadrin)</li>
-                                        <li>Allergen Tags (Gluten, Nuts, Soy, Fish, etc.)</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="font-semibold mb-2">Chain Information Enhancement:</h4>
-                                <p className="text-gray-700 dark:text-gray-300">For new chains, uses LLM with internet search to find:</p>
-                                <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300">
-                                    <li>Website URL</li>
-                                    <li>Logo image URL</li>
-                                    <li>Chain description</li>
-                                    <li>Chain type classification</li>
+                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-emerald-900 dark:text-emerald-200">Chain Information (New Chains Only):</h4>
+                                <p className="mb-2 text-gray-700 dark:text-gray-300">LLM with internet search finds:</p>
+                                <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
+                                    <li>Website URL & Logo URL</li>
+                                    <li>Brief description</li>
+                                    <li>Chain type (supermarket, discount_store, premium_store, organic_store, kosher_store, convenience_store)</li>
                                 </ul>
                             </div>
 
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Store Location Discovery:</h4>
+                                <p className="text-gray-700 dark:text-gray-300">For new chains or chains without stores, queries OpenStreetMap Nominatim API:</p>
+                                <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-2">
+                                    <code>nominatim.openstreetmap.org/search?q=[ChainName] Israel&limit=50</code>
+                                </div>
+                                <p className="text-gray-700 dark:text-gray-300 mt-2">Creates Store records with address, city, lat/lon coordinates.</p>
+                            </div>
+
                             <div>
-                                <h4 className="font-semibold mb-2">Store Location Discovery:</h4>
-                                <p className="text-gray-700 dark:text-gray-300">Fetches branch locations from OpenStreetMap API and creates Store records with geocoded addresses.</p>
+                                <h4 className="font-semibold mb-2">Product Data Extracted:</h4>
+                                <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300 text-xs">
+                                    <li>ItemCode → gtin, chain_item_code</li>
+                                    <li>ItemName → canonical_name, display_name</li>
+                                    <li>ManufacturerName → brand_name</li>
+                                    <li>ItemPrice → current_price</li>
+                                    <li>UnitOfMeasurePrice → unit_price</li>
+                                    <li>bIsWeighted → is_weight_based</li>
+                                </ul>
+                            </div>
+
+                            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Background Enrichment:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">Products marked 'pending' are enriched by a separate background job (enrichProductsJob) which adds category, kosher_level, and allergen_tags via LLM.</p>
                             </div>
                         </div>
                     </DialogContent>
@@ -512,54 +519,50 @@ export default function Admin() {
                         </DialogHeader>
                         <div className="space-y-4 text-sm">
                             <div>
-                                <h4 className="font-semibold mb-2">Analysis Process:</h4>
+                                <h4 className="font-semibold mb-2">Process Overview:</h4>
                                 <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                                    <li>Fetches all stores and their reviews</li>
-                                    <li>For each store with reviews, analyzes comments individually</li>
-                                    <li>Calculates aggregate sentiment and statistics</li>
-                                    <li>Creates/updates StoreSentiment records</li>
-                                    <li>Aggregates to chain-level ChainSentiment</li>
+                                    <li>Fetches stores in batches (default: 5 per batch)</li>
+                                    <li>For each store, fetches all StoreReview records</li>
+                                    <li>Filters reviews with comments for LLM analysis</li>
+                                    <li>Creates/updates StoreSentiment record per store</li>
+                                    <li>On final batch, aggregates to ChainSentiment</li>
                                 </ol>
                             </div>
 
-                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">LLM Sentiment Classification:</h4>
-                                <p className="mb-2 text-gray-700 dark:text-gray-300">For each review comment:</p>
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono">
-                                    <p className="font-semibold mb-1">LLM Prompt:</p>
-                                    <p className="text-gray-600 dark:text-gray-400">"You are an expert sentiment analyst for grocery stores."</p>
-                                    <p className="text-gray-600 dark:text-gray-400 mt-2">"Classify sentiment as positive (1) or negative (-1)"</p>
-                                    <p className="text-gray-700 dark:text-gray-300 mt-2">Returns:</p>
-                                    <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300">
-                                        <li>Sentiment score (1 or -1)</li>
-                                        <li>Explanation (1-2 sentences)</li>
-                                        <li>Key themes (cleanliness, staff, prices, etc.)</li>
-                                    </ul>
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">LLM Sentiment Analysis:</h4>
+                                <p className="mb-2 text-gray-700 dark:text-gray-300">Each review comment is analyzed individually:</p>
+                                <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono">
+                                    <p className="text-gray-600 dark:text-gray-400">"Analyze review for grocery store. Return JSON."</p>
                                 </div>
+                                <p className="text-gray-700 dark:text-gray-300 mt-2 text-xs">Returns: sentiment (1 or -1), explanation, themes array</p>
                             </div>
 
                             <div>
-                                <h4 className="font-semibold mb-2">Aggregation Logic:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p><strong>Store Level:</strong></p>
-                                    <ul className="list-disc list-inside ml-4">
-                                        <li>Majority vote: More likes = positive, more dislikes = negative</li>
-                                        <li>Sentiment score: Total likes minus dislikes</li>
-                                        <li>Top 5 most mentioned themes across all reviews</li>
-                                        <li>Average rating from star ratings (1-5)</li>
-                                    </ul>
-                                    <p className="mt-2"><strong>Chain Level:</strong></p>
-                                    <ul className="list-disc list-inside ml-4">
-                                        <li>Mean rating across all stores in chain</li>
-                                        <li>Majority sentiment based on store counts</li>
-                                        <li>Breakdown of positive/neutral/negative stores</li>
-                                    </ul>
-                                </div>
+                                <h4 className="font-semibold mb-2">StoreSentiment Record:</h4>
+                                <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300 text-xs">
+                                    <li><strong>overall_sentiment:</strong> 'positive' | 'negative' | 'neutral' (majority vote)</li>
+                                    <li><strong>sentiment_score:</strong> likes count &gt; dislikes = 1, else -1 or 0</li>
+                                    <li><strong>average_rating:</strong> Mean of star ratings (1-5)</li>
+                                    <li><strong>positive_reviews / negative_reviews:</strong> Counts</li>
+                                    <li><strong>common_themes:</strong> Top 5 themes mentioned</li>
+                                    <li><strong>sentiment_explanations:</strong> Array of LLM explanations</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-2">ChainSentiment Aggregation:</h4>
+                                <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300 text-xs">
+                                    <li><strong>average_rating:</strong> Mean across all stores in chain</li>
+                                    <li><strong>overall_sentiment:</strong> Majority based on store sentiment counts</li>
+                                    <li><strong>positive/neutral/negative_stores:</strong> Store breakdown</li>
+                                    <li><strong>total_stores_analyzed:</strong> Count of stores with sentiment</li>
+                                </ul>
                             </div>
 
                             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
                                 <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Rate Limiting:</h4>
-                                <p className="text-gray-700 dark:text-gray-300">1000ms delay between stores, 500ms between reviews to avoid API rate limits. Stops after 1 consecutive error.</p>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">1000ms delay between stores, 500ms between reviews. Stops after 1 consecutive LLM error to prevent runaway failures.</p>
                             </div>
                         </div>
                     </DialogContent>
@@ -589,92 +592,63 @@ export default function Admin() {
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <Brain className="w-5 h-5 text-purple-600" />
-                                User Vectors - Technical Details
+                                Rebuild User Vectors - Technical Details
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 text-sm">
                             <div>
-                                <h4 className="font-semibold mb-2">System Overview:</h4>
-                                <p className="text-gray-700 dark:text-gray-300">Hybrid recommendation engine combining collaborative filtering and content-based analysis to suggest stores, categories, and products.</p>
+                                <h4 className="font-semibold mb-2">Process Overview:</h4>
+                                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                                    <li>Process users in batches (default: 10 per batch)</li>
+                                    <li>Build Profile Vector from UserProfile data</li>
+                                    <li>Build Behavior Vector from receipts, habits, carts, feedback</li>
+                                    <li>Save vectors to UserVectorSnapshot entity</li>
+                                    <li>Compute similar users via cosine similarity</li>
+                                    <li>Store top 10 neighbors in SimilarUserEdge</li>
+                                </ol>
                             </div>
                             
                             <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">1. User Profile Vector Generation:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Analyzes all available purchase history:</p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li><strong>Category preferences:</strong> Frequency distribution across product categories</li>
-                                        <li><strong>Price sensitivity:</strong> avg_item_price, price_variance, discount_preference</li>
-                                        <li><strong>Brand affinity:</strong> Ranked list of most purchased brands</li>
-                                        <li><strong>Dietary signals:</strong> organic_ratio, kosher_ratio, health_conscious_ratio</li>
-                                        <li><strong>Shopping behavior:</strong> basket_size, purchase_frequency, time_of_day</li>
-                                    </ul>
-                                </div>
+                                <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">Profile Vector Components:</h4>
+                                <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300 text-xs">
+                                    <li><strong>kosher_[level]:</strong> From kashrut_level (1.0 if set)</li>
+                                    <li><strong>diet_[type]:</strong> From diet preference (1.0 if set)</li>
+                                    <li><strong>household_size:</strong> Normalized 0-1 (size/10)</li>
+                                    <li><strong>budget_score:</strong> 0=save_money, 0.5=balanced, 0.8=health_focused, 1=high</li>
+                                    <li><strong>allergy_[name]:</strong> From allergies array</li>
+                                    <li><strong>prefChain_[id]:</strong> Preferred store chains</li>
+                                    <li><strong>age_[range], role_[type]:</strong> Demographics</li>
+                                </ul>
                             </div>
                             
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">2. Collaborative Filtering (User Similarity):</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs">Finds "shopper twins" using cosine similarity:</p>
-                                    <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono mt-1">
-                                        <code className="text-gray-700 dark:text-gray-300">
-                                            similarity = (V_user · V_other) / (||V_user|| × ||V_other||)<br/>
-                                            where V = normalized preference vector
-                                        </code>
-                                    </div>
-                                    <ul className="list-disc list-inside ml-4 text-xs mt-2">
-                                        <li>Pre-computed similarity scores stored in SimilarUserEdge</li>
-                                        <li>Selects top 10 most similar users (threshold: similarity ≥ 0.3)</li>
-                                        <li>Extracts products/stores they bought that you haven't</li>
-                                    </ul>
-                                </div>
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Behavior Vector Data Sources:</h4>
+                                <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300 text-xs">
+                                    <li><strong>Receipts (100):</strong> store, category, product, brand signals with time decay (e^(-days/30))</li>
+                                    <li><strong>UserProductHabit (200):</strong> Strong product/brand signals weighted by purchase_count × confidence</li>
+                                    <li><strong>SavedCart (50):</strong> Intent signals for store, products, brands</li>
+                                    <li><strong>UserProductPreference:</strong> Explicit like (+1.5) / dislike (-1.0)</li>
+                                    <li><strong>SmartTipFeedback:</strong> Tip type preferences (like +0.5, dislike -0.3)</li>
+                                    <li><strong>RecommendationFeedback (100):</strong> Engagement signals (thumbs_up +1.0, add_to_cart +0.8, dismiss -0.3)</li>
+                                </ul>
                             </div>
                             
                             <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">3. Candidate Scoring & Ranking:</h4>
-                                <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                                    <p className="text-xs"><strong>Product Recommendations:</strong></p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li>Collaborative score: Σ(similarity_weight × purchase_frequency)</li>
-                                        <li>Category match bonus: +points if category in user's top 5</li>
-                                        <li>Price appropriateness: Penalize if outside user's price range</li>
-                                        <li>Recency boost: Newer products get slight advantage</li>
-                                    </ul>
-                                    <p className="text-xs mt-2"><strong>Store Recommendations:</strong></p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li>Based on chains where similar users shop</li>
-                                        <li>Location bonus if user coordinates provided</li>
-                                        <li>estimated_savings calculated from price comparisons</li>
-                                    </ul>
-                                    <p className="text-xs mt-2"><strong>Category Suggestions:</strong></p>
-                                    <ul className="list-disc list-inside ml-4 text-xs">
-                                        <li>Categories popular among similar users but new to you</li>
-                                        <li>Sorted by aggregate similarity score</li>
-                                    </ul>
+                                <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200">User Similarity Calculation:</h4>
+                                <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono">
+                                    <code>cosine_similarity = (A · B) / (||A|| × ||B||)</code>
                                 </div>
+                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300 mt-2">
+                                    <li>Computed on behavior vectors (normalized)</li>
+                                    <li>Minimum threshold: 0.1 similarity</li>
+                                    <li>Top 10 similar users stored per user</li>
+                                    <li>Old edges deleted before recomputation</li>
+                                </ul>
                             </div>
-                            
+
                             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">4. Insights Generation:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">Smart Insights use rule-based heuristics:</p>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>ShopperTwins:</strong> Highlights most similar user (e.g., "74% match with User X")</li>
-                                    <li><strong>CategoryTrend:</strong> Detects if you're buying more of a category lately</li>
-                                    <li><strong>BudgetAlert:</strong> Warns if spending above usual patterns</li>
-                                </ul>
-                            </div>
-                            
-                            <div>
-                                <h4 className="font-semibold mb-2">5. Feedback Loop:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">User interactions (thumbs up/down, add to cart, dismiss) are logged to RecommendationFeedback and used in future training cycles to refine similarity weights.</p>
-                            </div>
-                            
-                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                                <h4 className="font-semibold mb-2">Background Jobs:</h4>
-                                <ul className="list-disc list-inside ml-4 text-xs text-gray-700 dark:text-gray-300">
-                                    <li><strong>buildUserVectors:</strong> Nightly rebuild of all user preference vectors</li>
-                                    <li><strong>computeSimilarUsers:</strong> Weekly recalculation of user-user similarity graph</li>
-                                </ul>
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Incremental Mode:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">If mode='incremental', checks for new data since last snapshot (receipts, habits, feedback, profile updates). Skips users with no changes.</p>
                             </div>
                         </div>
                     </DialogContent>
@@ -704,20 +678,46 @@ export default function Admin() {
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <GitMerge className="w-5 h-5 text-teal-600" />
-                                Merge GTIN Duplicates
+                                Scan GTIN Duplicates - Technical Details
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-3 text-sm">
-                            <p className="text-gray-700 dark:text-gray-300">
-                                Finds products with the same name but different GTINs and unifies them.
-                            </p>
-                            <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-teal-900 dark:text-teal-200">Selection Logic:</h4>
-                                <ol className="list-decimal list-inside text-xs text-gray-700 dark:text-gray-300 space-y-1">
-                                    <li>Choose the most common GTIN</li>
-                                    <li>If tie: Choose the GTIN with more digits</li>
-                                    <li>If same length: Choose the higher number (e.g., 800 vs 100)</li>
+                            <div>
+                                <h4 className="font-semibold mb-2">Process Overview:</h4>
+                                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300 text-xs">
+                                    <li>Fetches all products in batches of 5000</li>
+                                    <li>Groups by canonical_name (case-insensitive)</li>
+                                    <li>Identifies groups with multiple unique GTINs</li>
+                                    <li>Excludes groups where all products are from the same chain</li>
+                                    <li>Presents interactive approval UI for merging</li>
                                 </ol>
+                            </div>
+
+                            <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-teal-900 dark:text-teal-200">Target GTIN Selection:</h4>
+                                <ol className="list-decimal list-inside text-xs text-gray-700 dark:text-gray-300 space-y-1">
+                                    <li>Most common GTIN (highest occurrence count)</li>
+                                    <li>If tie: Longer GTIN (more digits)</li>
+                                    <li>If same length: Numerically higher value</li>
+                                </ol>
+                            </div>
+
+                            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Exclusion Rules:</h4>
+                                <ul className="list-disc list-inside text-xs text-gray-700 dark:text-gray-300">
+                                    <li>Products with same chain_id AND chain_item_code as reference</li>
+                                    <li>Groups where all products belong to a single chain</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-2">Approval UI Features:</h4>
+                                <ul className="list-disc list-inside text-xs text-gray-700 dark:text-gray-300">
+                                    <li>Select/deselect individual products to merge</li>
+                                    <li>Change target GTIN via dropdown</li>
+                                    <li>Highlights data conflicts (category, brand, kosher, allergens)</li>
+                                    <li>Approve individual groups or all at once</li>
+                                </ul>
                             </div>
                         </div>
                     </DialogContent>
@@ -802,34 +802,50 @@ export default function Admin() {
                         <div className="space-y-4 text-sm">
                             <div>
                                 <h4 className="font-semibold mb-2">Process Overview:</h4>
-                                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                                    <li>Iterates through all users in batches.</li>
-                                    <li>For each user, fetches all their receipts, sorted by purchase date.</li>
-                                    <li>Deletes any existing UserProductHabit records for that user to ensure a clean slate.</li>
-                                    <li>Re-calculates product purchase habits based on the user's entire receipt history. This includes tracking purchase count, last purchase date, average cadence (days between purchases), and average quantity.</li>
-                                    <li>Habits are processed chronologically to correctly derive cadence.</li>
-                                    <li>Bulk creates the newly calculated UserProductHabit records for the user.</li>
-                                </ul>
+                                <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                                    <li>Process users in batches (default: 1 user per batch)</li>
+                                    <li>Fetch receipts by user_email + created_by (merged, deduplicated)</li>
+                                    <li>Sort receipts by purchased_at ascending (chronological)</li>
+                                    <li>FULL mode: Delete existing habits, rebuild from scratch</li>
+                                    <li>INCREMENTAL mode: Only process receipts newer than last habit</li>
+                                    <li>Bulk create UserProductHabit records</li>
+                                </ol>
                             </div>
 
                             <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-orange-900 dark:text-orange-200">Habit Calculation Logic:</h4>
-                                <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300 space-y-1">
-                                    <li><strong>Product Identification:</strong> Uses SKU, code, or product name from receipt items.</li>
-                                    <li><strong>Cadence Calculation:</strong> For subsequent purchases of the same product, it calculates the days since the last purchase and updates the average cadence incrementally.</li>
-                                    <li><strong>Average Quantity:</strong> Calculates the average quantity purchased per item.</li>
+                                <h4 className="font-semibold mb-2 text-orange-900 dark:text-orange-200">UserProductHabit Fields:</h4>
+                                <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300 text-xs space-y-1">
+                                    <li><strong>product_id:</strong> SKU || code || name from receipt item</li>
+                                    <li><strong>product_name:</strong> Latest item name</li>
+                                    <li><strong>purchase_count:</strong> Total times purchased</li>
+                                    <li><strong>last_purchase_date:</strong> Most recent purchase</li>
+                                    <li><strong>avg_cadence_days:</strong> Average days between purchases</li>
+                                    <li><strong>avg_quantity:</strong> Average quantity per purchase</li>
+                                    <li><strong>confidence_score:</strong> From receipt item (default 0.5)</li>
+                                </ul>
+                            </div>
+
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">Cadence Calculation:</h4>
+                                <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono">
+                                    <code>newCadence = (oldCadence × (N-2) + daysSince) / (N-1)</code>
+                                </div>
+                                <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">Only updates if daysSince &gt; 0.1 (separate trips, not same receipt)</p>
+                            </div>
+
+                            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-200">Rate Limiting & Chunking:</h4>
+                                <ul className="list-disc list-inside text-xs text-gray-700 dark:text-gray-300">
+                                    <li>Deletes habits in batches of 50</li>
+                                    <li>Creates habits in batches (maxHabitsPerBatch, default 50)</li>
+                                    <li>60 second delay between users (configurable)</li>
+                                    <li>Returns hasMore=true if more chunks needed</li>
                                 </ul>
                             </div>
 
                             <div>
-                                <h4 className="font-semibold mb-2">Batch Processing:</h4>
-                                <p className="text-gray-700 dark:text-gray-300 mb-2">The function processes users in small batches (default 1 user per batch) to prevent timeouts, especially for apps with many users or extensive receipt histories.</p>
-                                <p className="text-gray-700 dark:text-gray-300">This allows the processManager to update progress and manage the overall operation.</p>
-                            </div>
-
-                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                                <h4 className="font-semibold mb-2">Idempotency:</h4>
-                                <p className="text-xs text-gray-700 dark:text-gray-300">The process ensures idempotency by clearing existing habits for a user before recalculating, meaning running it multiple times for the same user yields the same result.</p>
+                                <h4 className="font-semibold mb-2">Incremental Mode:</h4>
+                                <p className="text-xs text-gray-700 dark:text-gray-300">Only processes receipts newer than the latest last_purchase_date in existing habits. Updates existing habits in-place and creates new ones for new products.</p>
                             </div>
                         </div>
                     </DialogContent>
