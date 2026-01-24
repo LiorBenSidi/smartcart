@@ -188,7 +188,7 @@ export default Deno.serve(async (req) => {
             // 3. Only delete existing habits on FIRST call for this user (habitOffset === 0)
             if (habitOffset === 0) {
                 console.log(`[rebuildUserHabits] FULL mode - Fetching existing habits for ${targetUser.email}...`);
-                const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
+                const existingHabits = await svc.entities.UserProductHabit.filter({ user_id: targetUser.email });
                 console.log(`[rebuildUserHabits] Found ${existingHabits.length} existing habits to delete`);
                 
                 if (existingHabits.length > 0) {
