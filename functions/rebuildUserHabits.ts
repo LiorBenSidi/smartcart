@@ -57,8 +57,8 @@ export default Deno.serve(async (req) => {
             if (mode === 'incremental') {
                 console.log(`[rebuildUserHabits] INCREMENTAL mode for ${targetUser.email}`);
                 
-                // Fetch existing habits
-                const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
+                // Fetch existing habits - use user_id field (email) not created_by
+                const existingHabits = await svc.entities.UserProductHabit.filter({ user_id: targetUser.email });
                 const habitsMap = new Map();
                 let latestHabitDate = null;
                 
