@@ -78,6 +78,16 @@ export default Deno.serve(async (req) => {
                 
                 // Fetch existing habits - use user_id field (email) not created_by
                 const existingHabits = await svc.entities.UserProductHabit.filter({ user_id: targetUser.email });
+
+                // Also fetch any habits with wrong user_id (app ID instead of email) and fix them
+                const wrongIdHabits = await svc.entities.UserProductHabit.filter({ user_id: "69330b1ba1b4842cb79a70d6" });
+                if (wrongIdHabits.length > 0) {
+                    console.log(`[rebuildUserHabits] Found ${wrongIdHabits.length} habits with wrong user_id, fixing...`);
+                    for (const h of wrongIdHabits) {
+                        await svc.entities.UserProductHabit.update(h.id, { user_id: targetUser.email });
+                        existingHabits.push({ ...h, user_id: targetUser.email });
+                    }
+                }
                 const habitsMap = new Map();
                 let latestHabitDate = null;
                 
