@@ -532,9 +532,37 @@ export default function Admin() {
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
                                 <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-200">LLM Sentiment Analysis:</h4>
                                 <p className="mb-2 text-gray-700 dark:text-gray-300">Each review comment is analyzed individually:</p>
-                                <div className="bg-white dark:bg-gray-800 p-2 rounded text-xs font-mono">
-                                    <p className="text-gray-600 dark:text-gray-400">"Analyze review for grocery store. Return JSON."</p>
-                                </div>
+                                <details className="mt-2">
+                                    <summary className="cursor-pointer text-xs font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100">
+                                        Show actual LLM prompt & schema
+                                    </summary>
+                                    <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono mt-2 space-y-3">
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400 mb-1">Prompt:</p>
+                                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">"Analyze review for grocery store. Return JSON. Review: "[review.comment]""</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400 mb-1">Response JSON Schema:</p>
+                                            <pre className="text-gray-700 dark:text-gray-300 overflow-x-auto">{`{
+  "type": "object",
+  "properties": {
+    "sentiment": { 
+      "type": "number", 
+      "enum": [1, -1] 
+    },
+    "explanation": { 
+      "type": "string" 
+    },
+    "themes": { 
+      "type": "array", 
+      "items": { "type": "string" } 
+    }
+  },
+  "required": ["sentiment", "explanation", "themes"]
+}`}</pre>
+                                        </div>
+                                    </div>
+                                </details>
                                 <p className="text-gray-700 dark:text-gray-300 mt-2 text-xs">Returns: sentiment (1 or -1), explanation, themes array</p>
                             </div>
 
