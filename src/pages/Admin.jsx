@@ -544,22 +544,22 @@ export default function Admin() {
                                         <div>
                                             <p className="text-gray-500 dark:text-gray-400 mb-1">Response JSON Schema:</p>
                                             <pre className="text-gray-700 dark:text-gray-300 overflow-x-auto">{`{
-  "type": "object",
-  "properties": {
-    "sentiment": { 
-      "type": "number", 
-      "enum": [1, -1] 
-    },
-    "explanation": { 
-      "type": "string" 
-    },
-    "themes": { 
-      "type": "array", 
-      "items": { "type": "string" } 
-    }
-  },
-  "required": ["sentiment", "explanation", "themes"]
-}`}</pre>
+                                          "type": "object",
+                                          "properties": {
+                                            "sentiment": { 
+                                              "type": "number", 
+                                              "enum": [1, -1] 
+                                            },
+                                            "explanation": { 
+                                              "type": "string" 
+                                            },
+                                            "themes": { 
+                                              "type": "array", 
+                                              "items": { "type": "string" } 
+                                            }
+                                          },
+                                          "required": ["sentiment", "explanation", "themes"]
+                                        }`}</pre>
                                         </div>
                                     </div>
                                 </details>
