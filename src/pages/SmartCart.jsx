@@ -2073,9 +2073,7 @@ export default function SmartCart() {
                   </div>
             }
 
-                  </div> :
-
-
+                  </div> : null
           }
         </>
         }
