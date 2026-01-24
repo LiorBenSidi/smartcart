@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check, Loader2, ChevronDown } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check, Loader2, ChevronDown, HelpCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -11,7 +11,14 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 
@@ -294,9 +301,23 @@ Example output format:
                                 <p className="text-emerald-300/80 text-xs font-medium uppercase tracking-widest mb-2">
                                     Potential Monthly Savings
                                 </p>
-                                <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-1">
-                                    ₪{totalSavings.toFixed(0)}
-                                </h2>
+                                <div className="flex items-center justify-center gap-2">
+                                    <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-1">
+                                        ₪{totalSavings.toFixed(0)}
+                                    </h2>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button className="text-emerald-400/60 hover:text-emerald-300 transition-colors mt-1">
+                                                    <HelpCircle className="w-4 h-4" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-xs bg-gray-900 border-gray-700 text-gray-200">
+                                                <p className="text-xs">This is the sum of potential savings from all {recommendationsCount} recommended actions, based on your spending patterns and price comparisons.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
                                 <p className="text-emerald-400/70 text-sm">
                                     {recommendationsCount} action{recommendationsCount !== 1 ? 's' : ''}
                                 </p>
