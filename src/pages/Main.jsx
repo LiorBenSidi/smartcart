@@ -581,6 +581,29 @@ export default function Main() {
                                     <li>📄 <strong>Scan receipts</strong> → Updates your habits and spending analysis</li>
                                 </ul>
                             </div>
+
+                            <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-lg border border-cyan-100 dark:border-cyan-800">
+                                <h4 className="font-semibold mb-2 text-cyan-900 dark:text-cyan-200 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-cyan-600" />
+                                    New User? We've Got You Covered
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                    Even without any receipts, you'll still receive personalized recommendations.
+                                </p>
+                                <div className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                    <p>
+                                        <strong>How it works:</strong> During onboarding, you shared preferences like budget focus, dietary needs, and household size. 
+                                        We use this profile to find users with similar characteristics.
+                                    </p>
+                                    <p>
+                                        Then, we analyze what products those similar users frequently buy, and combine this <strong>collaborative filtering</strong> data 
+                                        with your stated preferences to generate tailored shopping recommendations.
+                                    </p>
+                                    <p className="text-gray-500 dark:text-gray-400 italic">
+                                        As you scan receipts, insights become even more accurate and personalized to your actual shopping habits.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </DialogContent>
                 </Dialog>
