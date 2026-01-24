@@ -414,14 +414,14 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                                     />
                                                                 </div>
                                                             </td>
-                                                            <td className="py-2 px-1 w-24">
-                                                                <Input
-                                                                    type="number"
-                                                                    value={item.quantity || ''}
-                                                                    onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                                    className="h-7 text-center text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50"
-                                                                />
-                                                            </td>
+                                                            <td className="py-2 px-1 pl-3 w-24">
+                                                                                                                                <Input
+                                                                                                                                    type="number"
+                                                                                                                                    value={item.quantity || ''}
+                                                                                                                                    onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                                                                                                                                    className="h-7 text-left text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50"
+                                                                                                                                />
+                                                                                                                            </td>
                                                             <td className="p-2 w-28">
                                                                 <Input
                                                                     type="number"
