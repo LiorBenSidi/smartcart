@@ -21,13 +21,16 @@ export default Deno.serve(async (req) => {
 
         // 1. Fetch Users
         let batchUsers;
+        let totalUsers = 0;
         if (specificUserId) {
             // If a specific userId (email) is provided, only process that user
             const allUsers = await svc.entities.User.filter({ email: specificUserId });
             batchUsers = allUsers.length > 0 ? [allUsers[0]] : [];
+            totalUsers = batchUsers.length;
             console.log(`[rebuildUserHabits] Processing specific user: ${specificUserId}`);
         } else {
             const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
+            totalUsers = users.length;
             // Manual pagination since list params might vary
             batchUsers = users.slice(skip, skip + limit);
         }
@@ -359,7 +362,7 @@ export default Deno.serve(async (req) => {
 
         // Check if current user still has more habits to create
         const currentUserHasMore = results.length > 0 && results[0].userHasMore;
-        const hasMoreUsers = (skip + limit) < users.length;
+        const hasMoreUsers = (skip + limit) < totalUsers;
         const hasMore = currentUserHasMore || hasMoreUsers;
         
         // Return next habitOffset if user has more, otherwise reset for next user
