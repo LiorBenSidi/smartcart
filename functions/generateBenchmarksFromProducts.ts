@@ -23,11 +23,18 @@ export default Deno.serve(async (req) => {
         // Group products by GTIN to calculate min/avg prices
         const pricesByGtin = new Map();
         
+        // Log first product to debug structure
+        if (products.length > 0) {
+            console.log("[generateBenchmarks] Sample product keys:", Object.keys(products[0]));
+            console.log("[generateBenchmarks] Sample product:", JSON.stringify(products[0]).substring(0, 500));
+        }
+        
         for (const product of products) {
-            const gtin = product.gtin || product.data?.gtin;
-            const price = product.current_price || product.data?.current_price;
+            // Try multiple ways to access the data
+            const gtin = product.gtin ?? product.data?.gtin;
+            const price = product.current_price ?? product.data?.current_price;
             
-            if (!gtin || !price) continue;
+            if (!gtin || price === undefined || price === null) continue;
             
             if (!pricesByGtin.has(gtin)) {
                 pricesByGtin.set(gtin, []);
