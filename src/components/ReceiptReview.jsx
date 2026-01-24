@@ -91,10 +91,17 @@ export default function ReceiptReview({ receipt, onConfirm }) {
         base44.functions.invoke('rebuildUserHabits', { userId: userEmail, mode: 'incremental' })
           .then(res => {
             console.log("Incremental habit rebuild completed", res.data);
+            console.log("Now invoking buildUserVectors for:", userEmail);
             return base44.functions.invoke('buildUserVectors', { userId: userEmail, mode: 'incremental' });
           })
-          .then(res => console.log("Incremental vector rebuild completed", res.data))
-          .catch(e => console.error("Incremental update failed", e));
+          .then(res => {
+            console.log("Incremental vector rebuild completed", res.data);
+          })
+          .catch(e => {
+            console.error("Incremental update failed at step:", e);
+          });
+      } else {
+        console.warn("No user email found, skipping incremental updates");
       }
 
       // Include the original receipt's created_by in the callback
