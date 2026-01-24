@@ -98,6 +98,7 @@ export default Deno.serve(async (req) => {
         - "type": "money_saving" | "health_dietary" | "discovery" | "general"
         - "message": (string, max 2 sentences, must be specific and actionable)
         - "related_entity_name": (string, optional - use actual product/store name when applicable)
+        - "related_entity_type": (string, optional - "product" or "chain" - specify what kind of entity it is)
         - "inspired_by_liked_tips": (array of strings, optional - if this tip is similar to liked tips, copy the EXACT FULL MESSAGE of ALL those liked tips here verbatim as an array)
 
         Output ONLY the JSON array.
@@ -117,6 +118,7 @@ export default Deno.serve(async (req) => {
                                 type: { type: "string" },
                                 message: { type: "string" },
                                 related_entity_name: { type: "string" },
+                                related_entity_type: { type: "string" },
                                 inspired_by_liked_tips: { 
                                     type: "array",
                                     items: { type: "string" }
