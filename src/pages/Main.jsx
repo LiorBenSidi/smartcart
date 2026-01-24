@@ -894,7 +894,7 @@ export default function Main() {
                                                         Add to Smart Cart
                                                     </>
                                                 )}
-                                            </button>
+                                            </button>}
                                         </div>
                                         )}
                                     </div>
