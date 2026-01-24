@@ -1,5 +1,4 @@
 import Admin from './pages/Admin';
-import CatalogAdmin from './pages/CatalogAdmin';
 import Feedback from './pages/Feedback';
 import Landing from './pages/Landing';
 import Main from './pages/Main';
@@ -9,12 +8,12 @@ import Profile from './pages/Profile';
 import Receipt from './pages/Receipt';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
+import CatalogAdmin from './pages/CatalogAdmin';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Admin": Admin,
-    "CatalogAdmin": CatalogAdmin,
     "Feedback": Feedback,
     "Landing": Landing,
     "Main": Main,
@@ -24,6 +23,7 @@ export const PAGES = {
     "Receipt": Receipt,
     "SmartCart": SmartCart,
     "Upload": Upload,
+    "CatalogAdmin": CatalogAdmin,
 }
 
 export const pagesConfig = {

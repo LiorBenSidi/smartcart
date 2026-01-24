@@ -578,7 +578,7 @@ export default function Receipt() {
 
           {/* Insights Section - Separate Card on Desktop */}
           <div className="lg:col-span-1 space-y-6">
-             {receipt.insights && receipt.insights.length > 0 ?
+             {receipt.insights && receipt.insights.length > 0 &&
           <>
                 {/* Savings & Overpay Insights */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -667,11 +667,7 @@ export default function Receipt() {
                 }
                     </div>
                 </div>
-                </> :
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center text-gray-400 text-sm">
-                    No specific insights for this receipt.
-                </div>
+                </>
           }
           </div>
         </div>
