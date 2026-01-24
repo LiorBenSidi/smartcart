@@ -390,66 +390,68 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                             {showVerifiedItems && (
                                 <CardContent className="p-0 mt-2">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-sm table-fixed">
-                                            <colgroup>
-                                                <col className="w-auto" />
-                                                <col className="w-20" />
-                                                <col className="w-24" />
-                                                <col className="w-10" />
-                                            </colgroup>
-                                            <thead className="bg-gray-800/30 text-gray-500 dark:text-gray-500 border-y border-gray-700/30 text-xs">
-                                                <tr>
-                                                    <th className="py-2 px-3 text-left font-medium">Item</th>
-                                                    <th className="py-2 px-2 text-right font-medium">Qty</th>
-                                                    <th className="py-2 px-2 text-right font-medium">Price</th>
-                                                    <th className="py-2 px-2"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-700/20">
-                                                {verifiedItems.map((item) => {
-                                                    const idx = data.items.findIndex(i => i === item);
-                                                    return (
-                                                        <tr key={idx} className="hover:bg-gray-800/20 transition-colors group">
-                                                            <td className="py-2 px-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500/50 flex-shrink-0" />
-                                                                    <Input
-                                                                        value={item.name || ''}
-                                                                        onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                                        className="h-7 text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 focus:border-gray-600"
-                                                                    />
-                                                                </div>
-                                                            </td>
-                                                            <td className="py-2 px-2">
-                                                                <Input
-                                                                    type="number"
-                                                                    value={item.quantity || ''}
-                                                                    onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                                    className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50 tabular-nums"
-                                                                />
-                                                            </td>
-                                                            <td className="py-2 px-2">
-                                                                <Input
-                                                                    type="number"
-                                                                    value={item.price || ''}
-                                                                    onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                                                                    className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 font-medium tabular-nums"
-                                                                />
-                                                            </td>
-                                                            <td className="py-2 px-2 text-center">
-                                                                <button
-                                                                    onClick={() => handleDeleteItem(idx)}
-                                                                    className="text-gray-400 hover:text-red-400 transition-colors"
-                                                                    title="Remove item"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
+                                        {/* Header Row */}
+                                        <div 
+                                            className="grid items-center gap-3 px-3 py-2 bg-gray-800/30 text-gray-500 dark:text-gray-500 border-y border-gray-700/30 text-xs font-medium"
+                                            style={{ gridTemplateColumns: '20px 1fr 72px 88px 40px' }}
+                                        >
+                                            <div></div>
+                                            <div className="text-left">Item</div>
+                                            <div className="text-right">Qty</div>
+                                            <div className="text-right">Price</div>
+                                            <div></div>
+                                        </div>
+                                        {/* Data Rows */}
+                                        <div className="divide-y divide-gray-700/20">
+                                            {verifiedItems.map((item) => {
+                                                const idx = data.items.findIndex(i => i === item);
+                                                return (
+                                                    <div 
+                                                        key={idx} 
+                                                        className="grid items-center gap-3 px-3 py-2 hover:bg-gray-800/20 transition-colors group"
+                                                        style={{ gridTemplateColumns: '20px 1fr 72px 88px 40px' }}
+                                                    >
+                                                        <div className="flex justify-center">
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500/50" />
+                                                        </div>
+                                                        <div>
+                                                            <Input
+                                                                value={item.name || ''}
+                                                                onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
+                                                                className="h-7 text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 focus:border-gray-600"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Input
+                                                                type="number"
+                                                                value={item.quantity || ''}
+                                                                onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                                                                className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50"
+                                                                style={{ fontVariantNumeric: 'tabular-nums' }}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Input
+                                                                type="number"
+                                                                value={item.price || ''}
+                                                                onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
+                                                                className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 font-medium"
+                                                                style={{ fontVariantNumeric: 'tabular-nums' }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-center">
+                                                            <button
+                                                                onClick={() => handleDeleteItem(idx)}
+                                                                className="text-gray-400 hover:text-red-400 transition-colors"
+                                                                title="Remove item"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </CardContent>
                             )}
