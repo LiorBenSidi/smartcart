@@ -229,7 +229,7 @@ export default function Main() {
   const [showSmartTips, setShowSmartTips] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [receipts, setReceipts] = useState([]);
-  const [focusMode, setFocusMode] = useState(false);
+  const [focusMode, setFocusMode] = useState(true);
   const [showMoreTips, setShowMoreTips] = useState(false);
 
   const fetchAIInsights = async () => {
