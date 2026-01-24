@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import SystemValidationPanel from '../components/SystemValidationPanel';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { processManager } from "@/components/processManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1055,7 +1055,7 @@ export default function Admin() {
             </Card>
         )}
 
-        <SystemValidationPanel />
+
 
         {/* Global Process Results Display */}
         {processState.results && processState.results.length > 0 && !processState.loading && (
