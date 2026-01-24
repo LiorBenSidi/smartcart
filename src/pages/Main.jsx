@@ -797,7 +797,7 @@ export default function Main() {
                                             <span className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md border border-gray-600/50" dir="auto">
                                                 Related: {tip.related_entity_name}
                                             </span>
-                                            <button 
+                                            {tip.related_entity_type === 'product' && <button 
                                                 onClick={async () => {
                                                     const tipKey = `tip-${i}`;
                                                     setAddedToCart(prev => ({ ...prev, [tipKey]: 'loading' }));
