@@ -490,10 +490,9 @@ export default function Receipt() {
                       
                       {/* Table Header */}
                       <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-400 border-b border-gray-100 pb-2 mb-2 px-2">
-                          <div className="col-span-5">ITEM</div>
-                          <div className="col-span-2 text-center">QTY</div>
-                          <div className="col-span-2 text-right">PAID</div>
-                          <div className="col-span-3 text-right">BENCHMARK</div>
+                          <div className="col-span-6">ITEM</div>
+                          <div className="col-span-3 text-center">QTY</div>
+                          <div className="col-span-3 text-right">PAID</div>
                       </div>
 
                       <div className="space-y-1">
@@ -503,34 +502,20 @@ export default function Receipt() {
                     const overpayPercent = benchmark ? ((benchmark.paid_price - benchmark.benchmark_min_price) / benchmark.benchmark_min_price * 100).toFixed(0) : 0;
 
                     return (
-                      <div key={idx} className={`grid grid-cols-12 gap-2 items-center text-sm p-2 rounded-lg transition-colors ${isOverpaid ? 'bg-red-50/50' : 'hover:bg-gray-50'}`}>
-                                  <div className="col-span-5">
-                                      <span className={`font-medium block truncate ${isOverpaid ? 'text-red-900' : 'text-gray-800'}`}>{item.name}</span>
-                                      <div className="text-[10px] text-gray-400 truncate">
-                                          {item.category} • <span className="font-mono opacity-75">{item.code}</span>
-                                      </div>
-                                  </div>
-                                  <div className="col-span-2 text-center text-gray-500 text-xs">
-                                      {item.quantity}
-                                  </div>
-                                  <div className="col-span-2 text-right font-medium text-gray-900">
-                                      ₪{item.price.toFixed(2)}
-                                  </div>
-                                  <div className="col-span-3 text-right">
-                                      {benchmark ?
-                          <div>
-                                              <div className="text-xs text-gray-500">₪{benchmark.benchmark_min_price.toFixed(2)}</div>
-                                              {isOverpaid &&
-                            <div className="text-[10px] text-red-600 font-bold flex items-center justify-end gap-0.5">
-                                                      <TrendingDown className="w-3 h-3" /> +{overpayPercent}%
-                                                  </div>
-                            }
-                                          </div> :
-
-                          <span className="text-xs text-gray-300">-</span>
-                          }
-                                  </div>
-                              </div>);
+                        <div key={idx} className={`grid grid-cols-12 gap-2 items-center text-sm p-2 rounded-lg transition-colors ${isOverpaid ? 'bg-red-50/50' : 'hover:bg-gray-50'}`}>
+                                    <div className="col-span-6">
+                                        <span className={`font-medium block truncate ${isOverpaid ? 'text-red-900' : 'text-gray-800'}`}>{item.name}</span>
+                                        <div className="text-[10px] text-gray-400 truncate">
+                                            {item.category} • <span className="font-mono opacity-75">{item.code}</span>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-3 text-center text-gray-500 text-xs">
+                                        {item.quantity}
+                                    </div>
+                                    <div className="col-span-3 text-right font-medium text-gray-900">
+                                        ₪{item.price.toFixed(2)}
+                                    </div>
+                                </div>);
                   })}
                       </div>
                   </div>

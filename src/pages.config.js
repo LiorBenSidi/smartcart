@@ -5,10 +5,10 @@ import Landing from './pages/Landing';
 import Main from './pages/Main';
 import NearbyStores from './pages/NearbyStores';
 import PriceComparison from './pages/PriceComparison';
-import Receipt from './pages/Receipt';
+import Profile from './pages/Profile';
 import SmartCart from './pages/SmartCart';
 import Upload from './pages/Upload';
-import Profile from './pages/Profile';
+import Receipt from './pages/Receipt';
 import __Layout from './Layout.jsx';
 
 
@@ -20,10 +20,10 @@ export const PAGES = {
     "Main": Main,
     "NearbyStores": NearbyStores,
     "PriceComparison": PriceComparison,
-    "Receipt": Receipt,
+    "Profile": Profile,
     "SmartCart": SmartCart,
     "Upload": Upload,
-    "Profile": Profile,
+    "Receipt": Receipt,
 }
 
 export const pagesConfig = {
