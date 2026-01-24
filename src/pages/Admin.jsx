@@ -351,13 +351,7 @@ export default function Admin() {
     }
   };
 
-  const handleGenerateBenchmarks = async () => {
-    try {
-      await processManager.startProcess('generateBenchmarksFromProducts', { limit: 500 }, { delayMs: 2000 });
-    } catch (err) {
-      console.error('Benchmark generation failed:', err);
-    }
-  };
+
 
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
