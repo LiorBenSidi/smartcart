@@ -729,8 +729,9 @@ export default function Main() {
                                                         // Use same search method as EnhancedProductSearch - fetch all products and use Fuse.js style matching
                                                         const allProducts = await base44.entities.Product.list('-updated_date', 1000);
                                                         
-                                                        // Find best matching product by canonical_name
-                                                        const searchTerm = tip.related_entity_name.toLowerCase().trim();
+                                                        // Use original Hebrew name for search (if available), fallback to display name
+                                                        const originalName = tip.related_entity_name_original || tip.related_entity_name;
+                                                        const searchTerm = originalName.toLowerCase().trim();
                                                         let matchedProduct = null;
                                                         
                                                         // First try exact match
