@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle, Brain, Clock, Settings, GitMerge } from 'lucide-react';
+import { ShieldCheck, Database, Trash2, RefreshCw, Zap, HelpCircle, Brain, Clock, Settings, GitMerge, TrendingUp } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from 'react-router-dom';
@@ -32,6 +32,8 @@ export default function Admin() {
   const [processingMerge, setProcessingMerge] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState({}); // { dupName: { productId: boolean } }
   const [selectedTargetGtin, setSelectedTargetGtin] = useState({}); // { dupName: gtin }
+  const [isGeneratingBenchmarks, setIsGeneratingBenchmarks] = useState(false);
+  const [benchmarkResults, setBenchmarkResults] = useState(null);
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -350,6 +352,20 @@ export default function Admin() {
     }
   };
 
+  const handleGenerateBenchmarks = async () => {
+    setIsGeneratingBenchmarks(true);
+    setBenchmarkResults(null);
+    try {
+      const response = await base44.functions.invoke('generateBenchmarksFromProducts', {});
+      setBenchmarkResults(response.data);
+    } catch (error) {
+      console.error('Failed to generate benchmarks', error);
+      setBenchmarkResults({ success: false, error: error.message });
+    } finally {
+      setIsGeneratingBenchmarks(false);
+    }
+  };
+
   if (isLoading) return <div className="p-10 text-center">Loading Admin Panel...</div>;
 
   return (
@@ -410,7 +426,7 @@ export default function Admin() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="relative">
                 <Link to={createPageUrl('CatalogAdmin')} className="w-full">
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
@@ -722,6 +738,50 @@ export default function Admin() {
             </div>
 
             <div className="relative">
+                <Button 
+                    onClick={handleGenerateBenchmarks}
+                    disabled={isGeneratingBenchmarks}
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50"
+                >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    {isGeneratingBenchmarks ? 'Generating...' : 'Generate Benchmarks'}
+                </Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                            <HelpCircle className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5 text-cyan-600" />
+                                Generate Benchmark Prices
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm">
+                            <p className="text-gray-700 dark:text-gray-300">
+                                Creates benchmark prices from existing product catalog data.
+                            </p>
+                            <div className="bg-cyan-50 dark:bg-cyan-900/20 p-3 rounded">
+                                <h4 className="font-semibold mb-2 text-cyan-900 dark:text-cyan-200">Process:</h4>
+                                <ol className="list-decimal list-inside text-xs text-gray-700 dark:text-gray-300 space-y-1">
+                                    <li>Fetches all products with prices</li>
+                                    <li>Groups by GTIN to find min/avg prices</li>
+                                    <li>Creates BenchmarkPrice records for today</li>
+                                    <li>Used by receipt analysis for overpay detection</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="relative">
                 <div className="flex gap-1">
                     <Button 
                         onClick={handleRebuildUserHabits}
@@ -831,6 +891,34 @@ export default function Admin() {
                 </Dialog>
             </div>
         </div>
+
+        {/* Benchmark Results */}
+        {benchmarkResults && (
+            <Card className={`border-cyan-200 ${benchmarkResults.success ? 'bg-cyan-50 dark:bg-cyan-900/20' : 'bg-red-50 dark:bg-red-900/20'} dark:border-cyan-800`}>
+                <CardContent className="p-4">
+                    <h3 className={`font-bold mb-2 flex items-center gap-2 ${benchmarkResults.success ? 'text-cyan-900 dark:text-cyan-200' : 'text-red-900 dark:text-red-200'}`}>
+                        <TrendingUp className="w-4 h-4" />
+                        Benchmark Generation {benchmarkResults.success ? 'Complete' : 'Failed'}
+                    </h3>
+                    {benchmarkResults.success ? (
+                        <div className="text-sm text-cyan-700 dark:text-cyan-300 space-y-1">
+                            <p>✓ Created <strong>{benchmarkResults.benchmarksCreated}</strong> benchmark records</p>
+                            <p>✓ Covering <strong>{benchmarkResults.uniqueProducts}</strong> unique products</p>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-red-700 dark:text-red-300">{benchmarkResults.error}</p>
+                    )}
+                    <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-3"
+                        onClick={() => setBenchmarkResults(null)}
+                    >
+                        Dismiss
+                    </Button>
+                </CardContent>
+            </Card>
+        )}
 
         {/* GTIN Duplicates - Approval UI */}
         {gtinDuplicates && gtinDuplicates.length > 0 && (
