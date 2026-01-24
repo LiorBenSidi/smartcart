@@ -10,13 +10,15 @@ Deno.serve(async (req) => {
         }
 
         const userEmail = user.email;
-        const wrongId = '69330b1ba1b4842cb79a70d6';
+        const wrongIdPrefix = '69330b1ba';
 
-        // Find habits with wrong user_id that belong to this user (by created_by)
-        const badHabits = await base44.entities.UserProductHabit.filter({ 
-            user_id: wrongId,
+        // Fetch habits for this user and find ones with wrong user_id starting with app ID prefix
+        const userHabits = await base44.entities.UserProductHabit.filter({ 
             created_by: userEmail 
         });
+
+        // Filter habits where user_id starts with the wrong prefix
+        const badHabits = userHabits.filter(h => h.user_id && h.user_id.startsWith(wrongIdPrefix));
 
         if (badHabits.length === 0) {
             return Response.json({ success: true, fixed: 0, message: 'No habits to fix' });
