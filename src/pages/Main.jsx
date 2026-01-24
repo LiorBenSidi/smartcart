@@ -302,10 +302,17 @@ export default function Main() {
               // Fetch a new tip
               refreshTips();
           }
-      } catch (e) {
+
+          // Update user vectors incrementally
+          if (user?.email) {
+              base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' })
+                  .then(() => console.log("User vectors updated"))
+                  .catch(e => console.error("Failed to update user vectors", e));
+          }
+          } catch (e) {
           console.error(e);
           toast.error("Failed to log feedback");
-      }
+          }
   };
 
   useEffect(() => {

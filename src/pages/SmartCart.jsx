@@ -370,12 +370,19 @@ export default function SmartCart() {
           preference: 'dislike'
         });
         toast.success("Removed from suggestions");
-      }
-    } catch (error) {
-      console.error("Failed to update preference", error);
-      toast.error("Failed to update preference");
-    }
-  };
+        }
+
+        // Update user vectors incrementally
+        if (user?.email) {
+        base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' })
+          .then(() => console.log("User vectors updated"))
+          .catch(e => console.error("Failed to update user vectors", e));
+        }
+        } catch (error) {
+        console.error("Failed to update preference", error);
+        toast.error("Failed to update preference");
+        }
+        };
 
 
 
