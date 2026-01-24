@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Pin, PinOff } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -10,49 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { base44 } from '@/api/base44Client';
 
 export default function AIInsightsPanel({ insights, focusMode = false }) {
     const [selectedRec, setSelectedRec] = useState(null);
-    const [pinnedRecs, setPinnedRecs] = useState([]);
-    const [pinningId, setPinningId] = useState(null);
-
-    useEffect(() => {
-        const loadPinned = async () => {
-            try {
-                const pinned = await base44.entities.PinnedRecommendation.list();
-                setPinnedRecs(pinned);
-            } catch (e) {
-                console.error("Failed to load pinned recommendations", e);
-            }
-        };
-        loadPinned();
-    }, []);
-
-    const isPinned = (rec) => pinnedRecs.some(p => p.title === rec.title);
-
-    const handleTogglePin = async (rec) => {
-        setPinningId(rec.title);
-        try {
-            const existing = pinnedRecs.find(p => p.title === rec.title);
-            if (existing) {
-                await base44.entities.PinnedRecommendation.delete(existing.id);
-                setPinnedRecs(pinnedRecs.filter(p => p.id !== existing.id));
-            } else {
-                const newPin = await base44.entities.PinnedRecommendation.create({
-                    title: rec.title,
-                    description: rec.description,
-                    potential_savings: rec.potentialSavings || 0,
-                    pinned_at: new Date().toISOString()
-                });
-                setPinnedRecs([...pinnedRecs, newPin]);
-            }
-        } catch (e) {
-            console.error("Failed to toggle pin", e);
-        } finally {
-            setPinningId(null);
-        }
-    };
     
     if (!insights) {
         return null;
@@ -170,18 +130,8 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
                                                             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white flex-1">
                                                                 Add to plan
                                                             </Button>
-                                                            <Button 
-                                                                size="sm" 
-                                                                variant="outline" 
-                                                                className={`border-gray-600 text-gray-300 hover:bg-gray-700 flex-1 ${isPinned(rec) ? 'bg-amber-600/20 border-amber-500 text-amber-400' : ''}`}
-                                                                onClick={() => handleTogglePin(rec)}
-                                                                disabled={pinningId === rec.title}
-                                                            >
-                                                                {isPinned(rec) ? (
-                                                                    <><PinOff className="w-3 h-3 mr-1" /> Unpin</>
-                                                                ) : (
-                                                                    <><Pin className="w-3 h-3 mr-1" /> Remind me</>
-                                                                )}
+                                                            <Button size="sm" variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 flex-1">
+                                                                Remind me
                                                             </Button>
                                                         </div>
                                                     </div>
