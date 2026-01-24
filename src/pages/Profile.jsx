@@ -144,6 +144,14 @@ export default function Profile() {
       } else {
         await base44.entities.UserProfile.create(profile);
       }
+      
+      // Update user vectors incrementally since profile data affects vectors
+      if (user?.email) {
+        base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' })
+          .then(() => console.log("User vectors updated after profile save"))
+          .catch(e => console.error("Failed to update user vectors", e));
+      }
+      
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 2000);
       // Force reload to update header instantly if needed, or rely on react state if layout was listening (Layout listens to user/profile on mount, might need refresh)
