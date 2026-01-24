@@ -121,21 +121,65 @@ export default function ReceiptReview({ receipt, onConfirm }) {
   };
 
   const metadataWarning = data.needs_metadata_review;
+  const [showVerifiedItems, setShowVerifiedItems] = useState(false);
+  const [showReceiptImage, setShowReceiptImage] = useState(true);
 
   // Calculate sum of items (using price as it represents line total)
   const calculatedSum = data.items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
   const hasMismatch = Math.abs(calculatedSum - (parseFloat(data.totalAmount) || 0)) > 0.05;
 
+  // Separate items needing review from verified items
+  const itemsNeedingReview = data.items.filter(item => item.needs_review);
+  const verifiedItems = data.items.filter(item => !item.needs_review);
+  const reviewCount = itemsNeedingReview.length;
+  const verifiedCount = verifiedItems.length;
+
+  // Check if store details are complete
+  const storeDetailsVerified = data.storeName && data.date && data.totalAmount;
+
   return (
-    <div className="space-y-6 text-gray-900 dark:text-gray-100">
-            <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-600 p-4 rounded-r-lg">
-                <div className="flex items-center">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400 mr-2" />
-                    <h3 className="text-amber-800 dark:text-amber-200 font-bold">Review Required</h3>
+    <div className="space-y-4 text-gray-900 dark:text-gray-100">
+            {/* Review Status Banner - Dominant */}
+            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-400/30 dark:border-amber-600/40 p-5 rounded-2xl">
+                <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 dark:bg-amber-600/30 flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-bold text-amber-900 dark:text-amber-100">Quick Review Needed</h3>
+                        <p className="text-amber-800/80 dark:text-amber-200/80 text-sm mt-1">
+                            Some items need a quick check. Most data is already verified.
+                        </p>
+                        
+                        {/* Checklist Summary */}
+                        <div className="mt-4 space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                                {storeDetailsVerified ? (
+                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                ) : (
+                                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                                )}
+                                <span className={storeDetailsVerified ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}>
+                                    Store details {storeDetailsVerified ? "verified" : "need review"}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                <span className="text-green-700 dark:text-green-400">
+                                    {verifiedCount} items auto-approved
+                                </span>
+                            </div>
+                            {reviewCount > 0 && (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                                    <span className="text-amber-700 dark:text-amber-400 font-medium">
+                                        {reviewCount} items need review
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
-                <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
-                    Please review the extracted data below. Confirm the store details and check any items marked with a warning.
-                </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
