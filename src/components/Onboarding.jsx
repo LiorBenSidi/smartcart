@@ -323,6 +323,18 @@ export default function Onboarding({ onComplete }) {
     );
   }
 
+  // Motivational sentences for loading screen
+  const MOTIVATIONAL_SENTENCES = [
+    "Even your first receipts help us start finding smart savings for you.",
+    "Just a few receipts are enough to start saving smarter.",
+    "Receipts lead to smarter insights."
+  ];
+
+  // Select random sentence once per session (using useState to keep it stable)
+  const [motivationalSentence] = useState(() => 
+    MOTIVATIONAL_SENTENCES[Math.floor(Math.random() * MOTIVATIONAL_SENTENCES.length)]
+  );
+
   // Generating recommendations
   if (isGenerating) {
     return (
@@ -334,6 +346,7 @@ export default function Onboarding({ onComplete }) {
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-gray-100">Setting things up</h2>
               <p className="text-sm text-gray-400">Creating your personalized profile...</p>
+              <p className="text-xs text-gray-500 pt-2 max-w-[250px] mx-auto">{motivationalSentence}</p>
             </div>
           </div>
         </div>
