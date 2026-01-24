@@ -726,50 +726,30 @@ export default function Main() {
                                                     setAddedToCart(prev => ({ ...prev, [tipKey]: 'loading' }));
 
                                                     try {
-                                                        // Fetch all products for flexible matching
+                                                        // Use same search method as EnhancedProductSearch - fetch all products and use Fuse.js style matching
                                                         const allProducts = await base44.entities.Product.list('-updated_date', 1000);
                                                         
-                                                        // Find best matching product - handle translated names by checking multiple match strategies
+                                                        // Find best matching product by canonical_name
                                                         const searchTerm = tip.related_entity_name.toLowerCase().trim();
-                                                        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 2);
                                                         let matchedProduct = null;
                                                         
-                                                        // 1. Try exact match
+                                                        // First try exact match
                                                         matchedProduct = allProducts.find(p => 
                                                             p.canonical_name && p.canonical_name.toLowerCase() === searchTerm
                                                         );
                                                         
-                                                        // 2. Try if product name includes search term
+                                                        // If no exact match, try includes
                                                         if (!matchedProduct) {
                                                             matchedProduct = allProducts.find(p => 
                                                                 p.canonical_name && p.canonical_name.toLowerCase().includes(searchTerm)
                                                             );
                                                         }
                                                         
-                                                        // 3. Try if search term includes product name
+                                                        // If still no match, try if search term includes product name
                                                         if (!matchedProduct) {
                                                             matchedProduct = allProducts.find(p => 
                                                                 p.canonical_name && searchTerm.includes(p.canonical_name.toLowerCase())
                                                             );
-                                                        }
-                                                        
-                                                        // 4. Try matching any significant word from search term
-                                                        if (!matchedProduct && searchWords.length > 0) {
-                                                            matchedProduct = allProducts.find(p => 
-                                                                p.canonical_name && searchWords.some(word => 
-                                                                    p.canonical_name.toLowerCase().includes(word)
-                                                                )
-                                                            );
-                                                        }
-                                                        
-                                                        // 5. Try matching by category if tip has one
-                                                        if (!matchedProduct && tip.category) {
-                                                            const categoryProducts = allProducts.filter(p => 
-                                                                p.category && p.category.toLowerCase().includes(tip.category.toLowerCase())
-                                                            );
-                                                            if (categoryProducts.length > 0) {
-                                                                matchedProduct = categoryProducts[0];
-                                                            }
                                                         }
 
                                                         if (matchedProduct) {
