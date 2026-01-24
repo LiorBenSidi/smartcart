@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, CheckCircle2, AlertCircle, Save, Plus, Trash2, Store, ChevronDown, ChevronUp, ShieldCheck, Image } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, AlertCircle, Save, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { base44 } from '@/api/base44Client';
 import { Badge } from "@/components/ui/badge";
@@ -121,387 +121,211 @@ export default function ReceiptReview({ receipt, onConfirm }) {
   };
 
   const metadataWarning = data.needs_metadata_review;
-  const [showVerifiedItems, setShowVerifiedItems] = useState(false);
-  const [showReceiptImage, setShowReceiptImage] = useState(true);
 
   // Calculate sum of items (using price as it represents line total)
   const calculatedSum = data.items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
   const hasMismatch = Math.abs(calculatedSum - (parseFloat(data.totalAmount) || 0)) > 0.05;
 
-  // Separate items needing review from verified items
-  const itemsNeedingReview = data.items.filter(item => item.needs_review);
-  const verifiedItems = data.items.filter(item => !item.needs_review);
-  const reviewCount = itemsNeedingReview.length;
-  const verifiedCount = verifiedItems.length;
-
-  // Check if store details are complete
-  const storeDetailsVerified = data.storeName && data.date && data.totalAmount;
-
   return (
-    <div className="space-y-4 text-gray-900 dark:text-gray-100">
-            {/* Review Status Banner - Dominant */}
-            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-400/30 dark:border-amber-600/40 p-5 rounded-2xl">
-                <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 dark:bg-amber-600/30 flex items-center justify-center flex-shrink-0">
-                        <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-lg font-bold text-amber-900 dark:text-amber-100">Quick Review Needed</h3>
-                        <p className="text-amber-800/80 dark:text-amber-200/80 text-sm mt-1">
-                            Some items need a quick check. Most data is already verified.
-                        </p>
-                        
-                        {/* Checklist Summary */}
-                        <div className="mt-4 space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
-                                {storeDetailsVerified ? (
-                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                ) : (
-                                    <AlertCircle className="w-4 h-4 text-amber-500" />
-                                )}
-                                <span className={storeDetailsVerified ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}>
-                                    Store details {storeDetailsVerified ? "verified" : "need review"}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                <span className="text-green-700 dark:text-green-400">
-                                    {verifiedCount} items auto-approved
-                                </span>
-                            </div>
-                            {reviewCount > 0 && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <AlertCircle className="w-4 h-4 text-amber-500" />
-                                    <span className="text-amber-700 dark:text-amber-400 font-medium">
-                                        {reviewCount} items need review
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+    <div className="space-y-6 text-gray-900 dark:text-gray-100">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-600 p-4 rounded-r-lg">
+                <div className="flex items-center">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400 mr-2" />
+                    <h3 className="text-amber-800 dark:text-amber-200 font-bold">Review Required</h3>
                 </div>
+                <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
+                    Please review the extracted data below. Confirm the store details and check any items marked with a warning.
+                </p>
             </div>
-
-            {/* Sticky Mini Summary */}
-            {reviewCount > 0 && (
-                <div className="sticky top-0 z-10 bg-gray-900/95 dark:bg-gray-950/95 backdrop-blur-sm border border-gray-700/50 rounded-xl p-3 flex items-center justify-between shadow-lg">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                            <AlertCircle className="w-4 h-4 text-amber-400" />
-                        </div>
-                        <span className="text-sm font-medium text-gray-200">
-                            Review {reviewCount} item{reviewCount !== 1 ? 's' : ''} → Confirm & continue
-                        </span>
-                    </div>
-                </div>
-            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Image Panel */}
-                <div className="lg:block">
-                    {/* Mobile Toggle */}
-                    <button 
-                        onClick={() => setShowReceiptImage(!showReceiptImage)}
-                        className="lg:hidden w-full flex items-center justify-between p-3 bg-gray-800/50 border border-gray-700/50 rounded-xl mb-3"
-                    >
-                        <div className="flex items-center gap-2 text-gray-300">
-                            <Image className="w-4 h-4" />
-                            <span className="text-sm font-medium">Receipt Image</span>
-                        </div>
-                        {showReceiptImage ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                    </button>
-                    
-                    <div className={`bg-gray-800/30 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-700/50 dark:border-gray-800 sticky top-16 ${showReceiptImage ? 'block' : 'hidden lg:block'}`} style={{ maxHeight: '75vh' }}>
-                        {data.raw_receipt_image_url?.toLowerCase().includes('.pdf') ? (
-                            <iframe
-                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(data.raw_receipt_image_url)}&embedded=true`}
-                                className="w-full h-[70vh]"
-                                title="Receipt PDF" 
-                            />
-                        ) : (
-                            <img
-                                src={data.raw_receipt_image_url}
-                                alt="Receipt"
-                                className="w-full h-auto max-h-[70vh] object-contain" 
-                            />
-                        )}
-                    </div>
+                <div className="bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-800 sticky top-4 h-[80vh]">
+                    {data.raw_receipt_image_url?.toLowerCase().includes('.pdf') ?
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(data.raw_receipt_image_url)}&embedded=true`}
+            className="w-full h-full"
+            title="Receipt PDF" /> :
+
+
+          <img
+            src={data.raw_receipt_image_url}
+            alt="Receipt"
+            className="w-full h-full object-contain" />
+
+          }
                 </div>
 
                 {/* Form Panel */}
-                <div className="space-y-5 overflow-y-auto lg:max-h-[80vh] pr-1 text-gray-900 dark:text-gray-100">
+                <div className="space-y-6 overflow-y-auto h-[80vh] pr-2 text-gray-900 dark:text-gray-100">
                     
                     {/* Metadata Section */}
-                    <Card className={`${metadataWarning ? "border-amber-500/50 dark:border-amber-600/50 bg-amber-500/5" : "border-gray-700/50"} dark:bg-gray-800/50 rounded-xl`}>
-                        <CardHeader className="pb-2 pt-4">
-                            <CardTitle className="text-sm flex justify-between items-center dark:text-gray-100">
-                                <div className="flex items-center gap-2">
-                                    <Store className="w-4 h-4 text-gray-400" />
-                                    Store Details
-                                </div>
-                                {storeDetailsVerified ? (
-                                    <Badge className="bg-green-500/10 text-green-400 border-green-500/30 text-xs">
-                                        <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline" className="text-amber-500 border-amber-500/50 text-xs">Needs review</Badge>
-                                )}
+                    <Card className={`${metadataWarning ? "border-amber-300 dark:border-amber-700 shadow-amber-50 dark:shadow-none" : "dark:border-gray-700"} dark:bg-gray-800`}>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base flex justify-between items-center dark:text-gray-100">
+                                Receipt Details
+                                {metadataWarning && <Badge variant="outline" className="text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-600">Check Info</Badge>}
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 pb-4">
-                            <div className="grid grid-cols-2 gap-3">
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Store Name</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Store Name</label>
                                     <Input
-                                        value={data.storeName || ''}
-                                        onChange={(e) => handleMetadataChange('storeName', e.target.value)}
-                                        className={`h-9 dark:bg-gray-900/50 dark:text-gray-100 ${!data.storeName ? "border-amber-500/50 bg-amber-500/5 dark:bg-amber-900/20 dark:border-amber-700" : "border-gray-700/50"}`} 
-                                    />
+                    value={data.storeName || ''}
+                    onChange={(e) => handleMetadataChange('storeName', e.target.value)}
+                    className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.storeName ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`} />
+
                                 </div>
                                 <div>
-                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Date</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Date</label>
                                     <Input
-                                        type="date"
-                                        value={data.date || ''}
-                                        onChange={(e) => handleMetadataChange('date', e.target.value)}
-                                        className={`h-9 dark:bg-gray-900/50 dark:text-gray-100 ${!data.date ? "border-amber-500/50 bg-amber-500/5 dark:bg-amber-900/20 dark:border-amber-700" : "border-gray-700/50"}`} 
-                                    />
+                    type="date"
+                    value={data.date || ''}
+                    onChange={(e) => handleMetadataChange('date', e.target.value)}
+                    className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.date ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`} />
+
                                 </div>
                                 <div>
-                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Total Amount</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Total Amount</label>
                                     <div className="relative">
                                         <Input
-                                            type="number"
-                                            value={data.totalAmount || ''}
-                                            onChange={(e) => handleMetadataChange('totalAmount', parseFloat(e.target.value))}
-                                            className={`h-9 dark:bg-gray-900/50 dark:text-gray-100 ${!data.totalAmount ? "border-amber-500/50 bg-amber-500/5 dark:bg-amber-900/20 dark:border-amber-700" : "border-gray-700/50 font-semibold"}`} 
-                                        />
-                                        <span className="absolute right-3 top-2 text-gray-500 dark:text-gray-500 text-xs">₪</span>
+                      type="number"
+                      value={data.totalAmount || ''}
+                      onChange={(e) => handleMetadataChange('totalAmount', parseFloat(e.target.value))}
+                      className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.totalAmount ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : "font-bold"}`} />
+
+                                        <span className="absolute right-3 top-2 text-gray-400 dark:text-gray-500 text-xs">{data.currency || 'ILS'}</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Currency</label>
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Currency</label>
                                     <Input
-                                        value={data.currency || 'ILS'}
-                                        onChange={(e) => handleMetadataChange('currency', e.target.value)}
-                                        className="h-9 dark:bg-gray-900/50 dark:text-gray-100 border-gray-700/50" 
-                                    />
+                    value={data.currency || 'ILS'}
+                    onChange={(e) => handleMetadataChange('currency', e.target.value)}
+                    className="dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700" />
+
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Items Needing Review Section */}
-                    {itemsNeedingReview.length > 0 && (
-                        <Card className="border-amber-500/40 dark:border-amber-600/40 bg-amber-500/5 dark:bg-amber-900/10 rounded-xl overflow-hidden">
-                            <CardHeader className="pb-2 pt-4 bg-amber-500/10 dark:bg-amber-900/20 border-b border-amber-500/20">
-                                <CardTitle className="text-sm flex justify-between items-center dark:text-amber-100">
-                                    <div className="flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4 text-amber-500" />
-                                        <span>Items Needing Review</span>
-                                        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs ml-1">{reviewCount}</Badge>
-                                    </div>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <div className="divide-y divide-amber-500/10">
-                                    {itemsNeedingReview.map((item) => {
-                                        const idx = data.items.findIndex(i => i === item);
-                                        return (
-                                            <div key={idx} className="p-3 hover:bg-amber-500/5 transition-colors">
-                                                <div className="flex items-start gap-3">
-                                                    <button
-                                                        onClick={() => toggleItemConfirm(idx)}
-                                                        className="mt-1 text-amber-500 hover:text-amber-400 transition-colors flex-shrink-0"
-                                                        title="Mark as reviewed"
-                                                    >
-                                                        <AlertCircle className="w-5 h-5" />
-                                                    </button>
-                                                    <div className="flex-1 min-w-0 space-y-2">
-                                                        <div>
-                                                            <Input
-                                                                value={item.name || ''}
-                                                                onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                                className="h-8 text-sm dark:bg-gray-900/50 dark:text-gray-100 border-amber-500/40 focus:border-amber-400"
-                                                                placeholder="Item name"
-                                                            />
-                                                            {item.raw_text && item.raw_text !== item.name && (
-                                                                <div className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-1 truncate" title={item.raw_text}>
-                                                                    We weren't fully sure about this item
-                                                                </div>
-                                                            )}
+                    {/* Items Section */}
+                    <Card className="dark:bg-gray-800 dark:border-gray-700">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base dark:text-gray-100">Line Items</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                                        <tr>
+                                            <th className="py-2 px-3 text-left">Item / Raw Text</th>
+                                            <th className="py-2 px-2 text-center w-[66px]">Qty</th>
+                                            <th className="py-2 px-2 text-right w-24">Price</th>
+                                            <th className="py-2 px-2 w-10"></th>
+                                            <th className="py-2 px-2 w-10"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y dark:divide-gray-700">
+                                        {data.items.map((item, idx) =>
+                    <tr key={idx} className={item.needs_review ? "bg-amber-50/50 dark:bg-amber-900/10" : ""}>
+                                                <td className="p-2">
+                                                    <Input
+                          value={item.name || ''}
+                          onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
+                          className={`h-7 text-sm dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 ${item.needs_review ? "border-amber-300 dark:border-amber-700 focus:border-amber-500" : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 dark:border-transparent"}`} />
+
+                                                    {item.raw_text && item.raw_text !== item.name &&
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 truncate max-w-[200px]" title={item.raw_text}>
+                                                            OCR: {item.raw_text}
                                                         </div>
-                                                        <div className="flex gap-2">
-                                                            <div className="w-20">
-                                                                <label className="text-[10px] text-gray-500 mb-0.5 block">Qty</label>
-                                                                <Input
-                                                                    type="number"
-                                                                    value={item.quantity || ''}
-                                                                    onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                                    className="h-7 text-center text-sm dark:bg-gray-900/50 dark:text-gray-100 border-gray-700/50"
-                                                                />
-                                                            </div>
-                                                            <div className="w-24">
-                                                                <label className="text-[10px] text-gray-500 mb-0.5 block">Price</label>
-                                                                <Input
-                                                                    type="number"
-                                                                    value={item.price || ''}
-                                                                    onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                                                                    className="h-7 text-right text-sm dark:bg-gray-900/50 dark:text-gray-100 border-gray-700/50 font-medium"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleDeleteItem(idx)}
-                                                        className="text-gray-500 hover:text-red-400 transition-colors opacity-50 hover:opacity-100 mt-1"
-                                                        title="Remove item"
-                                                    >
+                        }
+                                                </td>
+                                                <td className="py-2">
+                                                    <Input
+                          type="number"
+                          value={item.quantity || ''}
+                          onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                          className="h-7 text-center px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700" />
+
+                                                </td>
+                                                <td className="p-2">
+                                                    <Input
+                          type="number"
+                          value={item.price || ''}
+                          onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
+                          className="h-7 text-right px-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 font-medium" />
+
+                                                </td>
+                                                <td className="p-2 text-center">
+                                                    {item.needs_review ?
+                        <button
+                          onClick={() => toggleItemConfirm(idx)}
+                          className="text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                          title="Review needed">
+
+                                                            <AlertCircle className="w-4 h-4" />
+                                                        </button> :
+
+                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400 mx-auto" />
+                        }
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                        <button
+                          onClick={() => handleDeleteItem(idx)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          title="Remove item">
+
                                                         <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                                        </button>
+                                                        </td>
+                                                        </tr>
                     )}
+                                                        </tbody>
+                                                        </table>
+                                                        </div>
+                                                        <div className="p-2 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                                                        <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAddItem}
+                  className="w-full text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-dashed border-indigo-200 dark:border-indigo-800">
 
-                    {/* Verified Items Section */}
-                    {verifiedItems.length > 0 && (
-                        <Card className="border-gray-700/30 dark:bg-gray-800/30 rounded-xl overflow-hidden">
-                            <CardHeader className="pb-0 pt-3">
-                                <button 
-                                    onClick={() => setShowVerifiedItems(!showVerifiedItems)}
-                                    className="w-full flex justify-between items-center text-left"
-                                >
-                                    <CardTitle className="text-sm flex items-center gap-2 dark:text-gray-300">
-                                        <CheckCircle2 className="w-4 h-4 text-green-500/70" />
-                                        <span className="text-gray-400">Verified Items</span>
-                                        <Badge className="bg-green-500/10 text-green-500/80 border-green-500/20 text-xs">{verifiedCount}</Badge>
-                                    </CardTitle>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <span>Looks good — no action needed</span>
-                                        {showVerifiedItems ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                    </div>
-                                </button>
-                            </CardHeader>
-                            {showVerifiedItems && (
-                                <CardContent className="p-0 mt-2">
-                                    <div className="overflow-x-auto">
-                                        {/* Header Row */}
-                                        <div 
-                                            className="grid items-center gap-3 px-3 py-2 bg-gray-800/30 text-gray-500 dark:text-gray-500 border-y border-gray-700/30 text-xs font-medium"
-                                            style={{ gridTemplateColumns: '20px 1fr 72px 88px 40px' }}
-                                        >
-                                            <div></div>
-                                            <div className="text-left">Item</div>
-                                            <div className="text-right">Qty</div>
-                                            <div className="text-right">Price</div>
-                                            <div></div>
-                                        </div>
-                                        {/* Data Rows */}
-                                        <div className="divide-y divide-gray-700/20">
-                                            {verifiedItems.map((item) => {
-                                                const idx = data.items.findIndex(i => i === item);
-                                                return (
-                                                    <div 
-                                                        key={idx} 
-                                                        className="grid items-center gap-3 px-3 py-2 hover:bg-gray-800/20 transition-colors group"
-                                                        style={{ gridTemplateColumns: '20px 1fr 72px 88px 40px' }}
-                                                    >
-                                                        <div className="flex justify-center">
-                                                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500/50" />
+                                                        <Plus className="w-4 h-4 mr-2" /> Add Item
+                                                        </Button>
                                                         </div>
-                                                        <div>
-                                                            <Input
-                                                                value={item.name || ''}
-                                                                onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                                                                className="h-7 text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 focus:border-gray-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Input
-                                                                type="number"
-                                                                value={item.quantity || ''}
-                                                                onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                                className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50"
-                                                                style={{ fontVariantNumeric: 'tabular-nums' }}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Input
-                                                                type="number"
-                                                                value={item.price || ''}
-                                                                onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                                                                className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 font-medium"
-                                                                style={{ fontVariantNumeric: 'tabular-nums' }}
-                                                            />
-                                                        </div>
-                                                        <div className="flex justify-center">
-                                                            <button
-                                                                onClick={() => handleDeleteItem(idx)}
-                                                                className="text-gray-400 hover:text-red-400 transition-colors"
-                                                                title="Remove item"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            )}
-                        </Card>
-                    )}
+                                                        </CardContent>
+                                                        </Card>
 
-                    {/* Add Item Button */}
+                                                        {hasMismatch &&
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+                                                        <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                                        <div className="flex-1">
+                                                        <h4 className="text-sm font-bold text-red-900 dark:text-red-200">Total Amount Mismatch</h4>
+                                                        <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                                                        The sum of item prices (₪{calculatedSum.toFixed(2)}) does not match the receipt total (₪{(parseFloat(data.totalAmount) || 0).toFixed(2)}).
+                                                        </p>
+                                                        </div>
+                                                        <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
+              onClick={() => handleMetadataChange('totalAmount', calculatedSum)}>
+
+                                                        Fix Total
+                                                        </Button>
+                                                        </div>
+          }
+
                     <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleAddItem}
-                        className="w-full text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/20 border border-dashed border-indigo-700/50 rounded-xl h-10"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> Add Item
+            onClick={handleConfirmAll}
+            disabled={isSaving}
+            className="w-full h-12 text-lg bg-green-600 hover:bg-green-700">
+
+                        <Save className="mr-2 h-5 w-5" />
+                        {isSaving ? "Saving..." : "Confirm & Continue"}
                     </Button>
-
-                                                        {hasMismatch && (
-                        <div className="bg-amber-500/10 dark:bg-amber-900/20 border border-amber-500/30 dark:border-amber-700/50 rounded-xl p-4 flex items-start gap-3">
-                            <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <h4 className="text-sm font-semibold text-amber-200">Total doesn't match items</h4>
-                                <p className="text-xs text-amber-300/80 mt-1">
-                                    Items sum to ₪{calculatedSum.toFixed(2)}, but receipt shows ₪{(parseFloat(data.totalAmount) || 0).toFixed(2)}.
-                                </p>
-                            </div>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
-                                onClick={() => handleMetadataChange('totalAmount', calculatedSum)}
-                            >
-                                Use ₪{calculatedSum.toFixed(2)}
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* Confirm CTA */}
-                    <div className="space-y-2 pt-2">
-                        <Button
-                            onClick={handleConfirmAll}
-                            disabled={isSaving}
-                            className="w-full h-12 text-base font-semibold bg-green-600 hover:bg-green-500 rounded-xl shadow-lg shadow-green-900/30"
-                        >
-                            <ShieldCheck className="mr-2 h-5 w-5" />
-                            {isSaving ? "Saving..." : "Confirm & Continue"}
-                        </Button>
-                        <p className="text-xs text-gray-500 text-center">
-                            You can edit this receipt later if needed.
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>);
