@@ -73,39 +73,129 @@ Deno.serve(async (req) => {
         const prev30DaysTotal = last60To30Days.reduce((sum, r) => sum + (r.total_amount || 0), 0);
         const spendingTrend = prev30DaysTotal > 0 ? ((last30DaysTotal - prev30DaysTotal) / prev30DaysTotal) * 100 : 0;
 
+        // Calculate average monthly spending
+        const monthsOfData = Math.max(1, Math.ceil((now - new Date(receipts[receipts.length - 1]?.purchased_at || receipts[receipts.length - 1]?.date || now)) / (1000 * 60 * 60 * 24 * 30)));
+        const averageMonthlySpending = totalSpent / monthsOfData;
+
+        // Identify high-price items (items bought above category average)
+        const categoryAvgPrices = {};
+        Object.entries(categoryTotals).forEach(([cat, total]) => {
+            const itemsInCat = Object.values(productFrequency).filter(p => p.category === cat);
+            const totalCount = itemsInCat.reduce((sum, p) => sum + p.count, 0);
+            categoryAvgPrices[cat] = totalCount > 0 ? total / totalCount : 0;
+        });
+
+        const highPriceItems = Object.entries(productFrequency)
+            .filter(([name, data]) => {
+                const avgPrice = data.total / data.count;
+                const catAvg = categoryAvgPrices[data.category] || 0;
+                return avgPrice > catAvg * 1.3 && data.count >= 2;
+            })
+            .slice(0, 5)
+            .map(([name, data]) => ({ name, avgPrice: (data.total / data.count).toFixed(2), category: data.category }));
+
+        // Identify potential brand switching opportunities
+        const brandSwitchPotential = topCategories.slice(0, 3).map(cat => cat.name).join(', ');
+
+        // Identify overspending areas
+        const overspendingAreas = topCategories.slice(0, 2).map(cat => `${cat.name} (₪${cat.amount.toFixed(0)})`).join(', ');
+
         // Prepare context for AI
         const contextData = {
             totalReceipts: receipts.length,
             totalSpent: totalSpent.toFixed(2),
             avgReceiptValue: avgReceiptValue.toFixed(2),
+            averageMonthlySpending: averageMonthlySpending.toFixed(2),
             topCategories,
             frequentItems,
+            highPriceItems,
             last30DaysSpending: last30DaysTotal.toFixed(2),
             spendingTrend: spendingTrend.toFixed(1),
             userProfile: userProfile ? {
                 budgetFocus: userProfile.budget_focus,
                 monthlyBudget: userProfile.monthly_budget,
                 diet: userProfile.diet,
-                householdSize: userProfile.household_size
+                householdSize: userProfile.household_size,
+                allergies: userProfile.allergen_avoid_list || [],
+                dietaryRestrictions: userProfile.dietary_restrictions || [],
+                kosherLevel: userProfile.kosher_level || userProfile.kashrut_level || 'none'
             } : null
         };
 
-        // Generate AI insights
-        const prompt = `You are a personal finance and grocery shopping advisor. Analyze this user's shopping data and provide actionable insights.
+        // Generate AI insights with upgraded prompt
+        const prompt = `You are an expert financial advisor specializing in grocery spending optimization for busy households.
+Your goal is to analyze the user's real shopping behavior and generate highly personalized, realistic, and actionable optimization opportunities that help the user save money with minimal friction.
 
-IMPORTANT: All monetary values are in Israeli Shekels (ILS/NIS). Always use the ₪ symbol when displaying currency amounts (e.g., ₪100.00, not $100.00).
+You must prioritize recommendations that feel achievable, trustworthy, and clearly relevant to THIS user.
 
-USER DATA:
-${JSON.stringify(contextData, null, 2)}
+IMPORTANT: All monetary values are in Israeli Shekels (ILS/NIS). Always use the ₪ symbol when displaying currency amounts.
 
-Generate insights focusing on:
-1. Spending patterns and trends
-2. Budget optimization opportunities
-3. Category-specific recommendations
-4. Frequently purchased items analysis
-5. Behavioral patterns and anomalies
+────────────────────────────────────
+USER CONTEXT
+────────────────────────────────────
 
-Be specific, actionable, and data-driven. Reference actual numbers from the data. Remember to use ₪ for all currency values.`;
+User Profile:
+- User ID: ${user.email}
+- Average Monthly Grocery Spending: ₪${averageMonthlySpending.toFixed(2)}
+- Household Size: ${userProfile?.household_size || 'Unknown'}
+- Budget Focus: ${userProfile?.budget_focus || 'balanced'}
+- Dietary Restrictions: ${JSON.stringify(userProfile?.dietary_restrictions || [])}
+- Allergies: ${JSON.stringify(userProfile?.allergen_avoid_list || [])}
+- Kosher Level: ${userProfile?.kosher_level || userProfile?.kashrut_level || 'none'}
+- Monthly Budget Target: ${userProfile?.monthly_budget ? '₪' + userProfile.monthly_budget : 'Not set'}
+
+User's Recent Spending Habits (derived from ${receipts.length} receipts):
+- Total Spent (all time): ₪${totalSpent.toFixed(2)}
+- Average Receipt Value: ₪${avgReceiptValue.toFixed(2)}
+- Last 30 Days Spending: ₪${last30DaysTotal.toFixed(2)}
+- Spending Trend: ${spendingTrend > 0 ? '+' : ''}${spendingTrend.toFixed(1)}% vs previous period
+- Top Categories by Spend: ${JSON.stringify(topCategories)}
+- Frequently Purchased Items: ${JSON.stringify(frequentItems.slice(0, 5))}
+- Items Often Bought at High Prices: ${JSON.stringify(highPriceItems)}
+- Potential Brand Switching Categories: ${brandSwitchPotential}
+- Areas of Potential Overspending: ${overspendingAreas}
+
+────────────────────────────────────
+TASK: GENERATE OPTIMIZATION OPPORTUNITIES
+────────────────────────────────────
+
+Generate 3–5 DISTINCT, concrete, and actionable optimization opportunities.
+
+Each opportunity must:
+1. Be a clear, specific action the user can realistically take.
+2. Be tailored to the user's habits, preferences, and constraints.
+3. Target a DIFFERENT root cause of overspending (no duplicates or reworded ideas).
+4. Respect dietary restrictions, allergies, and kosher level at all times.
+5. Reference specific products, categories, or amounts from the user's actual data.
+
+────────────────────────────────────
+SAVINGS ESTIMATION RULES
+────────────────────────────────────
+
+For EACH opportunity:
+- Estimate potential monthly savings in:
+  • Absolute value (₪)
+  • Percentage of the user's average monthly grocery spend (₪${averageMonthlySpending.toFixed(2)})
+- Savings must be conservative, realistic, and clearly justified.
+- Total combined savings MUST NOT exceed 35% of the user's average monthly grocery spending (max ₪${(averageMonthlySpending * 0.35).toFixed(0)}).
+- Avoid exaggerated or "too good to be true" estimates.
+
+────────────────────────────────────
+CLASSIFICATION & PRIORITIZATION
+────────────────────────────────────
+
+- At least 2 opportunities must be "Quick Wins": Easy to adopt, minimal lifestyle change, immediate value.
+- Remaining opportunities may be "Strategic Changes": Higher impact, require some habit adjustment.
+
+────────────────────────────────────
+QUALITY CHECK (MANDATORY)
+────────────────────────────────────
+
+Before returning the response, verify that:
+- Recommendations feel personalized, not generic.
+- Savings estimates are believable and proportional to the user's spending.
+- No two recommendations solve the same problem.
+- Advice aligns with the user's lifestyle and constraints.`;
 
         const aiResponse = await base44.integrations.Core.InvokeLLM({
             prompt,
