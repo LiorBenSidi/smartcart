@@ -208,7 +208,7 @@ Example output format:
                                             
                                             <div className="relative p-4 flex items-center gap-4">
                                                 {/* Icon */}
-                                                <span className="text-2xl shrink-0">{getCategoryEmoji(rec.title, rec.description)}</span>
+                                                <span className="text-2xl shrink-0">{getEmoji(rec.title, rec.description)}</span>
                                                 
                                                 {/* Content - Single line */}
                                                 <div className="flex-1 min-w-0">
