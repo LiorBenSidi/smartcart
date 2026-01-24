@@ -119,6 +119,7 @@ export default Deno.serve(async (req) => {
                                 type: { type: "string" },
                                 message: { type: "string" },
                                 related_entity_name: { type: "string" },
+                                related_entity_name_original: { type: "string" },
                                 related_entity_type: { type: "string" },
                                 inspired_by_liked_tips: { 
                                     type: "array",
