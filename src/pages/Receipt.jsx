@@ -35,18 +35,12 @@ export default function Receipt() {
       const response = await base44.functions.invoke('processReceipt', { receiptId: r.id });
 
       if (response.data.success) {
-        const updatedReceipt = { ...r, ...response.data.data };
-        setReceipt(updatedReceipt);
-
-        // If needs review, we stay on this page and the render logic handles it
-        if (response.data.needs_review) {
-
-          // Just update state, the component will render ReviewReceipt
+          const updatedReceipt = { ...r, ...response.data.data };
+          // Always set needs_review to true after processing so user reviews first
+          updatedReceipt.needs_review = true;
+          setReceipt(updatedReceipt);
         } else {
-
-          // If by miracle it's perfect, we can proceed (e.g. to comparison or summary)
-          // But generally we expect review.
-        }} else {throw new Error(response.data.error || "Unknown processing error");
+          throw new Error(response.data.error || "Unknown processing error");
       }
 
     } catch (error) {
