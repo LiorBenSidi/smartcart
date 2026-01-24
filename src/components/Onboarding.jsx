@@ -294,9 +294,9 @@ export default function Onboarding({ onComplete }) {
   // Welcome screen
   if (step === -1) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] flex flex-col items-center justify-center p-8 text-center">
+      <div className="fixed inset-0 bg-gray-900 z-[100] flex flex-col items-center justify-center p-8 text-center">
         <div className="max-w-sm mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-200">
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-900/50">
             <Sparkles className="w-10 h-10 text-white" />
           </div>
           
