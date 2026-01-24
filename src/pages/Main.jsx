@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-
+import UserSimilarityDisplay from "@/components/UserSimilarityDisplay";
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format } from 'date-fns';
@@ -815,7 +815,7 @@ export default function Main() {
           </section>
       )}
 
-
+      {!focusMode && <UserSimilarityDisplay currentUser={user} learningSnippet={insights.find(i => i.type === 'ShopperTwins')?.message} />}
 
 
 
