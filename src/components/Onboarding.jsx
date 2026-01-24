@@ -111,12 +111,24 @@ const QUESTIONS = [
   }
 ];
 
+// Motivational sentences for loading screen
+const MOTIVATIONAL_SENTENCES = [
+  "Even your first receipts help us start finding smart savings for you.",
+  "Just a few receipts are enough to start saving smarter.",
+  "Receipts lead to smarter insights."
+];
+
 export default function Onboarding({ onComplete }) {
   const [step, setStep] = useState(-1);
   const [answers, setAnswers] = useState({});
   const [selectedAllergens, setSelectedAllergens] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
+  
+  // Select random sentence once per session
+  const [motivationalSentence] = useState(() => 
+    MOTIVATIONAL_SENTENCES[Math.floor(Math.random() * MOTIVATIONAL_SENTENCES.length)]
+  );
 
   const currentQuestion = step >= 0 ? QUESTIONS[step] : null;
   const isLastQuestion = step === QUESTIONS.length - 1;
