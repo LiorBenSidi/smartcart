@@ -4,7 +4,7 @@ import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Target, Eye, EyeOff } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Target, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -231,6 +231,7 @@ export default function Main() {
   const [receipts, setReceipts] = useState([]);
   const [focusMode, setFocusMode] = useState(true);
   const [showMoreTips, setShowMoreTips] = useState(false);
+  const [addedToCart, setAddedToCart] = useState({});
 
   const CACHE_KEY_INSIGHTS = 'cached_ai_insights';
   const CACHE_KEY_TIPS = 'cached_smart_tips';
@@ -761,18 +762,109 @@ export default function Main() {
                                             {tip.message}
                                         </p>
                                         {tip.related_entity_name && (
-                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                <span className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md border border-gray-600/50" dir="auto">
-                                                    Related: {tip.related_entity_name}
-                                                </span>
-                                                <a 
-                                                    href={`/smartcart?add=${encodeURIComponent(tip.related_entity_name)}`}
-                                                    className="inline-flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-md transition-colors"
-                                                >
-                                                    <Plus className="w-3 h-3" />
-                                                    Add to Smart Cart
-                                                </a>
-                                            </div>
+                                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                            <span className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md border border-gray-600/50" dir="auto">
+                                                Related: {tip.related_entity_name}
+                                            </span>
+                                            <button 
+                                                onClick={async () => {
+                                                    const tipKey = `tip-${i}`;
+                                                    setAddedToCart(prev => ({ ...prev, [tipKey]: 'loading' }));
+
+                                                    try {
+                                                        // Search for product by name
+                                                        const products = await base44.entities.Product.filter({
+                                                            canonical_name: tip.related_entity_name
+                                                        }, '-updated_date', 10);
+
+                                                        if (products.length > 0) {
+                                                            const product = products[0];
+
+                                                            // Get current cart from localStorage
+                                                            const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
+                                                            const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
+
+                                                            // Check if already in cart
+                                                            const existingItem = existingCart.find(item => item.gtin === product.gtin);
+
+                                                            if (existingItem) {
+                                                                // Increase quantity
+                                                                const updatedCart = existingCart.map(item => 
+                                                                    item.gtin === product.gtin 
+                                                                        ? { ...item, quantity: item.quantity + 1 }
+                                                                        : item
+                                                                );
+                                                                localStorage.setItem('smartCartItems', JSON.stringify(updatedCart));
+                                                            } else {
+                                                                // Add new item
+                                                                const newItem = {
+                                                                    gtin: product.gtin,
+                                                                    name: product.canonical_name,
+                                                                    quantity: 1,
+                                                                    fromSuggestion: true
+                                                                };
+                                                                localStorage.setItem('smartCartItems', JSON.stringify([...existingCart, newItem]));
+
+                                                                // Fetch prices for all chains
+                                                                const allVariants = await base44.entities.Product.filter({ gtin: product.gtin }, '-updated_date', 100);
+                                                                const pricesByChain = {};
+                                                                allVariants.forEach(variant => {
+                                                                    if (variant.chain_id && variant.current_price != null) {
+                                                                        if (!pricesByChain[variant.chain_id] || variant.current_price < pricesByChain[variant.chain_id].price) {
+                                                                            pricesByChain[variant.chain_id] = {
+                                                                                price: variant.current_price,
+                                                                                chain_id: variant.chain_id,
+                                                                                store_id: variant.store_id
+                                                                            };
+                                                                        }
+                                                                    }
+                                                                });
+
+                                                                existingPrices[product.gtin] = pricesByChain;
+                                                                localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
+                                                            }
+
+                                                            setAddedToCart(prev => ({ ...prev, [tipKey]: 'success' }));
+                                                            toast.success(`Added "${tip.related_entity_name}" to Smart Cart`);
+
+                                                            // Reset after 2 seconds
+                                                            setTimeout(() => {
+                                                                setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
+                                                            }, 2000);
+                                                        } else {
+                                                            toast.error("Product not found");
+                                                            setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
+                                                        }
+                                                    } catch (error) {
+                                                        console.error("Failed to add to cart", error);
+                                                        toast.error("Failed to add to cart");
+                                                        setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
+                                                    }
+                                                }}
+                                                disabled={addedToCart[`tip-${i}`] === 'loading'}
+                                                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all ${
+                                                    addedToCart[`tip-${i}`] === 'success' 
+                                                        ? 'bg-green-600 text-white' 
+                                                        : addedToCart[`tip-${i}`] === 'loading'
+                                                            ? 'bg-indigo-500 text-white cursor-wait'
+                                                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                                }`}
+                                            >
+                                                {addedToCart[`tip-${i}`] === 'loading' ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : addedToCart[`tip-${i}`] === 'success' ? (
+                                                    <>
+                                                        <CheckCircle className="w-3 h-3" />
+                                                        Added!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Plus className="w-3 h-3" />
+                                                        Add to Smart Cart
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                         )}
                                     </div>
                                     <div className="flex gap-1 shrink-0">
