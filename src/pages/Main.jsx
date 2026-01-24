@@ -664,7 +664,7 @@ export default function Main() {
             </Card>
           )}
 
-          {aiInsights && !loadingAiInsights && (
+          {!loadingAiInsights && (
             <AIInsightsPanel insights={aiInsights} focusMode={focusMode} />
           )}
         </>
