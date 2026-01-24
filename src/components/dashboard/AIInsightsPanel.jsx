@@ -19,6 +19,47 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
     const [addingToPlan, setAddingToPlan] = useState({});
     const [settingReminder, setSettingReminder] = useState({});
     const [addedToPlan, setAddedToPlan] = useState({});
+    const [emojiMap, setEmojiMap] = useState({});
+
+    // Fetch emojis via LLM for recommendations
+    React.useEffect(() => {
+        const fetchEmojis = async () => {
+            if (!insights?.topRecommendations?.length) return;
+            
+            const titles = insights.topRecommendations.map(r => r.title);
+            const uncachedTitles = titles.filter(t => !emojiMap[t]);
+            
+            if (uncachedTitles.length === 0) return;
+
+            try {
+                const result = await base44.integrations.Core.InvokeLLM({
+                    prompt: `For each of the following shopping/grocery recommendation titles, select the single most appropriate emoji that represents the category or action. Return ONLY a JSON object mapping each title to its emoji.
+
+Titles:
+${uncachedTitles.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
+
+Example output format:
+{"Switch to store brand milk": "🥛", "Buy snacks in bulk": "📦"}`,
+                    response_json_schema: {
+                        type: "object",
+                        additionalProperties: { type: "string" }
+                    }
+                });
+                
+                if (result && typeof result === 'object') {
+                    setEmojiMap(prev => ({ ...prev, ...result }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch emojis:", error);
+            }
+        };
+
+        fetchEmojis();
+    }, [insights?.topRecommendations]);
+
+    const getEmoji = (title, description) => {
+        return emojiMap[title] || getCategoryEmoji(title, description);
+    };
 
     const handleAddToPlan = async (rec, idx) => {
         setAddingToPlan(prev => ({ ...prev, [idx]: true }));
