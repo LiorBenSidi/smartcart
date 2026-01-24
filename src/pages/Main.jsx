@@ -232,13 +232,39 @@ export default function Main() {
   const [focusMode, setFocusMode] = useState(true);
   const [showMoreTips, setShowMoreTips] = useState(false);
 
-  const fetchAIInsights = async () => {
+  const CACHE_KEY_INSIGHTS = 'cached_ai_insights';
+  const CACHE_KEY_TIPS = 'cached_smart_tips';
+
+  const loadCachedData = () => {
+    try {
+      const cachedInsights = localStorage.getItem(CACHE_KEY_INSIGHTS);
+      const cachedTips = localStorage.getItem(CACHE_KEY_TIPS);
+      
+      if (cachedInsights) {
+        const parsed = JSON.parse(cachedInsights);
+        setAiInsights(parsed.aiInsights);
+        setDashboardData(parsed.rawData);
+      }
+      if (cachedTips) {
+        setSmartTips(JSON.parse(cachedTips));
+      }
+    } catch (e) {
+      console.error("Failed to load cached data", e);
+    }
+  };
+
+  const fetchAIInsights = async (skipCache = false) => {
     setLoadingAiInsights(true);
     try {
       const response = await base44.functions.invoke('generateDashboardInsights', {});
       if (response.data.success) {
         setAiInsights(response.data.aiInsights);
         setDashboardData(response.data.rawData);
+        // Cache the data
+        localStorage.setItem(CACHE_KEY_INSIGHTS, JSON.stringify({
+          aiInsights: response.data.aiInsights,
+          rawData: response.data.rawData
+        }));
       }
     } catch (error) {
       console.error("Error fetching AI insights", error);
@@ -261,12 +287,14 @@ export default function Main() {
     }
   };
 
-  const refreshTips = async (currentCandidates = candidates) => {
+  const refreshTips = async (currentCandidates = candidates, skipCache = false) => {
       setTipsLoading(true);
       try {
           const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
           if (tipRes.data && tipRes.data.tips) {
               setSmartTips(tipRes.data.tips);
+              // Cache the tips
+              localStorage.setItem(CACHE_KEY_TIPS, JSON.stringify(tipRes.data.tips));
           }
       } catch (e) {
           console.error("Smart tips failed", e);
@@ -317,6 +345,9 @@ export default function Main() {
       try {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
+
+        // Load cached data immediately for instant display
+        loadCachedData();
         
         // Get Location
         let loc = {};
@@ -354,13 +385,7 @@ export default function Main() {
                 products: res.data.candidates.items || []
             };
             setCandidates(newCandidates);
-
-            // Generate Smart Tips
-            refreshTips(newCandidates);
         }
-
-        // Fetch AI Insights
-        fetchAIInsights();
 
         // Fetch receipts for analytics
         const isAdmin = currentUser.role === 'admin';
