@@ -726,50 +726,61 @@ export default function Main() {
                                                     setAddedToCart(prev => ({ ...prev, [tipKey]: 'loading' }));
 
                                                     try {
-                                                        // Search for product by name (using $contains for partial match)
-                                                        let products = await base44.entities.Product.filter({
-                                                            canonical_name: tip.related_entity_name
-                                                        }, '-updated_date', 10);
-
-                                                        // If no exact match, try listing all and filtering
-                                                        if (products.length === 0) {
-                                                            const allProducts = await base44.entities.Product.list('-updated_date', 500);
-                                                            products = allProducts.filter(p => 
-                                                                p.canonical_name && p.canonical_name.toLowerCase().includes(tip.related_entity_name.toLowerCase())
+                                                        // Use same search method as EnhancedProductSearch - fetch all products and use Fuse.js style matching
+                                                        const allProducts = await base44.entities.Product.list('-updated_date', 1000);
+                                                        
+                                                        // Find best matching product by canonical_name
+                                                        const searchTerm = tip.related_entity_name.toLowerCase().trim();
+                                                        let matchedProduct = null;
+                                                        
+                                                        // First try exact match
+                                                        matchedProduct = allProducts.find(p => 
+                                                            p.canonical_name && p.canonical_name.toLowerCase() === searchTerm
+                                                        );
+                                                        
+                                                        // If no exact match, try includes
+                                                        if (!matchedProduct) {
+                                                            matchedProduct = allProducts.find(p => 
+                                                                p.canonical_name && p.canonical_name.toLowerCase().includes(searchTerm)
+                                                            );
+                                                        }
+                                                        
+                                                        // If still no match, try if search term includes product name
+                                                        if (!matchedProduct) {
+                                                            matchedProduct = allProducts.find(p => 
+                                                                p.canonical_name && searchTerm.includes(p.canonical_name.toLowerCase())
                                                             );
                                                         }
 
-                                                        if (products.length > 0) {
-                                                            const product = products[0];
-
+                                                        if (matchedProduct) {
                                                             // Get current cart from localStorage
                                                             const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
                                                             const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
 
                                                             // Check if already in cart
-                                                            const existingItem = existingCart.find(item => item.gtin === product.gtin);
+                                                            const existingItem = existingCart.find(item => item.gtin === matchedProduct.gtin);
 
                                                             if (existingItem) {
                                                                 // Increase quantity
                                                                 const updatedCart = existingCart.map(item => 
-                                                                    item.gtin === product.gtin 
+                                                                    item.gtin === matchedProduct.gtin 
                                                                         ? { ...item, quantity: item.quantity + 1 }
                                                                         : item
                                                                 );
                                                                 localStorage.setItem('smartCartItems', JSON.stringify(updatedCart));
-                                                                toast.success(`Increased quantity of "${product.canonical_name}"`);
+                                                                toast.success(`Increased quantity of "${matchedProduct.canonical_name}"`);
                                                             } else {
                                                                 // Add new item
                                                                 const newItem = {
-                                                                    gtin: product.gtin,
-                                                                    name: product.canonical_name,
+                                                                    gtin: matchedProduct.gtin,
+                                                                    name: matchedProduct.canonical_name,
                                                                     quantity: 1,
                                                                     fromSuggestion: true
                                                                 };
                                                                 localStorage.setItem('smartCartItems', JSON.stringify([...existingCart, newItem]));
 
-                                                                // Fetch prices for all chains
-                                                                const allVariants = await base44.entities.Product.filter({ gtin: product.gtin }, '-updated_date', 100);
+                                                                // Fetch prices for all chains (same GTIN from different chains)
+                                                                const allVariants = allProducts.filter(p => p.gtin === matchedProduct.gtin);
                                                                 const pricesByChain = {};
                                                                 allVariants.forEach(variant => {
                                                                     if (variant.chain_id && variant.current_price != null) {
@@ -783,9 +794,9 @@ export default function Main() {
                                                                     }
                                                                 });
 
-                                                                existingPrices[product.gtin] = pricesByChain;
+                                                                existingPrices[matchedProduct.gtin] = pricesByChain;
                                                                 localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
-                                                                toast.success(`Added "${product.canonical_name}" to Smart Cart`);
+                                                                toast.success(`Added "${matchedProduct.canonical_name}" to Smart Cart`);
                                                             }
 
                                                             setAddedToCart(prev => ({ ...prev, [tipKey]: 'success' }));
