@@ -20,6 +20,15 @@ const ALLERGEN_OPTIONS = [
 
 const QUESTIONS = [
   {
+    id: 'display_name',
+    text: 'What should we call you?',
+    icon: Heart,
+    type: 'input',
+    inputType: 'text',
+    placeholder: 'Enter your name',
+    options: []
+  },
+  {
     id: 'monthly_budget',
     text: 'What is your target monthly grocery budget (₪)?',
     icon: TrendingDown,
@@ -176,6 +185,11 @@ export default function Onboarding({ onComplete }) {
         age_range: finalAnswers.age && finalAnswers.age !== 'skip' ? finalAnswers.age : null,
         user_role: finalAnswers.role && finalAnswers.role !== 'skip' ? finalAnswers.role : null
       };
+
+      // Update user display name
+      if (finalAnswers.display_name) {
+        await base44.auth.updateMe({ display_name: finalAnswers.display_name });
+      }
 
       // Create user profile
       await base44.entities.UserProfile.create(profile);
