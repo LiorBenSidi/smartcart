@@ -34,6 +34,29 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
         }
     };
 
+    const getCategoryEmoji = (title, description) => {
+        const text = `${title} ${description}`.toLowerCase();
+        if (text.includes('snack') || text.includes('chips') || text.includes('candy') || text.includes('chocolate')) return '🍿';
+        if (text.includes('delivery') || text.includes('shipping')) return '🚴';
+        if (text.includes('drink') || text.includes('beverage') || text.includes('soda') || text.includes('juice')) return '🥤';
+        if (text.includes('meat') || text.includes('chicken') || text.includes('beef')) return '🥩';
+        if (text.includes('dairy') || text.includes('milk') || text.includes('cheese') || text.includes('yogurt')) return '🧀';
+        if (text.includes('bread') || text.includes('bakery') || text.includes('pastry')) return '🍞';
+        if (text.includes('fruit') || text.includes('apple') || text.includes('banana')) return '🍎';
+        if (text.includes('vegetable') || text.includes('veggies') || text.includes('salad')) return '🥬';
+        if (text.includes('frozen') || text.includes('ice cream')) return '🧊';
+        if (text.includes('coffee') || text.includes('tea')) return '☕';
+        if (text.includes('cleaning') || text.includes('detergent') || text.includes('soap')) return '🧹';
+        if (text.includes('baby') || text.includes('diaper')) return '👶';
+        if (text.includes('pet') || text.includes('dog') || text.includes('cat')) return '🐾';
+        if (text.includes('organic') || text.includes('health')) return '🌿';
+        if (text.includes('store') || text.includes('shop') || text.includes('chain')) return '🏪';
+        if (text.includes('brand') || text.includes('switch')) return '🔄';
+        if (text.includes('bulk') || text.includes('quantity')) return '📦';
+        if (text.includes('save') || text.includes('money') || text.includes('budget')) return '💰';
+        return '💡';
+    };
+
     const allInsights = [
         insights.spendingInsight,
         insights.budgetInsight,
