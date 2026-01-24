@@ -176,11 +176,133 @@ export default Deno.serve(async (req) => {
         console.log(`[CF] Found ${similarUsers.length} similar users for ${user.email}`);
 
         if (similarUsers.length === 0) {
-            console.log(`[CF] No similar users found - need more users with vectors`);
+            console.log(`[CF] No similar users in SimilarUserEdge - falling back to profile-based matching`);
+            
+            // Fall back to profile-based matching using UserProfile attributes
+            const userProfile = await base44.entities.UserProfile.filter(
+                { created_by: user.email }
+            ).catch(() => []);
+            
+            if (userProfile.length === 0) {
+                return Response.json({ 
+                    success: true, 
+                    recommendations: [],
+                    debug: { reason: "no_profile", message: "Complete onboarding first" }
+                });
+            }
+            
+            const profile = userProfile[0];
+            console.log(`[CF] Using profile-based CF: budget=${profile.budget_focus}, household=${profile.household_size}`);
+            
+            // Find similar users based on profile attributes
+            const allProfiles = await base44.asServiceRole.entities.UserProfile.list('-created_date', 100).catch(() => []);
+            
+            // Score similarity based on profile attributes
+            const similarProfiles = allProfiles
+                .filter(p => p.created_by !== user.email)
+                .map(p => {
+                    let score = 0;
+                    if (p.budget_focus === profile.budget_focus) score += 0.3;
+                    const householdDiff = Math.abs((p.household_size || 1) - (profile.household_size || 1));
+                    if (householdDiff === 0) score += 0.25;
+                    else if (householdDiff === 1) score += 0.15;
+                    const pKosher = p.kosher_level || p.kashrut_level || 'none';
+                    const userKosher = profile.kosher_level || profile.kashrut_level || 'none';
+                    if (pKosher === userKosher) score += 0.25;
+                    if (p.diet === profile.diet) score += 0.2;
+                    return { ...p, similarity: score };
+                })
+                .filter(p => p.similarity > 0.3)
+                .sort((a, b) => b.similarity - a.similarity)
+                .slice(0, 10);
+            
+            console.log(`[CF] Found ${similarProfiles.length} similar profiles`);
+            
+            if (similarProfiles.length === 0) {
+                return Response.json({ 
+                    success: true, 
+                    recommendations: [],
+                    debug: { reason: "no_similar_profiles" }
+                });
+            }
+            
+            // Get habits/receipts from similar profile users
+            const profileBasedSuggestions = [];
+            for (const similarProfile of similarProfiles) {
+                const neighborHabits = await base44.asServiceRole.entities.UserProductHabit.filter(
+                    { user_id: similarProfile.created_by },
+                    '-purchase_count',
+                    15
+                ).catch(() => []);
+                
+                if (neighborHabits.length === 0) {
+                    const receipts = await base44.asServiceRole.entities.Receipt.filter(
+                        { created_by: similarProfile.created_by, processing_status: 'processed' },
+                        '-purchased_at',
+                        10
+                    ).catch(() => []);
+                    
+                    const productCounts = {};
+                    receipts.forEach(r => {
+                        if (!r.items) return;
+                        r.items.forEach(item => {
+                            const pid = item.code || item.sku || item.product_id;
+                            if (!pid) return;
+                            if (!productCounts[pid]) {
+                                productCounts[pid] = { product_id: pid, product_name: item.name, count: 0, total_qty: 0 };
+                            }
+                            productCounts[pid].count++;
+                            productCounts[pid].total_qty += (item.quantity || 1);
+                        });
+                    });
+                    
+                    Object.values(productCounts)
+                        .sort((a, b) => b.count - a.count)
+                        .slice(0, 10)
+                        .forEach(item => {
+                            profileBasedSuggestions.push({
+                                product_id: item.product_id,
+                                product_name: item.product_name,
+                                suggested_qty: Math.round(item.total_qty / item.count) || 1,
+                                reason_type: "Collaborative",
+                                confidence: 0.35 * similarProfile.similarity * Math.min(item.count / 5, 1),
+                                evidence: { source: "profile_based_receipts", profile_similarity: similarProfile.similarity.toFixed(2) }
+                            });
+                        });
+                } else {
+                    neighborHabits.forEach(habit => {
+                        profileBasedSuggestions.push({
+                            product_id: habit.product_id,
+                            product_name: habit.product_name,
+                            suggested_qty: Math.round(habit.avg_quantity) || 1,
+                            reason_type: "Collaborative",
+                            confidence: 0.45 * similarProfile.similarity * (habit.confidence_score || 0.5),
+                            evidence: { source: "profile_based_habits", profile_similarity: similarProfile.similarity.toFixed(2) }
+                        });
+                    });
+                }
+            }
+            
+            // Aggregate
+            const aggregatedProfile = {};
+            profileBasedSuggestions.forEach(item => {
+                if (!aggregatedProfile[item.product_id]) {
+                    aggregatedProfile[item.product_id] = { ...item, similar_users_count: 1 };
+                } else {
+                    aggregatedProfile[item.product_id].confidence = Math.min(0.85, aggregatedProfile[item.product_id].confidence + 0.08);
+                    aggregatedProfile[item.product_id].similar_users_count++;
+                }
+            });
+            
+            const profileResults = Object.values(aggregatedProfile)
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 15);
+            
+            console.log(`[CF] Returning ${profileResults.length} profile-based recommendations`);
             return Response.json({ 
                 success: true, 
-                recommendations: [],
-                debug: { reason: "no_similar_users", message: "No similar users found. Need more users with purchase history." }
+                recommendations: profileResults,
+                debug: { source: "profile_based_cf" }
             });
         }
 
