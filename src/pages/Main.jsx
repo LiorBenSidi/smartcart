@@ -233,13 +233,12 @@ export default function Main() {
   const [showMoreTips, setShowMoreTips] = useState(false);
   const [addedToCart, setAddedToCart] = useState({});
 
-  const CACHE_KEY_INSIGHTS = 'cached_ai_insights';
-  const CACHE_KEY_TIPS = 'cached_smart_tips';
+  const getCacheKey = (type, userEmail) => `cached_${type}_${userEmail || 'anonymous'}`;
 
-  const loadCachedData = () => {
+  const loadCachedData = (userEmail) => {
     try {
-      const cachedInsights = localStorage.getItem(CACHE_KEY_INSIGHTS);
-      const cachedTips = localStorage.getItem(CACHE_KEY_TIPS);
+      const cachedInsights = localStorage.getItem(getCacheKey('ai_insights', userEmail));
+      const cachedTips = localStorage.getItem(getCacheKey('smart_tips', userEmail));
       
       if (cachedInsights) {
         const parsed = JSON.parse(cachedInsights);
@@ -254,15 +253,15 @@ export default function Main() {
     }
   };
 
-  const fetchAIInsights = async (skipCache = false) => {
+  const fetchAIInsights = async (userEmail, skipCache = false) => {
     setLoadingAiInsights(true);
     try {
       const response = await base44.functions.invoke('generateDashboardInsights', {});
       if (response.data.success) {
         setAiInsights(response.data.aiInsights);
         setDashboardData(response.data.rawData);
-        // Cache the data
-        localStorage.setItem(CACHE_KEY_INSIGHTS, JSON.stringify({
+        // Cache the data per user
+        localStorage.setItem(getCacheKey('ai_insights', userEmail), JSON.stringify({
           aiInsights: response.data.aiInsights,
           rawData: response.data.rawData
         }));
@@ -283,20 +282,22 @@ export default function Main() {
         data = await base44.entities.Receipt.filter({ created_by: userEmail }, '-date', 100);
       }
       setReceipts(data);
-      localStorage.setItem('cached_receipts', JSON.stringify(data));
+      localStorage.setItem(getCacheKey('receipts', userEmail), JSON.stringify(data));
     } catch (error) {
       console.error("Error fetching receipts", error);
     }
   };
 
-  const refreshTips = async (currentCandidates = candidates, skipCache = false) => {
+  const refreshTips = async (currentCandidates = candidates, userEmail = null) => {
       setTipsLoading(true);
       try {
           const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
           if (tipRes.data && tipRes.data.tips) {
               setSmartTips(tipRes.data.tips);
-              // Cache the tips
-              localStorage.setItem(CACHE_KEY_TIPS, JSON.stringify(tipRes.data.tips));
+              // Cache the tips per user
+              if (userEmail) {
+                localStorage.setItem(getCacheKey('smart_tips', userEmail), JSON.stringify(tipRes.data.tips));
+              }
           }
       } catch (e) {
           console.error("Smart tips failed", e);
@@ -310,10 +311,11 @@ export default function Main() {
       toast.info("Refreshing insights...");
       const currentUser = await base44.auth.me();
       const isAdmin = currentUser?.role === 'admin';
+      const userEmail = currentUser?.email;
       await Promise.all([
-          fetchAIInsights(),
-          refreshTips(),
-          fetchReceipts(currentUser?.email, isAdmin)
+          fetchAIInsights(userEmail),
+          refreshTips(candidates, userEmail),
+          fetchReceipts(userEmail, isAdmin)
       ]);
       toast.success("Insights refreshed!");
   };
@@ -351,8 +353,8 @@ export default function Main() {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
 
-        // Load cached data immediately for instant display
-        loadCachedData();
+        // Load cached data immediately for instant display (user-specific)
+        loadCachedData(currentUser?.email);
         
         // Get Location
         let loc = {};
@@ -392,8 +394,8 @@ export default function Main() {
             setCandidates(newCandidates);
         }
 
-        // Load cached receipts first, then fetch fresh data only on refresh
-        const cachedReceipts = localStorage.getItem('cached_receipts');
+        // Load cached receipts first, then fetch fresh data only on refresh (user-specific)
+        const cachedReceipts = localStorage.getItem(getCacheKey('receipts', currentUser?.email));
         if (cachedReceipts) {
             setReceipts(JSON.parse(cachedReceipts));
         }
