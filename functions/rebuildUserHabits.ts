@@ -217,7 +217,7 @@ export default Deno.serve(async (req) => {
             } else if (habitOffset === -1) {
                 // Continue deleting
                 console.log(`[rebuildUserHabits] Continuing delete for ${targetUser.email}...`);
-                const existingHabits = await svc.entities.UserProductHabit.filter({ created_by: targetUser.email });
+                const existingHabits = await svc.entities.UserProductHabit.filter({ user_id: targetUser.email });
                 
                 if (existingHabits.length > 0) {
                     const DELETE_BATCH_SIZE = 50;
