@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import CartAlternatives from '@/components/CartAlternatives';
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import AlternativeProductSelector from '@/components/AlternativeProductSelector';
+import FrequentItemsSmartCart from '@/components/FrequentItemsSmartCart';
 import { processManager } from "@/components/processManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -1086,6 +1087,12 @@ export default function SmartCart() {
           </Card>
         </TooltipProvider>
       }
+
+              {/* Most Purchased Items */}
+              <FrequentItemsSmartCart 
+                onAddToCartWithPrices={addToCartWithPrices} 
+                chains={chains} 
+              />
 
               {/* Enhanced Product Search */}
               <Card>
