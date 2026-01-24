@@ -566,21 +566,18 @@ export default function Main() {
             </div>
         </div>
         
-        {/* Focus Mode Toggle */}
-        <div className="flex items-center justify-between bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${focusMode ? 'bg-indigo-600/20 text-indigo-400' : 'bg-gray-700/50 text-gray-400'}`}>
-              {focusMode ? <Target className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-200">Focus Mode</p>
-              <p className="text-xs text-gray-500">{focusMode ? 'Showing biggest savings only' : 'Showing all insights'}</p>
-            </div>
+        {/* Focus Mode Toggle - Subtle */}
+        <div className="flex items-center justify-between px-1 py-2">
+          <div className="flex items-center gap-2">
+            <Target className={`w-3.5 h-3.5 ${focusMode ? 'text-emerald-500' : 'text-gray-500'}`} />
+            <p className="text-xs text-gray-500">
+              {focusMode ? 'Focused on highest impact' : 'Showing all insights'}
+            </p>
           </div>
           <Switch 
             checked={focusMode} 
             onCheckedChange={setFocusMode}
-            className="data-[state=checked]:bg-indigo-600"
+            className="data-[state=checked]:bg-emerald-600 scale-90"
           />
         </div>
       </div>
