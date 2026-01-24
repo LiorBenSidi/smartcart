@@ -303,11 +303,6 @@ export default function Receipt() {
   if (loading) return <div className="p-10 text-center text-gray-500">Loading receipt...</div>;
   if (!receipt) return <div className="p-10 text-center text-gray-500">Receipt not found.</div>;
 
-  // Debug log to check receipt data
-  console.log("[Receipt] Current receipt data:", receipt);
-  console.log("[Receipt] Items:", receipt.items);
-  console.log("[Receipt] Insights:", receipt.insights);
-
   // Show Review Mode if needed
   if (receipt.needs_review) {
     return (
