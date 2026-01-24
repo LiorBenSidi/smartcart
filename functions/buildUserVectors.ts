@@ -83,20 +83,23 @@ export default Deno.serve(async (req) => {
                     
                     if (lastComputedAt) {
                         // Check if there are new receipts, habits, or feedback since last computation
-                        const [newReceipts, newHabits, newFeedback] = await Promise.all([
+                        const [newReceipts, newHabits, newFeedback, newUserProfile] = await Promise.all([
                             base44.asServiceRole.entities.Receipt.filter({ created_by: userId }, '-created_date', 1),
                             base44.asServiceRole.entities.UserProductHabit.filter({ created_by: userId }, '-last_calculated_at', 1),
-                            base44.asServiceRole.entities.RecommendationFeedback.filter({ user_id: userId }, '-created_at', 1)
+                            base44.asServiceRole.entities.RecommendationFeedback.filter({ user_id: userId }, '-created_at', 1),
+                            base44.asServiceRole.entities.UserProfile.filter({ created_by: userId }, '-updated_date', 1)
                         ]);
                         
                         const latestReceiptDate = newReceipts[0] ? new Date(newReceipts[0].created_date) : null;
                         const latestHabitDate = newHabits[0] ? new Date(newHabits[0].last_calculated_at) : null;
                         const latestFeedbackDate = newFeedback[0] ? new Date(newFeedback[0].created_at) : null;
+                        const latestUserProfileDate = newUserProfile[0] ? new Date(newUserProfile[0].updated_date) : null;
                         
                         const hasNewData = 
                             (latestReceiptDate && latestReceiptDate > lastComputedAt) ||
                             (latestHabitDate && latestHabitDate > lastComputedAt) ||
-                            (latestFeedbackDate && latestFeedbackDate > lastComputedAt);
+                            (latestFeedbackDate && latestFeedbackDate > lastComputedAt) ||
+                            (latestUserProfileDate && latestUserProfileDate > lastComputedAt);
                         
                         if (!hasNewData) {
                             console.log(`[buildUserVectors] INCREMENTAL: No new data for ${userId} since ${lastComputedAt.toISOString()}, skipping`);
