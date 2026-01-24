@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, CheckCircle2, AlertCircle, Save, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, AlertCircle, Save, Plus, Trash2, Store, ChevronDown, ChevronUp, ShieldCheck, Image } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { base44 } from '@/api/base44Client';
 import { Badge } from "@/components/ui/badge";
