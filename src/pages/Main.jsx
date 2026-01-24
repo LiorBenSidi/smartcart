@@ -795,7 +795,8 @@ export default function Main() {
                                         {tip.related_entity_name && (
                                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                                             <span className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md border border-gray-600/50" dir="auto">
-                                                Related: {tip.related_entity_name}
+                                                {tip.related_entity_type === 'chain' ? <Store className="w-3 h-3 inline mr-1" /> : <Package className="w-3 h-3 inline mr-1" />}
+                                                {tip.related_entity_name}
                                             </span>
                                             {tip.related_entity_type === 'product' && <button 
                                                 onClick={async () => {
