@@ -84,6 +84,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
       // Get the current user's email (not created_by which might be app ID)
       const currentUser = await base44.auth.me();
       const userEmail = currentUser?.email;
+      console.log("userEmail: ", userEmail)
       
       // Trigger incremental habit and vector updates (sequential: habits first, then vectors)
       if (userEmail) {
