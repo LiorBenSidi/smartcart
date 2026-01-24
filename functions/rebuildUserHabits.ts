@@ -5,8 +5,8 @@ export default Deno.serve(async (req) => {
         const base44 = createClientFromRequest(req);
         const user = await base44.auth.me();
         
-        if (!user) {
-             return Response.json({ error: "Unauthorized" }, { status: 401 });
+        if (!user || user.role !== 'admin') {
+             return Response.json({ error: "Unauthorized" }, { status: 403 });
         }
 
         const svc = base44.asServiceRole;
@@ -19,26 +19,15 @@ export default Deno.serve(async (req) => {
         const mode = payload.mode || 'full'; // 'full' = delete all & rebuild, 'incremental' = update only new receipts
         const specificUserId = payload.userId; // Optional: process only this specific user (email)
 
-        // For 'full' mode without specific user, require admin
-        if (mode === 'full' && !specificUserId && user.role !== 'admin') {
-            return Response.json({ error: "Admin required for full rebuild" }, { status: 403 });
-        }
-        
-        // For incremental mode with specific user, allow if user is processing their own data
-        if (mode === 'incremental' && specificUserId && specificUserId !== user.email && user.role !== 'admin') {
-            return Response.json({ error: "Can only process your own data" }, { status: 403 });
-        }
-
         // 1. Fetch Users
         let batchUsers;
-        let users = [];
         if (specificUserId) {
             // If a specific userId (email) is provided, only process that user
             const allUsers = await svc.entities.User.filter({ email: specificUserId });
             batchUsers = allUsers.length > 0 ? [allUsers[0]] : [];
             console.log(`[rebuildUserHabits] Processing specific user: ${specificUserId}`);
         } else {
-            users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
+            const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
             // Manual pagination since list params might vary
             batchUsers = users.slice(skip, skip + limit);
         }
