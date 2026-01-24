@@ -441,7 +441,7 @@ export default function Receipt() {
 
         {/* Potential Savings Summary Card */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {totalPotentialSavings > 0 ?
+             {totalPotentialSavings > 0 &&
         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-emerald-700 font-medium text-sm uppercase tracking-wide">Potential Savings Found</p>
@@ -450,17 +450,6 @@ export default function Receipt() {
                     </div>
                     <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center">
                         <Coins className="w-6 h-6 text-emerald-600" />
-                    </div>
-                </div> :
-
-        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-gray-500 font-medium text-sm uppercase tracking-wide">Market Price Analysis</p>
-                        <h3 className="text-2xl font-bold text-gray-900 mt-1">Fair Price</h3>
-                        <p className="text-gray-400 text-xs mt-1">No significant overpayments detected</p>
-                    </div>
-                    <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6 text-gray-400" />
                     </div>
                 </div>
         }
