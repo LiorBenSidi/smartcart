@@ -398,7 +398,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                             <div></div>
                                             <div className="text-left">Item</div>
                                             <div className="text-right pr-8">Qty</div>
-                                            <div className="text-right">Price</div>
+                                            <div className="text-right pr-6">Price</div>
                                             <div></div>
                                         </div>
                                         {/* Data Rows */}
