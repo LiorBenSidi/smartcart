@@ -739,9 +739,18 @@ export default function Main() {
                                             {tip.message}
                                         </p>
                                         {tip.related_entity_name && (
-                                            <span className="inline-block mt-2 text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md border border-gray-600/50" dir="auto">
-                                                Related: {tip.related_entity_name}
-                                            </span>
+                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                <span className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md border border-gray-600/50" dir="auto">
+                                                    Related: {tip.related_entity_name}
+                                                </span>
+                                                <a 
+                                                    href={`/smartcart?add=${encodeURIComponent(tip.related_entity_name)}`}
+                                                    className="inline-flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-md transition-colors"
+                                                >
+                                                    <Plus className="w-3 h-3" />
+                                                    Add to Smart Cart
+                                                </a>
+                                            </div>
                                         )}
                                     </div>
                                     <div className="flex gap-1 shrink-0">
