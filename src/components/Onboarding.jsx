@@ -255,21 +255,31 @@ export default function Onboarding({ onComplete }) {
   // Welcome screen
   if (step === -1) {
     return (
-      <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
-        <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl">
-          <Sparkles className="w-10 h-10 text-white" />
+      <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] flex flex-col items-center justify-center p-8 text-center">
+        <div className="max-w-sm mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-200">
+            <Sparkles className="w-10 h-10 text-white" />
+          </div>
+          
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome!</h1>
+            <p className="text-gray-500 text-base leading-relaxed">
+              A few quick questions to personalize your experience
+            </p>
+          </div>
+          
+          <div className="pt-4">
+            <Button 
+              onClick={() => setStep(0)}
+              size="lg"
+              className="bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 px-10 h-12 text-base font-medium rounded-xl"
+            >
+              Let's Go <ChevronRight className="w-5 h-5 ml-1" />
+            </Button>
+          </div>
+          
+          <p className="text-xs text-gray-400 pt-2">Takes about 1 minute</p>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">Welcome to Smart Cart!</h1>
-        <p className="text-gray-600 mb-8 max-w-md">
-          Let's personalize your shopping experience. Answer a few quick questions to get customized recommendations.
-        </p>
-        <Button 
-          onClick={() => setStep(0)}
-          size="lg"
-          className="bg-indigo-600 hover:bg-indigo-700 shadow-lg px-8"
-        >
-          Get Started <ChevronRight className="w-5 h-5 ml-2" />
-        </Button>
       </div>
     );
   }
@@ -277,10 +287,16 @@ export default function Onboarding({ onComplete }) {
   // Generating recommendations
   if (isGenerating) {
     return (
-      <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
-        <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-6" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Creating Your Profile</h2>
-        <p className="text-gray-500">Generating personalized recommendations...</p>
+      <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] flex flex-col items-center justify-center p-8 text-center">
+        <div className="max-w-xs mx-auto space-y-6 animate-in fade-in duration-500">
+          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto">
+            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900">Setting things up</h2>
+            <p className="text-sm text-gray-500">Creating your personalized profile...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -288,59 +304,63 @@ export default function Onboarding({ onComplete }) {
   // Show recommendations
   if (recommendations) {
     return (
-      <div className="fixed inset-0 bg-white z-[100] overflow-y-auto p-6">
-        <div className="space-y-6 animate-in fade-in duration-500 max-w-2xl mx-auto py-8">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-8 h-8 text-green-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Profile is Ready!</h2>
-          <p className="text-gray-600">Here are your personalized recommendations</p>
-        </div>
-
-        <Card className="border-2 border-indigo-200 bg-indigo-50/50">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <ShoppingCart className="w-6 h-6 text-indigo-600 mt-1" />
+      <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] overflow-y-auto">
+        <div className="min-h-full flex flex-col p-6">
+          <div className="flex-1 max-w-md mx-auto w-full py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* Success Header */}
+            <div className="text-center space-y-3">
+              <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto">
+                <Sparkles className="w-7 h-7 text-green-600" />
+              </div>
               <div>
-                <h3 className="font-bold text-lg text-gray-900 mb-1">Recommended Store</h3>
-                <p className="text-2xl font-bold text-indigo-600 mb-2">{recommendations.store}</p>
-                <p className="text-sm text-gray-700">{recommendations.storeReason}</p>
+                <h2 className="text-2xl font-bold text-gray-900">You're all set!</h2>
+                <p className="text-gray-500 text-sm mt-1">Here's what we recommend</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <div className="space-y-3">
-          <h3 className="font-bold text-gray-900">Focus on These Categories:</h3>
-          {recommendations.products.map((product, idx) => (
-            <Card key={idx} className="border border-gray-200">
-              <CardContent className="p-4 flex items-start gap-3">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 font-bold">
-                  {idx + 1}
+            {/* Store Recommendation */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-indigo-600 uppercase tracking-wide">
+                <ShoppingCart className="w-4 h-4" />
+                Recommended Store
+              </div>
+              <p className="text-xl font-bold text-gray-900">{recommendations.store}</p>
+              <p className="text-sm text-gray-600 leading-relaxed">{recommendations.storeReason}</p>
+            </div>
+
+            {/* Categories */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide px-1">Focus Categories</h3>
+              {recommendations.products.map((product, idx) => (
+                <div key={idx} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-start gap-3">
+                  <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 font-semibold text-sm flex-shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 text-sm">{product.category}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{product.reason}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{product.category}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{product.reason}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              ))}
+            </div>
 
-        <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
-          <CardContent className="p-5">
-            <p className="text-gray-700 leading-relaxed">{recommendations.summary}</p>
-          </CardContent>
-        </Card>
+            {/* Summary */}
+            <div className="bg-indigo-50/70 rounded-xl p-4 border border-indigo-100">
+              <p className="text-sm text-gray-700 leading-relaxed">{recommendations.summary}</p>
+            </div>
 
-        <Button 
-          onClick={handleGetStarted}
-          size="lg"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-lg"
-        >
-          Start Shopping <ChevronRight className="w-5 h-5 ml-2" />
-        </Button>
+            {/* CTA */}
+            <div className="pt-2">
+              <Button 
+                onClick={handleGetStarted}
+                size="lg"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 h-12 text-base font-medium rounded-xl"
+              >
+                Start Shopping <ChevronRight className="w-5 h-5 ml-1" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -351,141 +371,140 @@ export default function Onboarding({ onComplete }) {
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
   return (
-    <div className="fixed inset-0 bg-white z-[100] overflow-y-auto p-6">
-      <div className="space-y-6 animate-in fade-in duration-300 max-w-lg mx-auto py-8">
-      {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
-          className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      <div className="text-center">
-        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Icon className="w-6 h-6 text-indigo-600" />
-        </div>
-        <p className="text-sm text-gray-500 mb-2">
-          Question {step + 1} of {QUESTIONS.length}
-          {currentQuestion.optional && <span className="text-indigo-600 ml-1">(Optional)</span>}
-        </p>
-        <h2 className="text-2xl font-bold text-gray-900">{currentQuestion.text}</h2>
-      </div>
-
-      <div className="space-y-3">
-        {currentQuestion.options.map((option) => {
-          const currentSelections = currentQuestion.multiSelect ? (answers[currentQuestion.id] || []) : null;
-          const isSelected = currentQuestion.multiSelect ? currentSelections.includes(option.value) : false;
-          const isDisabled = currentQuestion.multiSelect && 
-                            currentSelections.includes('none') && 
-                            option.value !== 'none';
+    <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] overflow-y-auto">
+      <div className="min-h-full flex flex-col p-6">
+        <div className="flex-1 max-w-md mx-auto w-full py-6 flex flex-col">
           
-          return (
-            <button
-              key={option.value}
-              onClick={() => !isDisabled && handleAnswer(option.value)}
-              disabled={isDisabled}
-              className={`w-full p-5 border-2 rounded-xl transition-all text-left group active:scale-[0.98] ${
-                isSelected 
-                  ? 'bg-indigo-600 border-indigo-600' 
-                  : isDisabled 
-                    ? 'bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed'
-                    : 'bg-white border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-3xl">{option.emoji}</span>
-                <span className={`font-semibold text-lg flex-1 ${
-                  isSelected ? 'text-white' : 'text-gray-900 group-hover:text-indigo-700'
-                }`}>
-                  {option.label}
-                </span>
-                {isSelected && (
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
+          {/* Progress Section - Fixed at top */}
+          <div className="space-y-3 mb-8">
+            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className="bg-indigo-500 h-full rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 text-center">
+              {step + 1} of {QUESTIONS.length}
+              {currentQuestion.optional && <span className="text-gray-400 ml-1">· Optional</span>}
+            </p>
+          </div>
+
+          {/* Question Header */}
+          <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <h2 className="text-xl font-semibold text-gray-900 leading-snug px-2">{currentQuestion.text}</h2>
+          </div>
+
+          {/* Answer Options */}
+          <div className="flex-1 space-y-3 animate-in fade-in duration-300">
+            {currentQuestion.options.map((option) => {
+              const currentSelections = currentQuestion.multiSelect ? (answers[currentQuestion.id] || []) : null;
+              const isSelected = currentQuestion.multiSelect ? currentSelections.includes(option.value) : false;
+              const isDisabled = currentQuestion.multiSelect && 
+                                currentSelections.includes('none') && 
+                                option.value !== 'none';
+              
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => !isDisabled && handleAnswer(option.value)}
+                  disabled={isDisabled}
+                  className={`w-full p-4 rounded-xl transition-all duration-200 text-left active:scale-[0.98] ${
+                    isSelected 
+                      ? 'bg-indigo-600 shadow-md shadow-indigo-200' 
+                      : isDisabled 
+                        ? 'bg-gray-50 opacity-40 cursor-not-allowed'
+                        : 'bg-white border border-gray-150 shadow-sm hover:border-indigo-200 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl flex-shrink-0">{option.emoji}</span>
+                    <span className={`font-medium text-base flex-1 ${
+                      isSelected ? 'text-white' : 'text-gray-800'
+                    }`}>
+                      {option.label}
+                    </span>
+                    {isSelected && (
+                      <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Allergen Selection - Subgroup */}
+          {currentQuestion.id === 'restrictions' && 
+           answers.restrictions && 
+           answers.restrictions.includes('allergies') && (
+            <div className="mt-6 bg-amber-50/80 rounded-xl p-4 border border-amber-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <h4 className="text-sm font-medium text-amber-900">Select your allergens</h4>
               </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Show allergen selection if allergies is selected */}
-      {currentQuestion.id === 'restrictions' && 
-       answers.restrictions && 
-       answers.restrictions.includes('allergies') && (
-        <Card className="border-2 border-amber-200 bg-amber-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-              <h4 className="font-semibold text-gray-900">Select Your Allergens</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {ALLERGEN_OPTIONS.map((allergen) => {
+                  const isSelected = selectedAllergens.includes(allergen.value);
+                  return (
+                    <button
+                      key={allergen.value}
+                      onClick={() => toggleAllergen(allergen.value)}
+                      className={`px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
+                        isSelected
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'bg-white text-gray-700 border border-gray-200 hover:border-amber-300'
+                      }`}
+                    >
+                      {allergen.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {ALLERGEN_OPTIONS.map((allergen) => {
-                const isSelected = selectedAllergens.includes(allergen.value);
-                return (
-                  <button
-                    key={allergen.value}
-                    onClick={() => toggleAllergen(allergen.value)}
-                    className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
-                      isSelected
-                        ? 'bg-amber-600 border-amber-600 text-white'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-amber-400'
-                    }`}
-                  >
-                    {allergen.label}
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      {currentQuestion.type === 'input' && (
-        <div className="space-y-4">
-            <Input
+          {/* Input Type Question */}
+          {currentQuestion.type === 'input' && (
+            <div className="mt-4 space-y-4">
+              <Input
                 type={currentQuestion.inputType || 'text'}
                 placeholder={currentQuestion.placeholder}
                 value={answers[currentQuestion.id] || ''}
                 onChange={(e) => setAnswers({ ...answers, [currentQuestion.id]: e.target.value })}
-                className="h-14 text-lg text-center"
+                className="h-14 text-lg text-center rounded-xl border-gray-200 focus:border-indigo-300 focus:ring-indigo-200"
                 autoFocus
-            />
-            <Button
+              />
+            </div>
+          )}
+
+          {/* Action Buttons - Fixed at bottom */}
+          <div className="mt-8 space-y-3 pt-4">
+            {(currentQuestion.type === 'input' || currentQuestion.multiSelect) && (
+              <Button
                 onClick={handleContinue}
-                disabled={!answers[currentQuestion.id]}
+                disabled={currentQuestion.type === 'input' 
+                  ? !answers[currentQuestion.id] 
+                  : !answers[currentQuestion.id] || answers[currentQuestion.id].length === 0}
                 size="lg"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                Continue <ChevronRight className="w-5 h-5 ml-2" />
-            </Button>
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed h-12 text-base font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                Continue <ChevronRight className="w-5 h-5 ml-1" />
+              </Button>
+            )}
+
+            {step > 0 && (
+              <button 
+                onClick={() => setStep(step - 1)}
+                className="w-full py-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                ← Back
+              </button>
+            )}
+          </div>
         </div>
-      )}
-
-      {currentQuestion.multiSelect && (
-        <Button
-          onClick={handleContinue}
-          disabled={!answers[currentQuestion.id] || answers[currentQuestion.id].length === 0}
-          size="lg"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Continue <ChevronRight className="w-5 h-5 ml-2" />
-        </Button>
-      )}
-
-      {step > 0 && (
-        <Button 
-          variant="ghost" 
-          onClick={() => setStep(step - 1)}
-          className="w-full"
-        >
-          ← Back
-        </Button>
-      )}
       </div>
     </div>
   );
