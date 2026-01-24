@@ -338,13 +338,6 @@ export default function SmartCart() {
             return next;
           });
           toast.success("Removed from Liked Items");
-          
-          // Update user vectors incrementally on unlike
-          if (user?.email) {
-            base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' })
-              .then(() => console.log("User vectors updated"))
-              .catch(e => console.error("Failed to update user vectors", e));
-          }
         } else {
           // Toggle ON (Like)
           setLikedItems((prev) => new Set([...prev, item.product_id]));
