@@ -9,40 +9,28 @@ export default Deno.serve(async (req) => {
             return Response.json({ error: "Admin access required" }, { status: 403 });
         }
 
+        const { skip = 0, limit = 500 } = await req.json().catch(() => ({}));
         const svc = base44.asServiceRole;
 
-        // Fetch products in smaller batches to avoid memory issues
-        let allProducts = [];
-        let skip = 0;
-        const batchSize = 1000;
+        // Fetch one batch of products
+        const products = await svc.entities.Product.filter({}, '-updated_date', limit, skip);
         
-        while (true) {
-            const batch = await svc.entities.Product.filter({}, '-updated_date', batchSize, skip);
-            if (!batch || batch.length === 0) break;
-            allProducts = allProducts.concat(batch);
-            console.log(`[generateBenchmarks] Fetched batch ${skip / batchSize + 1}, got ${batch.length} products, total: ${allProducts.length}`);
-            if (batch.length < batchSize) break;
-            skip += batchSize;
-            // Safety limit
-            if (allProducts.length > 50000) break;
+        if (!products || products.length === 0) {
+            return Response.json({ 
+                success: true, 
+                done: true,
+                message: "No more products to process",
+                processedInBatch: 0,
+                nextSkip: skip
+            });
         }
 
-        console.log(`[generateBenchmarks] Total products fetched: ${allProducts.length}`);
-        
-        if (!allProducts || allProducts.length === 0) {
-            return Response.json({ success: false, error: "No products found" });
-        }
-
-        // Log sample to debug structure
-        if (allProducts.length > 0) {
-            const sample = allProducts[0];
-            console.log(`[generateBenchmarks] Sample product: gtin=${sample.gtin}, current_price=${sample.current_price}`);
-        }
+        console.log(`[generateBenchmarks] Processing batch: skip=${skip}, got ${products.length} products`);
 
         // Group products by GTIN to calculate min/avg prices
         const pricesByGtin = new Map();
         
-        for (const product of allProducts) {
+        for (const product of products) {
             const gtin = product.gtin;
             const price = product.current_price;
             
@@ -54,13 +42,18 @@ export default Deno.serve(async (req) => {
             pricesByGtin.get(gtin).push(price);
         }
 
-        console.log(`[generateBenchmarks] Found ${pricesByGtin.size} unique GTINs with prices`);
+        console.log(`[generateBenchmarks] Found ${pricesByGtin.size} unique GTINs with prices in this batch`);
 
         if (pricesByGtin.size === 0) {
-            return Response.json({ success: false, error: "No products with prices found" });
+            return Response.json({ 
+                success: true, 
+                done: products.length < limit,
+                processedInBatch: 0,
+                nextSkip: skip + products.length
+            });
         }
 
-        // Create benchmarks
+        // Create benchmarks for this batch
         const today = new Date().toISOString().split('T')[0];
         const benchmarks = [];
 
@@ -78,29 +71,32 @@ export default Deno.serve(async (req) => {
             });
         }
 
-        // Delete existing benchmarks for today to avoid duplicates
-        const existingBenchmarks = await svc.entities.BenchmarkPrice.filter({ date: today });
-        console.log(`[generateBenchmarks] Deleting ${existingBenchmarks.length} existing benchmarks for today`);
-        
-        for (const b of existingBenchmarks) {
-            await svc.entities.BenchmarkPrice.delete(b.id);
+        // Check for existing benchmarks for these GTINs today and delete them
+        for (const benchmark of benchmarks) {
+            const existing = await svc.entities.BenchmarkPrice.filter({ 
+                product_id: benchmark.product_id, 
+                date: today 
+            });
+            for (const e of existing) {
+                await svc.entities.BenchmarkPrice.delete(e.id);
+            }
         }
 
-        // Bulk create in chunks
-        const chunkSize = 100;
-        let created = 0;
-        
-        for (let i = 0; i < benchmarks.length; i += chunkSize) {
-            const chunk = benchmarks.slice(i, i + chunkSize);
-            await svc.entities.BenchmarkPrice.bulkCreate(chunk);
-            created += chunk.length;
-            console.log(`[generateBenchmarks] Created ${created}/${benchmarks.length} benchmarks`);
+        // Bulk create benchmarks
+        if (benchmarks.length > 0) {
+            await svc.entities.BenchmarkPrice.bulkCreate(benchmarks);
         }
+
+        console.log(`[generateBenchmarks] Created ${benchmarks.length} benchmarks`);
+
+        const done = products.length < limit;
 
         return Response.json({
             success: true,
-            benchmarksCreated: created,
-            uniqueProducts: pricesByGtin.size
+            done,
+            processedInBatch: products.length,
+            benchmarksCreated: benchmarks.length,
+            nextSkip: skip + products.length
         });
 
     } catch (error) {

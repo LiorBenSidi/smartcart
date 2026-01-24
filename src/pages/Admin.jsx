@@ -353,16 +353,10 @@ export default function Admin() {
   };
 
   const handleGenerateBenchmarks = async () => {
-    setIsGeneratingBenchmarks(true);
-    setBenchmarkResults(null);
     try {
-      const response = await base44.functions.invoke('generateBenchmarksFromProducts', {});
-      setBenchmarkResults(response.data);
-    } catch (error) {
-      console.error('Failed to generate benchmarks', error);
-      setBenchmarkResults({ success: false, error: error.message });
-    } finally {
-      setIsGeneratingBenchmarks(false);
+      await processManager.startProcess('generateBenchmarksFromProducts', { limit: 500 }, { delayMs: 2000 });
+    } catch (err) {
+      console.error('Benchmark generation failed:', err);
     }
   };
 
@@ -740,11 +734,11 @@ export default function Admin() {
             <div className="relative">
                 <Button 
                     onClick={handleGenerateBenchmarks}
-                    disabled={isGeneratingBenchmarks}
+                    disabled={processState.loading}
                     className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50"
                 >
                     <TrendingUp className="w-4 h-4 mr-2" />
-                    {isGeneratingBenchmarks ? 'Generating...' : 'Generate Benchmarks'}
+                    {processState.loading && processState.activeProcess === 'generateBenchmarksFromProducts' ? 'Generating...' : 'Generate Benchmarks'}
                 </Button>
                 <Dialog>
                     <DialogTrigger asChild>
