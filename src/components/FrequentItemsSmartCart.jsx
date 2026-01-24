@@ -8,7 +8,7 @@ import { ShoppingBag, ChevronDown, ChevronUp, Plus, CheckCircle, Loader2 } from 
 export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains = [] }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const [addedItems, setAddedItems] = useState(new Set());
     const [loadingPrices, setLoadingPrices] = useState(new Set());
 

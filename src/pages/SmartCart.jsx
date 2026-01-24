@@ -543,6 +543,10 @@ export default function SmartCart() {
                                  </li>
                                  <li className="flex items-start gap-2">
                                      <span className="text-emerald-500 mt-0.5">✓</span>
+                                     <span><strong>Most Purchased</strong> — Quickly add your frequently bought items from the collapsible section</span>
+                                 </li>
+                                 <li className="flex items-start gap-2">
+                                     <span className="text-emerald-500 mt-0.5">✓</span>
                                      <span><strong>Adjust Quantities</strong> — Use +/- buttons to change item quantities</span>
                                  </li>
                                  <li className="flex items-start gap-2">
