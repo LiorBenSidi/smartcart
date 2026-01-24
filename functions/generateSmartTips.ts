@@ -97,7 +97,8 @@ export default Deno.serve(async (req) => {
         Format: JSON array of objects with keys:
         - "type": "money_saving" | "health_dietary" | "discovery" | "general"
         - "message": (string, max 2 sentences, must be specific and actionable)
-        - "related_entity_name": (string, optional - use actual product/store name when applicable)
+        - "related_entity_name": (string, optional - use actual product/store name when applicable, can be translated/localized for display)
+        - "related_entity_name_original": (string, optional - CRITICAL: the ORIGINAL Hebrew product name exactly as it appears in the catalog/recommendations, used for database lookup. Do NOT translate this field.)
         - "related_entity_type": (string, optional - "product" or "chain" - specify what kind of entity it is)
         - "inspired_by_liked_tips": (array of strings, optional - if this tip is similar to liked tips, copy the EXACT FULL MESSAGE of ALL those liked tips here verbatim as an array)
 
