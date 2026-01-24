@@ -390,13 +390,19 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                             {showVerifiedItems && (
                                 <CardContent className="p-0 mt-2">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
+                                        <table className="w-full text-sm table-fixed">
+                                            <colgroup>
+                                                <col className="w-auto" />
+                                                <col className="w-20" />
+                                                <col className="w-24" />
+                                                <col className="w-10" />
+                                            </colgroup>
                                             <thead className="bg-gray-800/30 text-gray-500 dark:text-gray-500 border-y border-gray-700/30 text-xs">
                                                 <tr>
                                                     <th className="py-2 px-3 text-left font-medium">Item</th>
-                                                    <th className="py-2 px-1 pl-3 text-left w-24 font-medium">Qty</th>
-                                                    <th className="py-2 px-2 text-left w-28 font-medium">Price</th>
-                                                    <th className="py-2 px-2 w-10"></th>
+                                                    <th className="py-2 px-2 text-right font-medium">Qty</th>
+                                                    <th className="py-2 px-2 text-right font-medium">Price</th>
+                                                    <th className="py-2 px-2"></th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-700/20">
@@ -404,7 +410,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                     const idx = data.items.findIndex(i => i === item);
                                                     return (
                                                         <tr key={idx} className="hover:bg-gray-800/20 transition-colors group">
-                                                            <td className="p-2">
+                                                            <td className="py-2 px-3">
                                                                 <div className="flex items-center gap-2">
                                                                     <CheckCircle2 className="w-3.5 h-3.5 text-green-500/50 flex-shrink-0" />
                                                                     <Input
@@ -414,23 +420,23 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                                     />
                                                                 </div>
                                                             </td>
-                                                            <td className="py-2 px-1 pl-2 w-24">
-                                                                                                                                <Input
-                                                                                                                                    type="number"
-                                                                                                                                    value={item.quantity || ''}
-                                                                                                                                    onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                                                                                                    className="h-7 text-left text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50"
-                                                                                                                                />
-                                                                                                                            </td>
-                                                            <td className="p-2 w-28">
+                                                            <td className="py-2 px-2">
+                                                                <Input
+                                                                    type="number"
+                                                                    value={item.quantity || ''}
+                                                                    onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                                                                    className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50 tabular-nums"
+                                                                />
+                                                            </td>
+                                                            <td className="py-2 px-2">
                                                                 <Input
                                                                     type="number"
                                                                     value={item.price || ''}
                                                                     onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                                                                    className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 font-medium"
+                                                                    className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 font-medium tabular-nums"
                                                                 />
                                                             </td>
-                                                            <td className="p-2 w-10 text-center">
+                                                            <td className="py-2 px-2 text-center">
                                                                 <button
                                                                     onClick={() => handleDeleteItem(idx)}
                                                                     className="text-gray-400 hover:text-red-400 transition-colors"
