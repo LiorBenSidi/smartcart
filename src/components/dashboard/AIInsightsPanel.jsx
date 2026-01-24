@@ -348,12 +348,40 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
                                                             </div>
                                                         )}
                                                         <div className="flex gap-2">
-                                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white flex-1">
-                                                                Add to plan
-                                                            </Button>
-                                                            <Button size="sm" variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 flex-1">
-                                                                Remind me
-                                                            </Button>
+                                                            <DialogClose asChild>
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                                                                    onClick={() => handleAddToPlan(rec, idx)}
+                                                                    disabled={addingToPlan[idx] || addedToPlan[idx]}
+                                                                >
+                                                                    {addingToPlan[idx] ? (
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    ) : addedToPlan[idx] ? (
+                                                                        <>
+                                                                            <Check className="w-4 h-4 mr-1" />
+                                                                            Added
+                                                                        </>
+                                                                    ) : (
+                                                                        "Add to plan"
+                                                                    )}
+                                                                </Button>
+                                                            </DialogClose>
+                                                            <DialogClose asChild>
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    variant="outline" 
+                                                                    className="border-gray-600 text-gray-300 hover:bg-gray-700 flex-1"
+                                                                    onClick={() => handleRemindMe(rec, idx)}
+                                                                    disabled={settingReminder[idx]}
+                                                                >
+                                                                    {settingReminder[idx] ? (
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    ) : (
+                                                                        "Remind me"
+                                                                    )}
+                                                                </Button>
+                                                            </DialogClose>
                                                         </div>
                                                     </div>
                                                 </DialogContent>
