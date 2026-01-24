@@ -291,12 +291,14 @@ Example output format:
                                     {[...Array(Math.min(recommendationsCount, 3))].map((_, i) => (
                                         <div 
                                             key={i} 
-                                            className="w-1.5 h-1.5 rounded-full bg-gray-600"
+                                            className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                                                addedToPlan[`focus-${i}`] ? 'bg-emerald-500' : 'bg-gray-600'
+                                            }`}
                                         />
                                     ))}
                                 </div>
                                 <span className="text-[10px] text-gray-600 font-medium">
-                                    0 of {Math.min(recommendationsCount, 3)} completed
+                                    {Object.keys(addedToPlan).filter(k => k.startsWith('focus-')).length} of {Math.min(recommendationsCount, 3)} completed
                                 </span>
                             </div>
                         )}
