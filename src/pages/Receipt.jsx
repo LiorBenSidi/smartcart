@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles, TrendingDown, ArrowDownRight, ArrowRightLeft, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Coins, ArrowLeft, Tag, Download, Loader2, RefreshCw, XCircle, Plus, Trash2, Calendar, Clock, MapPin, CheckCircle2, PackagePlus, Sparkles, TrendingDown, ArrowDownRight, ArrowRightLeft, ChevronDown, ChevronUp, Info, FileText, Pencil } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PriceComparisonReview from '../components/PriceComparisonReview';
@@ -391,23 +391,42 @@ export default function Receipt() {
   receipt.insights.reduce((sum, i) => sum + (i.potential_savings || 0), 0) :
   0;
 
+  // UI-only derived values for mini-metrics
+  const itemCount = receipt.items?.length || 0;
+  const avgPerItem = itemCount > 0 ? displayTotal / itemCount : 0;
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+    <div className="space-y-5 animate-in fade-in duration-500">
+        {/* Success Banner */}
+        <div className="bg-emerald-500/10 dark:bg-emerald-900/20 border border-emerald-500/20 dark:border-emerald-600/30 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1">
+                <p className="text-emerald-800 dark:text-emerald-200 font-semibold text-sm">Receipt saved</p>
+                <p className="text-emerald-700/70 dark:text-emerald-300/70 text-xs">You can edit anytime. Export CSV when needed.</p>
+            </div>
+        </div>
+
+        {/* Header with Back + Title + Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
                 <Link to={createPageUrl('Upload')}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </Button>
                 </Link>
-                <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">Receipt Details</h2>
+                <div>
+                    <h2 className="font-bold text-xl text-gray-900 dark:text-gray-100">Receipt Details</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Saved from your last scan</p>
+                </div>
             </div>
-            <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleEdit}>
-                    <RefreshCw className="w-4 h-4 mr-2" /> Edit
+            <div className="flex gap-2 ml-12 sm:ml-0">
+                <Button variant="outline" size="sm" onClick={handleEdit} className="gap-2 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <Pencil className="w-4 h-4" /> Edit
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportCSV}>
-                    <Download className="w-4 h-4 mr-2" /> Export CSV
+                <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-2 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800" title="Export includes all line items">
+                    <Download className="w-4 h-4" /> Export CSV
                 </Button>
             </div>
         </div>
@@ -415,30 +434,30 @@ export default function Receipt() {
         {/* Potential Savings Summary Card */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              {totalPotentialSavings > 0 &&
-        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700/50 rounded-2xl p-5 shadow-sm flex items-center justify-between">
                     <div>
-                        <p className="text-emerald-700 font-medium text-sm uppercase tracking-wide">Potential Savings Found</p>
-                        <h3 className="text-3xl font-bold text-emerald-900 mt-1">₪{totalPotentialSavings.toFixed(2)}</h3>
-                        <p className="text-emerald-600 text-xs mt-1">Based on market benchmark prices</p>
+                        <p className="text-emerald-700 dark:text-emerald-300 font-medium text-sm uppercase tracking-wide">Potential Savings Found</p>
+                        <h3 className="text-3xl font-bold text-emerald-900 dark:text-emerald-100 mt-1" style={{ fontVariantNumeric: 'tabular-nums' }}>₪{totalPotentialSavings.toFixed(2)}</h3>
+                        <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-1">Based on market benchmark prices</p>
                     </div>
-                    <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <Coins className="w-6 h-6 text-emerald-600" />
+                    <div className="h-12 w-12 bg-emerald-100 dark:bg-emerald-800 rounded-full flex items-center justify-center">
+                        <Coins className="w-6 h-6 text-emerald-600 dark:text-emerald-300" />
                     </div>
                 </div>
         }
 
             {/* AI Summary Card */}
             {receipt.summary &&
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5 shadow-sm">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-indigo-700/50 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-indigo-900 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
+                    <h3 className="font-bold text-indigo-900 dark:text-indigo-100 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
                       AI Summary
                     </h3>
-                    <p className="text-indigo-800 text-sm leading-relaxed">{receipt.summary}</p>
+                    <p className="text-indigo-800 dark:text-indigo-200 text-sm leading-relaxed">{receipt.summary}</p>
                   </div>
                 </div>
               </div>
@@ -446,73 +465,103 @@ export default function Receipt() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-5">
           
           {/* Overpay Alert */}
           {receipt.insights?.some((i) => i.type === 'OVERPAY_RECEIPT') &&
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-4">
-                  <div className="bg-red-100 p-2 rounded-full">
-                      <TrendingDown className="w-6 h-6 text-red-600" />
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-2xl p-4 flex items-center gap-4">
+                  <div className="bg-red-100 dark:bg-red-800 p-2 rounded-full">
+                      <TrendingDown className="w-6 h-6 text-red-600 dark:text-red-300" />
                   </div>
                   <div>
-                      <h3 className="font-bold text-red-900">Overpayment Detected</h3>
-                      <p className="text-red-700 text-sm">
+                      <h3 className="font-bold text-red-900 dark:text-red-100">Overpayment Detected</h3>
+                      <p className="text-red-700 dark:text-red-300 text-sm">
                           {receipt.insights.find((i) => i.type === 'OVERPAY_RECEIPT').message}
                       </p>
                   </div>
               </div>
           }
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-                              <ShoppingBag className="w-6 h-6" />
+          {/* Main Receipt Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+              {/* Hero Header */}
+              <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-700">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center flex-shrink-0">
+                              <ShoppingBag className="w-7 h-7" />
                           </div>
                           <div>
-                              <h1 className="font-bold text-xl text-gray-900">{receipt.storeName}</h1>
-                              <p className="text-sm text-gray-500">{receipt.date}</p>
+                              <h1 className="font-bold text-2xl text-gray-900 dark:text-gray-50">{receipt.storeName}</h1>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mt-0.5">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  {receipt.date}
+                              </p>
                           </div>
                       </div>
-                      <div className="text-right">
-                          <span className="block text-2xl font-bold text-gray-900">₪{displayTotal.toFixed(2)}</span>
-                          <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">Paid</span>
+                      <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
+                          <span className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-50" style={{ fontVariantNumeric: 'tabular-nums' }}>₪{displayTotal.toFixed(2)}</span>
+                          <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-100 dark:bg-emerald-900/50 px-2.5 py-1 rounded-full flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Verified
+                          </span>
                       </div>
                   </div>
 
-                  {/* Items List */}
-                  <div className="mt-6">
-                      <div className="flex items-center justify-between mb-3">
-                         <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Items Purchased</h4>
-                         <span className="text-xs text-gray-400">{receipt.items?.length || 0} items</span>
+                  {/* Mini Metrics Row */}
+                  <div className="flex items-center gap-4 sm:gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                              <FileText className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                          </div>
+                          <div>
+                              <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide font-medium">Items</p>
+                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200" style={{ fontVariantNumeric: 'tabular-nums' }}>{itemCount}</p>
+                          </div>
                       </div>
-                      
-                      {/* Table Header */}
-                      <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-400 border-b border-gray-100 pb-2 mb-2 px-2">
-                          <div className="col-span-6">ITEM</div>
-                          <div className="col-span-3 text-center">QTY</div>
-                          <div className="col-span-3 text-right">PAID</div>
+                      <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+                      <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                              <Tag className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                          </div>
+                          <div>
+                              <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide font-medium">Avg/Item</p>
+                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200" style={{ fontVariantNumeric: 'tabular-nums' }}>₪{avgPerItem.toFixed(2)}</p>
+                          </div>
                       </div>
+                  </div>
+              </div>
 
-                      <div className="space-y-1">
-                          {(receipt.items || []).map((item, idx) => {
-                    const benchmark = itemBenchmarks.find((b) => b.receipt_line_item_id === item.code); // Assuming item.code links to benchmark line item id, or we might need robust linking
+              {/* Items Table */}
+              <div className="p-5 sm:p-6">
+                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Line Items</h4>
+                  
+                  {/* Table Header - Fixed width columns */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg px-3 py-2.5 mb-2">
+                      <div className="grid gap-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" style={{ gridTemplateColumns: '1fr 72px 88px' }}>
+                          <div className="pl-1">Item</div>
+                          <div className="text-right pr-3">Qty</div>
+                          <div className="text-right pr-1">Paid</div>
+                      </div>
+                  </div>
+
+                  {/* Table Rows */}
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                      {(receipt.items || []).map((item, idx) => {
+                    const benchmark = itemBenchmarks.find((b) => b.receipt_line_item_id === item.code);
                     const isOverpaid = benchmark && benchmark.overpay_amount > 0;
-                    const overpayPercent = benchmark ? ((benchmark.paid_price - benchmark.benchmark_min_price) / benchmark.benchmark_min_price * 100).toFixed(0) : 0;
 
                     return (
-                        <div key={idx} className={`grid grid-cols-12 gap-2 items-center text-sm p-2 rounded-lg transition-colors ${isOverpaid ? 'bg-red-50/50' : 'hover:bg-gray-50'}`}>
-                                    <div className="col-span-6">
-                                        <span className={`font-medium block truncate ${isOverpaid ? 'text-red-900' : 'text-gray-800'}`}>{item.name}</span>
-                                        <div className="text-[10px] text-gray-400 truncate">
-                                            {item.category} • <span className="font-mono opacity-75">{item.code}</span>
+                        <div key={idx} className={`grid gap-3 items-center py-3 px-3 rounded-lg transition-colors ${isOverpaid ? 'bg-red-50/50 dark:bg-red-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`} style={{ gridTemplateColumns: '1fr 72px 88px' }}>
+                                    <div className="min-w-0 pl-1">
+                                        <span className={`font-medium text-sm block truncate ${isOverpaid ? 'text-red-900 dark:text-red-200' : 'text-gray-800 dark:text-gray-100'}`}>{item.name}</span>
+                                        <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                                            {item.category} <span className="opacity-50">•</span> <span className="font-mono opacity-75">{item.code}</span>
                                         </div>
                                     </div>
-                                    <div className="col-span-3 text-center text-gray-500 text-xs">
+                                    <div className="text-right pr-3 text-sm text-gray-600 dark:text-gray-300 font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
                                         {item.quantity}
                                     </div>
-                                    <div className="col-span-3 text-right font-medium text-gray-900">
+                                    <div className="text-right pr-1 font-semibold text-sm text-gray-900 dark:text-gray-100" style={{ fontVariantNumeric: 'tabular-nums' }}>
                                         ₪{item.price.toFixed(2)}
                                     </div>
                                 </div>);
@@ -520,7 +569,6 @@ export default function Receipt() {
                       </div>
                   </div>
               </div>
-          </div>
           </div>
 
           {/* Insights Section - Separate Card on Desktop */}
