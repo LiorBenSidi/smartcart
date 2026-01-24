@@ -353,20 +353,6 @@ export default function Main() {
 
         // Load cached data immediately for instant display (user-specific)
         loadCachedData(currentUser?.email);
-        
-        // Get Location
-        let loc = {};
-        try {
-            const position = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-            });
-            loc = {
-                user_lat: position.coords.latitude,
-                user_lon: position.coords.longitude
-            };
-        } catch (e) {
-            console.log("Location access denied or timeout");
-        }
 
         // Load cached receipts first, then fetch fresh data only on refresh (user-specific)
         const cachedReceipts = localStorage.getItem(getCacheKey('receipts', currentUser?.email));
