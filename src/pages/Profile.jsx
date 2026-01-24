@@ -147,9 +147,12 @@ export default function Profile() {
       
       // Update user vectors incrementally since profile data affects vectors
       if (user?.email) {
-        base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' })
-          .then(() => console.log("User vectors updated after profile save"))
-          .catch(e => console.error("Failed to update user vectors", e));
+        try {
+          await base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' });
+          console.log("User vectors updated after profile save");
+        } catch (e) {
+          console.error("Failed to update user vectors", e);
+        }
       }
       
       setIsSaved(true);
