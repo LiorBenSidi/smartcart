@@ -232,51 +232,60 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                 <div className="space-y-5 overflow-y-auto lg:max-h-[80vh] pr-1 text-gray-900 dark:text-gray-100">
                     
                     {/* Metadata Section */}
-                    <Card className={`${metadataWarning ? "border-amber-300 dark:border-amber-700 shadow-amber-50 dark:shadow-none" : "dark:border-gray-700"} dark:bg-gray-800`}>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base flex justify-between items-center dark:text-gray-100">
-                                Receipt Details
-                                {metadataWarning && <Badge variant="outline" className="text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-600">Check Info</Badge>}
+                    <Card className={`${metadataWarning ? "border-amber-500/50 dark:border-amber-600/50 bg-amber-500/5" : "border-gray-700/50"} dark:bg-gray-800/50 rounded-xl`}>
+                        <CardHeader className="pb-2 pt-4">
+                            <CardTitle className="text-sm flex justify-between items-center dark:text-gray-100">
+                                <div className="flex items-center gap-2">
+                                    <Store className="w-4 h-4 text-gray-400" />
+                                    Store Details
+                                </div>
+                                {storeDetailsVerified ? (
+                                    <Badge className="bg-green-500/10 text-green-400 border-green-500/30 text-xs">
+                                        <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="outline" className="text-amber-500 border-amber-500/50 text-xs">Needs review</Badge>
+                                )}
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                        <CardContent className="space-y-3 pb-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Store Name</label>
+                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Store Name</label>
                                     <Input
-                    value={data.storeName || ''}
-                    onChange={(e) => handleMetadataChange('storeName', e.target.value)}
-                    className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.storeName ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`} />
-
+                                        value={data.storeName || ''}
+                                        onChange={(e) => handleMetadataChange('storeName', e.target.value)}
+                                        className={`h-9 dark:bg-gray-900/50 dark:text-gray-100 ${!data.storeName ? "border-amber-500/50 bg-amber-500/5 dark:bg-amber-900/20 dark:border-amber-700" : "border-gray-700/50"}`} 
+                                    />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Date</label>
+                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Date</label>
                                     <Input
-                    type="date"
-                    value={data.date || ''}
-                    onChange={(e) => handleMetadataChange('date', e.target.value)}
-                    className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.date ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : ""}`} />
-
+                                        type="date"
+                                        value={data.date || ''}
+                                        onChange={(e) => handleMetadataChange('date', e.target.value)}
+                                        className={`h-9 dark:bg-gray-900/50 dark:text-gray-100 ${!data.date ? "border-amber-500/50 bg-amber-500/5 dark:bg-amber-900/20 dark:border-amber-700" : "border-gray-700/50"}`} 
+                                    />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Total Amount</label>
+                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Total Amount</label>
                                     <div className="relative">
                                         <Input
-                      type="number"
-                      value={data.totalAmount || ''}
-                      onChange={(e) => handleMetadataChange('totalAmount', parseFloat(e.target.value))}
-                      className={`dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${!data.totalAmount ? "border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800" : "font-bold"}`} />
-
-                                        <span className="absolute right-3 top-2 text-gray-400 dark:text-gray-500 text-xs">{data.currency || 'ILS'}</span>
+                                            type="number"
+                                            value={data.totalAmount || ''}
+                                            onChange={(e) => handleMetadataChange('totalAmount', parseFloat(e.target.value))}
+                                            className={`h-9 dark:bg-gray-900/50 dark:text-gray-100 ${!data.totalAmount ? "border-amber-500/50 bg-amber-500/5 dark:bg-amber-900/20 dark:border-amber-700" : "border-gray-700/50 font-semibold"}`} 
+                                        />
+                                        <span className="absolute right-3 top-2 text-gray-500 dark:text-gray-500 text-xs">₪</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Currency</label>
+                                    <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">Currency</label>
                                     <Input
-                    value={data.currency || 'ILS'}
-                    onChange={(e) => handleMetadataChange('currency', e.target.value)}
-                    className="dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700" />
-
+                                        value={data.currency || 'ILS'}
+                                        onChange={(e) => handleMetadataChange('currency', e.target.value)}
+                                        className="h-9 dark:bg-gray-900/50 dark:text-gray-100 border-gray-700/50" 
+                                    />
                                 </div>
                             </div>
                         </CardContent>
