@@ -32,8 +32,7 @@ export default function Admin() {
   const [processingMerge, setProcessingMerge] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState({}); // { dupName: { productId: boolean } }
   const [selectedTargetGtin, setSelectedTargetGtin] = useState({}); // { dupName: gtin }
-  const [isGeneratingBenchmarks, setIsGeneratingBenchmarks] = useState(false);
-  const [benchmarkResults, setBenchmarkResults] = useState(null);
+
 
   useEffect(() => {
     const unsubscribe = processManager.subscribe(setProcessState);
@@ -885,34 +884,6 @@ export default function Admin() {
                 </Dialog>
             </div>
         </div>
-
-        {/* Benchmark Results */}
-        {benchmarkResults && (
-            <Card className={`border-cyan-200 ${benchmarkResults.success ? 'bg-cyan-50 dark:bg-cyan-900/20' : 'bg-red-50 dark:bg-red-900/20'} dark:border-cyan-800`}>
-                <CardContent className="p-4">
-                    <h3 className={`font-bold mb-2 flex items-center gap-2 ${benchmarkResults.success ? 'text-cyan-900 dark:text-cyan-200' : 'text-red-900 dark:text-red-200'}`}>
-                        <TrendingUp className="w-4 h-4" />
-                        Benchmark Generation {benchmarkResults.success ? 'Complete' : 'Failed'}
-                    </h3>
-                    {benchmarkResults.success ? (
-                        <div className="text-sm text-cyan-700 dark:text-cyan-300 space-y-1">
-                            <p>✓ Created <strong>{benchmarkResults.benchmarksCreated}</strong> benchmark records</p>
-                            <p>✓ Covering <strong>{benchmarkResults.uniqueProducts}</strong> unique products</p>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-red-700 dark:text-red-300">{benchmarkResults.error}</p>
-                    )}
-                    <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="mt-3"
-                        onClick={() => setBenchmarkResults(null)}
-                    >
-                        Dismiss
-                    </Button>
-                </CardContent>
-            </Card>
-        )}
 
         {/* GTIN Duplicates - Approval UI */}
         {gtinDuplicates && gtinDuplicates.length > 0 && (
