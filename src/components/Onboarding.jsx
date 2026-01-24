@@ -301,8 +301,8 @@ export default function Onboarding({ onComplete }) {
           </div>
           
           <div className="space-y-3">
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome!</h1>
-            <p className="text-gray-500 text-base leading-relaxed">
+            <h1 className="text-3xl font-bold text-gray-100 tracking-tight">Welcome!</h1>
+            <p className="text-gray-400 text-base leading-relaxed">
               A few quick questions to personalize your experience
             </p>
           </div>
@@ -317,7 +317,7 @@ export default function Onboarding({ onComplete }) {
             </Button>
           </div>
           
-          <p className="text-xs text-gray-400 pt-2">Takes about 1 minute</p>
+          <p className="text-xs text-gray-500 pt-2">Takes about 1 minute</p>
         </div>
       </div>
     );
@@ -326,68 +326,68 @@ export default function Onboarding({ onComplete }) {
   // Generating recommendations
   if (isGenerating) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] flex flex-col items-center justify-center p-8 text-center">
-        <div className="max-w-xs mx-auto space-y-6 animate-in fade-in duration-500">
-          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-gray-900">Setting things up</h2>
-            <p className="text-sm text-gray-500">Creating your personalized profile...</p>
+      <div className="fixed inset-0 bg-gray-900 z-[100] flex flex-col items-center justify-center p-8 text-center">
+          <div className="max-w-xs mx-auto space-y-6 animate-in fade-in duration-500">
+            <div className="w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto">
+              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-gray-100">Setting things up</h2>
+              <p className="text-sm text-gray-400">Creating your personalized profile...</p>
+            </div>
           </div>
         </div>
-      </div>
     );
   }
 
   // Show recommendations
   if (recommendations) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] overflow-y-auto">
-        <div className="min-h-full flex flex-col p-6">
-          <div className="flex-1 max-w-md mx-auto w-full py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
-            {/* Success Header */}
-            <div className="text-center space-y-3">
-              <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto">
-                <Sparkles className="w-7 h-7 text-green-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">You're all set!</h2>
-                <p className="text-gray-500 text-sm mt-1">Here's what we recommend</p>
-              </div>
-            </div>
+      <div className="fixed inset-0 bg-gray-900 z-[100] overflow-y-auto">
+          <div className="min-h-full flex flex-col p-6">
+            <div className="flex-1 max-w-md mx-auto w-full py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-            {/* Store Recommendation */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-indigo-600 uppercase tracking-wide">
-                <ShoppingCart className="w-4 h-4" />
-                Recommended Store
-              </div>
-              <p className="text-xl font-bold text-gray-900">{recommendations.store}</p>
-              <p className="text-sm text-gray-600 leading-relaxed">{recommendations.storeReason}</p>
-            </div>
-
-            {/* Categories */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide px-1">Focus Categories</h3>
-              {recommendations.products.map((product, idx) => (
-                <div key={idx} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-start gap-3">
-                  <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 font-semibold text-sm flex-shrink-0">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-sm">{product.category}</h4>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{product.reason}</p>
-                  </div>
+              {/* Success Header */}
+              <div className="text-center space-y-3">
+                <div className="w-14 h-14 bg-green-900/50 rounded-2xl flex items-center justify-center mx-auto">
+                  <Sparkles className="w-7 h-7 text-green-400" />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-100">You're all set!</h2>
+                  <p className="text-gray-400 text-sm mt-1">Here's what we recommend</p>
+                </div>
+              </div>
 
-            {/* Summary */}
-            <div className="bg-indigo-50/70 rounded-xl p-4 border border-indigo-100">
-              <p className="text-sm text-gray-700 leading-relaxed">{recommendations.summary}</p>
-            </div>
+              {/* Store Recommendation */}
+              <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-sm p-5 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-medium text-indigo-400 uppercase tracking-wide">
+                  <ShoppingCart className="w-4 h-4" />
+                  Recommended Store
+                </div>
+                <p className="text-xl font-bold text-gray-100">{recommendations.store}</p>
+                <p className="text-sm text-gray-400 leading-relaxed">{recommendations.storeReason}</p>
+              </div>
+
+              {/* Categories */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide px-1">Focus Categories</h3>
+                {recommendations.products.map((product, idx) => (
+                  <div key={idx} className="bg-gray-800 rounded-xl border border-gray-700 shadow-sm p-4 flex items-start gap-3">
+                    <div className="w-7 h-7 bg-gray-700 rounded-lg flex items-center justify-center text-gray-300 font-semibold text-sm flex-shrink-0">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-100 text-sm">{product.category}</h4>
+                      <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{product.reason}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Summary */}
+              <div className="bg-indigo-900/30 rounded-xl p-4 border border-indigo-800">
+                <p className="text-sm text-gray-300 leading-relaxed">{recommendations.summary}</p>
+              </div>
 
             {/* CTA */}
             <div className="pt-2">
@@ -410,28 +410,28 @@ export default function Onboarding({ onComplete }) {
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-white to-gray-50 z-[100] overflow-y-auto">
-      <div className="min-h-full flex flex-col p-6">
-        <div className="flex-1 max-w-md mx-auto w-full py-6 flex flex-col">
-          
-          {/* Progress Section - Fixed at top */}
-          <div className="space-y-3 mb-8">
-            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-              <div 
-                className="bg-indigo-500 h-full rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-400 text-center">
-              {step + 1} of {QUESTIONS.length}
-              {currentQuestion.optional && <span className="text-gray-400 ml-1">· Optional</span>}
-            </p>
-          </div>
+    <div className="fixed inset-0 bg-gray-900 z-[100] overflow-y-auto">
+        <div className="min-h-full flex flex-col p-6">
+          <div className="flex-1 max-w-md mx-auto w-full py-6 flex flex-col">
 
-          {/* Question Header */}
-          <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-xl font-semibold text-gray-900 leading-snug px-2">{currentQuestion.text}</h2>
-          </div>
+            {/* Progress Section - Fixed at top */}
+            <div className="space-y-3 mb-8">
+              <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className="bg-indigo-500 h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 text-center">
+                {step + 1} of {QUESTIONS.length}
+                {currentQuestion.optional && <span className="text-gray-500 ml-1">· Optional</span>}
+              </p>
+            </div>
+
+            {/* Question Header */}
+            <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h2 className="text-xl font-semibold text-gray-100 leading-snug px-2">{currentQuestion.text}</h2>
+            </div>
 
           {/* Answer Options */}
           <div className="flex-1 space-y-3 animate-in fade-in duration-300">
@@ -448,18 +448,18 @@ export default function Onboarding({ onComplete }) {
                   onClick={() => !isDisabled && handleAnswer(option.value)}
                   disabled={isDisabled}
                   className={`w-full p-4 rounded-xl transition-all duration-200 text-left active:scale-[0.98] ${
-                    isSelected 
-                      ? 'bg-indigo-600 shadow-md shadow-indigo-200' 
-                      : isDisabled 
-                        ? 'bg-gray-50 opacity-40 cursor-not-allowed'
-                        : 'bg-white border border-gray-150 shadow-sm hover:border-indigo-200 hover:shadow-md'
-                  }`}
+                      isSelected 
+                        ? 'bg-indigo-600 shadow-md shadow-indigo-900/50' 
+                        : isDisabled 
+                          ? 'bg-gray-800 opacity-40 cursor-not-allowed'
+                          : 'bg-gray-800 border border-gray-700 shadow-sm hover:border-indigo-500 hover:shadow-md'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl flex-shrink-0">{option.emoji}</span>
                     <span className={`font-medium text-base flex-1 ${
-                      isSelected ? 'text-white' : 'text-gray-800'
-                    }`}>
+                        isSelected ? 'text-white' : 'text-gray-200'
+                      }`}>
                       {option.label}
                     </span>
                     {isSelected && (
@@ -479,10 +479,10 @@ export default function Onboarding({ onComplete }) {
           {currentQuestion.id === 'restrictions' && 
            answers.restrictions && 
            answers.restrictions.includes('allergies') && (
-            <div className="mt-6 bg-amber-50/80 rounded-xl p-4 border border-amber-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="mt-6 bg-amber-900/30 rounded-xl p-4 border border-amber-800 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <h4 className="text-sm font-medium text-amber-900">Select your allergens</h4>
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                <h4 className="text-sm font-medium text-amber-200">Select your allergens</h4>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {ALLERGEN_OPTIONS.map((allergen) => {
@@ -494,7 +494,7 @@ export default function Onboarding({ onComplete }) {
                       className={`px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
                         isSelected
                           ? 'bg-amber-600 text-white shadow-sm'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:border-amber-300'
+                          : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-amber-600'
                       }`}
                     >
                       {allergen.label}
@@ -513,7 +513,7 @@ export default function Onboarding({ onComplete }) {
                 placeholder={currentQuestion.placeholder}
                 value={answers[currentQuestion.id] || ''}
                 onChange={(e) => setAnswers({ ...answers, [currentQuestion.id]: e.target.value })}
-                className="h-14 text-lg text-center rounded-xl border-gray-200 focus:border-indigo-300 focus:ring-indigo-200"
+                className="h-14 text-lg text-center rounded-xl bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-indigo-500 focus:ring-indigo-500"
                 autoFocus
               />
             </div>
@@ -537,7 +537,7 @@ export default function Onboarding({ onComplete }) {
             {step > 0 && (
               <button 
                 onClick={() => setStep(step - 1)}
-                className="w-full py-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="w-full py-3 text-sm text-gray-500 hover:text-gray-300 transition-colors"
               >
                 ← Back
               </button>
