@@ -15,10 +15,8 @@ export default function Layout({ children, currentPageName }) {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isWebView, setIsWebView] = useState(true);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
-  });
+  // Dark mode is permanently enabled - no toggle
+  const [darkMode] = useState(true);
 
   const [storeState, setStoreState] = useState(storeManager.getState());
   const [processState, setProcessState] = useState(processManager.getState());
@@ -56,19 +54,15 @@ export default function Layout({ children, currentPageName }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(true)); //darkMode));
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+    // Always enforce dark mode
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // If not landing page and not logged in, showing simplified layout
   const isLanding = currentPageName === 'Landing';
 
   return (
-    <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
+    <ThemeContext.Provider value={{ darkMode: true, setDarkMode: () => {} }}>
     <div className="bg-gray-50 text-gray-900 font-sans min-h-screen dark:bg-gray-900 dark:text-gray-100 antialiased relative transition-colors duration-200">
 
 
