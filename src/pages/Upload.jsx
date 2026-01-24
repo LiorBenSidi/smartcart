@@ -178,6 +178,10 @@ export default function Upload() {
     setIsUploading(true);
     
     try {
+      // Get current user's email
+      const currentUser = await base44.auth.me();
+      const userEmail = currentUser?.email;
+      
       // 1. Upload the file
       const uploadRes = await base44.integrations.Core.UploadFile({
         file: file
@@ -191,11 +195,10 @@ export default function Upload() {
         raw_receipt_image_url: fileUrl,
         processing_status: 'pending',
         store_id: selectedStore?.id,
-        storeName: selectedStore?.name || selectedChain?.name
+        storeName: selectedStore?.name || selectedChain?.name,
+        user_email: userEmail // Store user email explicitly
       };
       
-
-
       const pendingReceipt = await base44.entities.Receipt.create(receiptData);
 
       // 3. Redirect to the Receipt page - processing will happen there
