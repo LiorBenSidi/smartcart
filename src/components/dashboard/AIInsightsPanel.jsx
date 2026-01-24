@@ -68,9 +68,9 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
                             </p>
                         </div>
                     </div>
-                    <Badge className="bg-green-600 text-white shrink-0">
+                    <span className="text-green-400 text-sm font-medium shrink-0">
                         {recommendationsCount} tips
-                    </Badge>
+                    </span>
                 </div>
             )}
 
