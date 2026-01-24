@@ -42,14 +42,34 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                 allVariants = await base44.entities.Product.filter({ gtin: item.gtin }, '-updated_date', 100);
             }
             
-            // If no GTIN or no results, search by name
+            // If no GTIN or no results, search by name with multiple strategies
             if (allVariants.length === 0 && item.name) {
-                const allProducts = await base44.entities.Product.filter({}, '-updated_date', 500);
-                const searchName = item.name.toLowerCase();
+                const allProducts = await base44.entities.Product.filter({}, '-updated_date', 1000);
+                const searchName = item.name.toLowerCase().trim();
+                const searchWords = searchName.split(/\s+/).filter(w => w.length > 2);
+                
+                // Strategy 1: Exact match
                 allVariants = allProducts.filter(p => 
-                    p.canonical_name?.toLowerCase().includes(searchName) ||
-                    p.display_name?.toLowerCase().includes(searchName)
+                    p.canonical_name?.toLowerCase() === searchName ||
+                    p.display_name?.toLowerCase() === searchName
                 );
+                
+                // Strategy 2: Contains full name
+                if (allVariants.length === 0) {
+                    allVariants = allProducts.filter(p => 
+                        p.canonical_name?.toLowerCase().includes(searchName) ||
+                        p.display_name?.toLowerCase().includes(searchName)
+                    );
+                }
+                
+                // Strategy 3: Match most words (at least 2 words must match)
+                if (allVariants.length === 0 && searchWords.length >= 2) {
+                    allVariants = allProducts.filter(p => {
+                        const productName = (p.canonical_name || p.display_name || '').toLowerCase();
+                        const matchCount = searchWords.filter(word => productName.includes(word)).length;
+                        return matchCount >= Math.min(2, searchWords.length);
+                    });
+                }
             }
             
             const pricesByChain = {};
