@@ -726,10 +726,18 @@ export default function Main() {
                                                     setAddedToCart(prev => ({ ...prev, [tipKey]: 'loading' }));
 
                                                     try {
-                                                        // Search for product by name
-                                                        const products = await base44.entities.Product.filter({
+                                                        // Search for product by name (using $contains for partial match)
+                                                        let products = await base44.entities.Product.filter({
                                                             canonical_name: tip.related_entity_name
                                                         }, '-updated_date', 10);
+
+                                                        // If no exact match, try listing all and filtering
+                                                        if (products.length === 0) {
+                                                            const allProducts = await base44.entities.Product.list('-updated_date', 500);
+                                                            products = allProducts.filter(p => 
+                                                                p.canonical_name && p.canonical_name.toLowerCase().includes(tip.related_entity_name.toLowerCase())
+                                                            );
+                                                        }
 
                                                         if (products.length > 0) {
                                                             const product = products[0];
@@ -749,6 +757,7 @@ export default function Main() {
                                                                         : item
                                                                 );
                                                                 localStorage.setItem('smartCartItems', JSON.stringify(updatedCart));
+                                                                toast.success(`Increased quantity of "${product.canonical_name}"`);
                                                             } else {
                                                                 // Add new item
                                                                 const newItem = {
@@ -776,17 +785,12 @@ export default function Main() {
 
                                                                 existingPrices[product.gtin] = pricesByChain;
                                                                 localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
+                                                                toast.success(`Added "${product.canonical_name}" to Smart Cart`);
                                                             }
 
                                                             setAddedToCart(prev => ({ ...prev, [tipKey]: 'success' }));
-                                                            toast.success(`Added "${tip.related_entity_name}" to Smart Cart`);
-
-                                                            // Reset after 2 seconds
-                                                            setTimeout(() => {
-                                                                setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
-                                                            }, 2000);
                                                         } else {
-                                                            toast.error("Product not found");
+                                                            toast.error(`Product "${tip.related_entity_name}" not found in catalog`);
                                                             setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
                                                         }
                                                     } catch (error) {
@@ -795,8 +799,8 @@ export default function Main() {
                                                         setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
                                                     }
                                                 }}
-                                                disabled={addedToCart[`tip-${i}`] === 'loading'}
-                                                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all ${
+                                                disabled={addedToCart[`tip-${i}`] === 'loading' || addedToCart[`tip-${i}`] === 'success'}
+                                                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all duration-300 ${
                                                     addedToCart[`tip-${i}`] === 'success' 
                                                         ? 'bg-green-600 text-white' 
                                                         : addedToCart[`tip-${i}`] === 'loading'
@@ -814,7 +818,7 @@ export default function Main() {
                                                 ) : (
                                                     <>
                                                         <Plus className="w-3 h-3" />
-                                                        Add to Smart Cart
+                                                        Add to Cart
                                                     </>
                                                 )}
                                             </button>}
