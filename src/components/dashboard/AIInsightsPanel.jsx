@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -73,6 +73,128 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
     const recommendationsCount = insights.topRecommendations?.length || 0;
     const displayedRecs = focusMode ? insights.topRecommendations?.slice(0, 3) : insights.topRecommendations?.slice(0, 3);
 
+    // Focus Mode UI
+    if (focusMode) {
+        return (
+            <div className="space-y-5">
+                {/* Hero Savings Card - Glassmorphism */}
+                {totalSavings > 0 && (
+                    <div className="relative overflow-hidden rounded-2xl">
+                        {/* Glass background */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 via-green-600/15 to-teal-600/20 backdrop-blur-xl" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                        {/* Subtle glow effect */}
+                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-green-500/20 rounded-full blur-3xl" />
+                        <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl" />
+                        
+                        <div className="relative p-6 border border-green-500/20 rounded-2xl">
+                            <div className="text-center">
+                                <p className="text-emerald-300/80 text-xs font-medium uppercase tracking-widest mb-2">
+                                    Potential Monthly Savings
+                                </p>
+                                <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-1">
+                                    ₪{totalSavings.toFixed(0)}
+                                </h2>
+                                <p className="text-emerald-400/70 text-sm">
+                                    {recommendationsCount} action{recommendationsCount !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Focused Action List */}
+                {insights.topRecommendations && insights.topRecommendations.length > 0 && (
+                    <div className="space-y-3">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium px-1">
+                            Highest Impact Actions
+                        </p>
+                        
+                        <div className="space-y-2">
+                            {displayedRecs.map((rec, idx) => (
+                                <Dialog key={idx}>
+                                    <DialogTrigger asChild>
+                                        <div className="group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.01]">
+                                            {/* Glass card background */}
+                                            <div className="absolute inset-0 bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-xl group-hover:bg-gray-800/60 group-hover:border-gray-600/50 transition-colors" />
+                                            
+                                            <div className="relative p-4 flex items-center gap-4">
+                                                {/* Icon */}
+                                                <span className="text-2xl shrink-0">{getCategoryEmoji(rec.title, rec.description)}</span>
+                                                
+                                                {/* Content - Single line */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-gray-100 text-sm font-medium truncate">
+                                                        {rec.title}
+                                                    </p>
+                                                </div>
+                                                
+                                                {/* Savings + Chevron */}
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    {rec.potentialSavings > 0 && (
+                                                        <span className="text-emerald-400 font-bold text-sm whitespace-nowrap">
+                                                            Save ₪{rec.potentialSavings.toFixed(0)}
+                                                        </span>
+                                                    )}
+                                                    <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-md bg-gray-900/95 backdrop-blur-xl border-gray-700/50">
+                                        <DialogHeader>
+                                            <DialogTitle className="flex items-center gap-3 text-gray-100">
+                                                <span className="text-2xl">{getCategoryEmoji(rec.title, rec.description)}</span>
+                                                {rec.title}
+                                            </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-gray-400 leading-relaxed">{rec.description}</p>
+                                            {rec.potentialSavings > 0 && (
+                                                <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-xl p-4 text-center">
+                                                    <p className="text-emerald-400 font-bold text-lg">
+                                                        ₪{rec.potentialSavings.toFixed(0)}/month
+                                                    </p>
+                                                    <p className="text-emerald-500/70 text-xs mt-1">potential savings</p>
+                                                </div>
+                                            )}
+                                            <div className="flex gap-2">
+                                                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 h-10">
+                                                    Add to plan
+                                                </Button>
+                                                <Button size="sm" variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800 flex-1 h-10">
+                                                    Remind me
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                            ))}
+                        </div>
+
+                        {/* Subtle progress indicator */}
+                        {recommendationsCount > 0 && (
+                            <div className="flex items-center justify-center gap-2 pt-2">
+                                <div className="flex gap-1.5">
+                                    {[...Array(Math.min(recommendationsCount, 3))].map((_, i) => (
+                                        <div 
+                                            key={i} 
+                                            className="w-1.5 h-1.5 rounded-full bg-gray-600"
+                                        />
+                                    ))}
+                                </div>
+                                <span className="text-[10px] text-gray-600 font-medium">
+                                    0 of {Math.min(recommendationsCount, 3)} completed
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Non-Focus Mode UI (original)
     return (
         <div className="space-y-4">
             {/* Optimization Summary Strip */}
@@ -171,7 +293,7 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
             )}
 
             {/* AI Insights - Condensed */}
-            {!focusMode && allInsights.length > 0 && (
+            {allInsights.length > 0 && (
                 <div className="space-y-3">
                     <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-300 uppercase tracking-wider">
                         <Sparkles className="w-4 h-4 text-indigo-400" />
