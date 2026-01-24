@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format } from 'date-fns';
-import FrequentItemsCard from '../components/dashboard/FrequentItemsCard';
+
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
@@ -208,10 +208,7 @@ function AnalyticsDashboard({ receipts, dashboardData, hideTrends = false }) {
         </Card>
       )}
 
-      {/* Frequent Items */}
-      {dashboardData?.frequentItems && dashboardData.frequentItems.length > 0 && !hideTrends && (
-        <FrequentItemsCard items={dashboardData.frequentItems} />
-      )}
+
     </div>
   );
 }
