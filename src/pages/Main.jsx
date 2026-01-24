@@ -476,7 +476,7 @@ export default function Main() {
                         if (hour < 12) return 'Good Morning';
                         if (hour < 17) return 'Good Afternoon';
                         return 'Good Evening';
-                    })()}{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}
+                    })()}{user?.display_name ? `, ${user.display_name.split(' ')[0]}` : ''}
                 </h1>
                 <Dialog>
                     <DialogTrigger asChild>
