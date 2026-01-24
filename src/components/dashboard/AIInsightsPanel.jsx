@@ -126,8 +126,24 @@ Example output format:
 
 
     
-    if (!insights) {
-        return null;
+    // Check if we have meaningful insights data
+    const hasRecommendations = insights?.topRecommendations?.length > 0;
+    const hasInsights = insights?.spendingInsight || insights?.budgetInsight || insights?.categoryInsight || insights?.behaviorInsight;
+    
+    if (!insights || (!hasRecommendations && !hasInsights)) {
+        return (
+            <Card className="border-gray-700/50 bg-gray-800/30">
+                <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Sparkles className="w-6 h-6 text-gray-500" />
+                    </div>
+                    <h3 className="text-gray-300 font-medium mb-1">Not enough data yet</h3>
+                    <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                        Upload a few receipts so we can analyze your shopping patterns and provide personalized insights.
+                    </p>
+                </CardContent>
+            </Card>
+        );
     }
 
     const getSeverityIcon = (severity) => {
