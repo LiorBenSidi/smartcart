@@ -16,7 +16,11 @@ export default Deno.serve(async (req) => {
         const userProfile = profiles[0] || {};
 
         // 2. Fetch User Habits (for "Discovery" context)
-        const habits = await base44.entities.UserProductHabit.filter({ created_by: user.email }, '-confidence_score', 5);
+        // Try both user_id and created_by for backward compatibility
+        let habits = await base44.entities.UserProductHabit.filter({ user_id: user.email }, '-confidence_score', 5);
+        if (!habits || habits.length === 0) {
+            habits = await base44.entities.UserProductHabit.filter({ created_by: user.email }, '-confidence_score', 5);
+        }
 
         // 2.5 Fetch Feedback
         const feedback = await base44.entities.SmartTipFeedback.filter({ created_by: user.email }, '-created_at', 50);
