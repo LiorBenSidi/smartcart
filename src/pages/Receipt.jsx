@@ -302,7 +302,7 @@ export default function Receipt() {
   const calculatedSum = calculateSum();
   const hasMismatch = editData ? Math.abs(calculatedSum - (editData.totalAmount || 0)) > 0.05 : false;
 
-  if (loading) return <div className="p-10 text-center text-gray-500">Loading receipt...</div>;
+  if (loading) return <ReceiptDetailsSkeleton showSavedBadge={true} />;
   if (!receipt) return <div className="p-10 text-center text-gray-500">Receipt not found.</div>;
 
   // Show Review Mode if needed
