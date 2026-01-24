@@ -9,7 +9,7 @@ export default Deno.serve(async (req) => {
             return Response.json({ error: "Admin access required" }, { status: 403 });
         }
 
-        const { skip = 0, limit = 500 } = await req.json().catch(() => ({}));
+        const { skip = 0, limit = 100 } = await req.json().catch(() => ({}));
         const svc = base44.asServiceRole;
 
         // Fetch one batch of products
