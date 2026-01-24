@@ -898,8 +898,19 @@ export default function SmartCart() {
               !suggestions?.items?.length ?
               <div className="text-center py-8 text-gray-500">
                           <CalendarDays className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-                          <p className="mb-2">No AI suggestions available yet</p>
-                          <p className="text-xs text-gray-400">Click refresh to generate personalized suggestions</p>
+                          {suggestions?.note ? (
+                            <>
+                              <p className="mb-2 text-gray-600 dark:text-gray-300">{suggestions.note}</p>
+                              <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                                Upload more receipts to help us learn your shopping patterns. Once we have enough data, we'll suggest items you're likely to need.
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="mb-2">No AI suggestions available yet</p>
+                              <p className="text-xs text-gray-400">Click refresh to generate personalized suggestions</p>
+                            </>
+                          )}
                       </div> :
 
               <div className="space-y-3">
