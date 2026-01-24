@@ -4,7 +4,7 @@ import RecommendationExplainer from '@/components/RecommendationExplainer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, ExternalLink, Info, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Target, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Target, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
 import {
@@ -215,13 +215,11 @@ function AnalyticsDashboard({ receipts, dashboardData, hideTrends = false }) {
 
 export default function Main() {
   const [loading, setLoading] = useState(true);
-  const [runId, setRunId] = useState(null);
-  const [candidates, setCandidates] = useState({ chains: [], categories: [], products: [] });
   const [insights, setInsights] = useState([]);
   const [smartTips, setSmartTips] = useState([]); // New Smart Tips
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [selectedStore, setSelectedStore] = useState(null);
+
   const [aiInsights, setAiInsights] = useState(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
@@ -288,10 +286,10 @@ export default function Main() {
     }
   };
 
-  const refreshTips = async (currentCandidates = candidates, userEmail = null) => {
+  const refreshTips = async (userEmail = null) => {
       setTipsLoading(true);
       try {
-          const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: currentCandidates });
+          const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: {} });
           if (tipRes.data && tipRes.data.tips) {
               setSmartTips(tipRes.data.tips);
               // Cache the tips per user
@@ -314,7 +312,7 @@ export default function Main() {
       const userEmail = currentUser?.email;
       await Promise.all([
           fetchAIInsights(userEmail),
-          refreshTips(candidates, userEmail),
+          refreshTips(userEmail),
           fetchReceipts(userEmail, isAdmin)
       ]);
       toast.success("Insights refreshed!");
@@ -370,30 +368,6 @@ export default function Main() {
             console.log("Location access denied or timeout");
         }
 
-        // 1. Generate Recommendations
-        const res = await base44.functions.invoke('api_createRecommendationRun', { 
-            user_id: currentUser.email,
-            context: { 
-                k_items: 30, 
-                k_categories: 5, 
-                k_stores: 3,
-                ...loc
-                // current_store_id could be passed if we knew the user was in a store
-            },
-            options: { lookback_days: 90 }
-        });
-        
-        if (res.data && res.data.run) {
-            setRunId(res.data.run.id);
-            // New API returns pre-grouped candidates
-            const newCandidates = {
-                chains: res.data.candidates.stores || [],
-                categories: res.data.candidates.categories || [],
-                products: res.data.candidates.items || []
-            };
-            setCandidates(newCandidates);
-        }
-
         // Load cached receipts first, then fetch fresh data only on refresh (user-specific)
         const cachedReceipts = localStorage.getItem(getCacheKey('receipts', currentUser?.email));
         if (cachedReceipts) {
@@ -417,45 +391,7 @@ export default function Main() {
     init();
   }, []);
 
-  const handleFeedback = async (candidate, action) => {
-      // Optimistic UI update for view action
-      if (action === 'click' && candidate.store_chain_id) {
-          setSelectedStore(candidate);
-      }
 
-      try {
-          await base44.functions.invoke('api_logRecommendationFeedback', {
-              user_id: user.email,
-              run_id: runId,
-              candidate_id: candidate.candidate_id,
-              action: action,
-              context: { page: 'Main' }
-          });
-          
-          if (action === 'dismiss' || action === 'add_to_cart') {
-              let type = 'products';
-              if (candidate.store_chain_id) type = 'chains';
-              else if (candidate.category) type = 'categories';
-              
-              setCandidates(prev => ({
-                  ...prev,
-                  [type]: prev[type].filter(c => c !== candidate)
-              }));
-
-              if (action === 'add_to_cart') toast.success("Added to cart");
-              else toast.info("Recommendation dismissed");
-          }
-      } catch (e) {
-          console.error(e);
-      }
-  };
-
-  const getMatchQuality = (score) => {
-      if (score >= 0.8) return { label: 'Excellent Match', color: 'bg-emerald-500' };
-      if (score >= 0.6) return { label: 'Great Match', color: 'bg-green-500' };
-      if (score >= 0.4) return { label: 'Good Match', color: 'bg-blue-500' };
-      return { label: 'Potential Match', color: 'bg-gray-500' };
-  };
 
   if (loading) {
     return (
@@ -979,7 +915,7 @@ export default function Main() {
 
 
       {/* Empty State */}
-      {!loading && candidates.products.length === 0 && candidates.categories.length === 0 && smartTips.length === 0 && !tipsLoading && (
+      {!loading && smartTips.length === 0 && !tipsLoading && (
           <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-800/30 rounded-xl border-2 border-dashed border-gray-700">
               <div className="bg-gray-800 p-4 rounded-full mb-4">
                   <Search className="w-8 h-8 text-gray-500" />
@@ -994,58 +930,7 @@ export default function Main() {
           </div>
       )}
 
-      {/* Store Details Dialog */}
-      <Dialog open={!!selectedStore} onOpenChange={(open) => !open && setSelectedStore(null)}>
-        <DialogContent className="sm:max-w-md">
-          {selectedStore && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-lg border flex items-center justify-center p-2">
-                        {selectedStore.image_url ? 
-                            <img src={selectedStore.image_url} alt={selectedStore.name} className="w-full h-full object-contain" /> :
-                            <Store className="w-6 h-6 text-indigo-600" />
-                        }
-                    </div>
-                    <div>
-                        <DialogTitle>{selectedStore.name}</DialogTitle>
-                        <DialogDescription className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary" className="text-xs">
-                                {Math.round(selectedStore.score * 100)}% Match
-                            </Badge>
-                        </DialogDescription>
-                    </div>
-                </div>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                  <div className="space-y-2">
-                      <h4 className="text-sm font-medium leading-none">Why we recommend this</h4>
-                      <div className="text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg flex gap-3">
-                          <Info className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-                          <p>
-                              Based on your profile, this chain offers products that align with your dietary preferences and budget goals.
-                              {selectedStore.description && <span className="block mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">{selectedStore.description}</span>}
-                          </p>
-                      </div>
-                  </div>
-                  
-                  {selectedStore.website_url && (
-                      <div className="pt-2">
-                          <a 
-                              href={selectedStore.website_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
-                          >
-                              Visit Website <ExternalLink className="w-3 h-3" />
-                          </a>
-                      </div>
-                  )}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+
 
 
     </div>
