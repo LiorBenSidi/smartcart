@@ -135,7 +135,7 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-3 ml-2">
+                                    <div className="flex items-center gap-3 ml-2 flex-shrink-0">
                                         <div className="text-right">
                                             <div className="font-bold text-amber-400 text-sm">
                                                 ₪{item.avgPrice?.toFixed(2) || (item.total / item.count)?.toFixed(2) || '—'}
@@ -146,12 +146,15 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                                         <Button
                                             size="sm"
                                             disabled={!item.gtin || isLoadingPrice}
-                                            className={`h-8 w-8 p-0 transition-all duration-300 ${
+                                            className={`h-8 w-8 p-0 transition-all duration-300 flex-shrink-0 relative z-10 ${
                                                 isAdded 
                                                     ? 'bg-green-500 hover:bg-green-600 scale-110' 
                                                     : 'bg-amber-600 hover:bg-amber-700'
                                             }`}
-                                            onClick={() => handleAddToCart(item)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddToCart(item);
+                                            }}
                                             title={item.gtin ? "Add to cart" : "No barcode available"}
                                         >
                                             {isLoadingPrice ? (
