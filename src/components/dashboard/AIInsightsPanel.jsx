@@ -393,7 +393,7 @@ Example output format:
                                     ))}
                                 </div>
                                 <span className="text-[10px] text-gray-600 font-medium">
-                                    {Object.keys(addedToPlan).filter(k => k.startsWith('focus-')).length} of {Math.min(recommendationsCount, 3)} completed
+                                    {Object.keys(addedToPlan).filter(k => k.startsWith('focus-')).length} of {Math.min(recommendationsCount, 3)} added to my savings plan
                                 </span>
                             </div>
                         )}
