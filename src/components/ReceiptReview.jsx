@@ -394,9 +394,9 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                             <thead className="bg-gray-800/30 text-gray-500 dark:text-gray-500 border-y border-gray-700/30 text-xs">
                                                 <tr>
                                                     <th className="py-2 px-3 text-left font-medium">Item</th>
-                                                    <th className="py-2 px-2 text-center w-24 font-medium">Qty</th>
-                                                    <th className="py-2 px-2 text-right w-20 font-medium">Price</th>
-                                                    <th className="py-2 px-2 w-8"></th>
+                                                    <th className="py-2 px-1 text-center w-24 font-medium">Qty</th>
+                                                    <th className="py-2 px-2 text-right w-28 font-medium">Price</th>
+                                                    <th className="py-2 px-2 w-10"></th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-700/20">
@@ -414,7 +414,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                                     />
                                                                 </div>
                                                             </td>
-                                                            <td className="py-2 px-1">
+                                                            <td className="py-2 px-1 w-24">
                                                                 <Input
                                                                     type="number"
                                                                     value={item.quantity || ''}
@@ -422,7 +422,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                                     className="h-7 text-center text-sm dark:bg-transparent dark:text-gray-400 border-transparent hover:border-gray-700/50"
                                                                 />
                                                             </td>
-                                                            <td className="p-2">
+                                                            <td className="p-2 w-28">
                                                                 <Input
                                                                     type="number"
                                                                     value={item.price || ''}
@@ -430,13 +430,13 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                                     className="h-7 text-right text-sm dark:bg-transparent dark:text-gray-300 border-transparent hover:border-gray-700/50 font-medium"
                                                                 />
                                                             </td>
-                                                            <td className="p-2 text-center">
+                                                            <td className="p-2 w-10 text-center">
                                                                 <button
                                                                     onClick={() => handleDeleteItem(idx)}
-                                                                    className="text-gray-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                    className="text-gray-400 hover:text-red-400 transition-colors"
                                                                     title="Remove item"
                                                                 >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                    <Trash2 className="w-4 h-4" />
                                                                 </button>
                                                             </td>
                                                         </tr>
