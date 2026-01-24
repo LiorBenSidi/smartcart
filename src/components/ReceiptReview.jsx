@@ -414,7 +414,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                                                     />
                                                                 </div>
                                                             </td>
-                                                            <td className="py-2 px-1 pl-3 w-24">
+                                                            <td className="py-2 px-1 pl-2 w-24">
                                                                                                                                 <Input
                                                                                                                                     type="number"
                                                                                                                                     value={item.quantity || ''}
