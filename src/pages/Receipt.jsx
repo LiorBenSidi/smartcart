@@ -572,41 +572,41 @@ export default function Receipt() {
           </div>
 
           {/* Insights Section - Separate Card on Desktop */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-5">
              {receipt.insights && receipt.insights.length > 0 &&
           <>
                 {/* Savings & Overpay Insights */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="bg-gray-50 p-4 border-b border-gray-100">
-                        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
-                            <Coins className="w-3 h-3" /> Financial Insights
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 border-b border-gray-100 dark:border-gray-700">
+                        <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                            <Coins className="w-3.5 h-3.5" /> Financial Insights
                         </h4>
                     </div>
                     <div className="p-4 space-y-3">
                         {receipt.insights.filter((i) => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving', 'warning'].includes(i.type)).map((insight, idx) =>
                 <div key={idx} className={`rounded-xl border transition-all ${
-                insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-900' :
-                'bg-red-50 border-red-100 text-red-900'}`
+                insight.type === 'warning' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700/50 text-amber-900 dark:text-amber-100' :
+                'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/50 text-red-900 dark:text-red-100'}`
                 }>
                                 <div
                     className="p-3 flex items-start gap-3 cursor-pointer"
                     onClick={() => setExpandedInsight(expandedInsight === idx ? null : idx)}>
 
-                                    {insight.type === 'warning' ? <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-600" /> : <TrendingDown className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-600" />}
+                                    {insight.type === 'warning' ? <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" /> : <TrendingDown className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-600 dark:text-red-400" />}
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
                                             <p className="font-bold text-sm">{insight.message}</p>
                                             {insight.potential_savings > 0 &&
-                        <Badge variant="outline" className="bg-white border-red-200 text-red-700 font-bold ml-2 whitespace-nowrap">
+                        <span className="bg-white dark:bg-red-900/50 border border-red-200 dark:border-red-600 text-red-700 dark:text-red-200 font-bold ml-2 whitespace-nowrap text-xs px-2 py-0.5 rounded-full" style={{ fontVariantNumeric: 'tabular-nums' }}>
                                                     Save ₪{insight.potential_savings.toFixed(2)}
-                                                </Badge>
+                                                </span>
                         }
                                         </div>
                                         {/* Progressive Disclosure */}
                                         <div className={`text-xs mt-2 overflow-hidden transition-all duration-300 ${expandedInsight === idx ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                                             <p className="opacity-90 leading-relaxed mb-2">{insight.explanation_text}</p>
                                             {insight.evidence_json &&
-                        <div className="bg-white/50 rounded p-2 text-[10px] font-mono border border-black/5">
+                        <div className="bg-white/50 dark:bg-black/20 rounded p-2 text-[10px] font-mono border border-black/5 dark:border-white/10">
                                                     Evidence: {(() => {
                             try {
                               const evidence = JSON.parse(insight.evidence_json);
@@ -617,39 +617,39 @@ export default function Receipt() {
                         }
                                         </div>
                                         <div className="flex justify-center mt-1">
-                                            {expandedInsight === idx ? <ChevronUp className="w-3 h-3 opacity-30" /> : <ChevronDown className="w-3 h-3 opacity-30" />}
+                                            {expandedInsight === idx ? <ChevronUp className="w-3 h-3 opacity-40" /> : <ChevronDown className="w-3 h-3 opacity-40" />}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                 )}
                         {receipt.insights.filter((i) => ['OVERPAY_RECEIPT', 'OVERPAY_ITEM', 'saving'].includes(i.type)).length === 0 &&
-                <p className="text-sm text-gray-500 text-center py-2">No overpayments detected! Good job.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No overpayments detected! Good job.</p>
                 }
                     </div>
                 </div>
 
                 {/* What-if / Swaps */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="bg-gradient-to-r from-violet-50 to-fuchsia-50 p-4 border-b border-violet-100">
-                        <h4 className="text-xs font-semibold text-violet-700 uppercase tracking-wider flex items-center gap-2">
-                            <Sparkles className="w-3 h-3" /> "What If" Simulator
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="bg-gradient-to-r from-violet-50 to-fuchsia-50 dark:from-violet-900/30 dark:to-fuchsia-900/30 p-4 border-b border-violet-100 dark:border-violet-800/50">
+                        <h4 className="text-xs font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wider flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5" /> "What If" Simulator
                         </h4>
                     </div>
                     <div className="p-4 space-y-3">
-                        <div className="flex items-center gap-2 mb-3 bg-violet-50/50 p-2 rounded text-xs text-violet-600">
-                             <Info className="w-3 h-3" />
+                        <div className="flex items-center gap-2 mb-3 bg-violet-50/50 dark:bg-violet-900/20 p-2 rounded-lg text-xs text-violet-600 dark:text-violet-300">
+                             <Info className="w-3.5 h-3.5 flex-shrink-0" />
                              <span>Hypothetical savings. Does not affect actual spending.</span>
                         </div>
                         {receipt.insights.filter((i) => i.type === 'alternative').map((insight, idx) =>
-                <div key={idx} className="p-3 rounded-lg border border-violet-100 bg-white shadow-sm text-violet-900 text-sm">
+                <div key={idx} className="p-3 rounded-xl border border-violet-200 dark:border-violet-700/50 bg-white dark:bg-violet-900/10 shadow-sm text-violet-900 dark:text-violet-100 text-sm">
                                 <div className="flex items-start gap-3">
-                                    <ArrowRightLeft className="w-5 h-5 mt-0.5 flex-shrink-0 text-violet-500" />
+                                    <ArrowRightLeft className="w-5 h-5 mt-0.5 flex-shrink-0 text-violet-500 dark:text-violet-400" />
                                     <div>
                                         <p className="font-bold">{insight.message}</p>
-                                        <p className="text-xs mt-1 text-gray-600 leading-relaxed">{insight.explanation_text}</p>
+                                        <p className="text-xs mt-1 text-gray-600 dark:text-gray-400 leading-relaxed">{insight.explanation_text}</p>
                                         {insight.potential_savings > 0 &&
-                      <div className="mt-2 text-xs font-semibold text-violet-600 bg-violet-50 inline-block px-2 py-1 rounded">
+                      <div className="mt-2 text-xs font-semibold text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/30 inline-block px-2 py-1 rounded" style={{ fontVariantNumeric: 'tabular-nums' }}>
                                                 Could save ₪{insight.potential_savings.toFixed(2)}
                                             </div>
                       }
@@ -658,7 +658,7 @@ export default function Receipt() {
                             </div>
                 )}
                         {receipt.insights.filter((i) => i.type === 'alternative').length === 0 &&
-                <p className="text-sm text-gray-400 text-center py-2">No swap opportunities found for this receipt.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-2">No swap opportunities found for this receipt.</p>
                 }
                     </div>
                 </div>
