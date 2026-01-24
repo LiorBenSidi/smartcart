@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, TrendingUp, ChevronRight, Sparkles, Check, Loader2 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -9,10 +9,57 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 export default function AIInsightsPanel({ insights, focusMode = false }) {
     const [selectedRec, setSelectedRec] = useState(null);
+    const [addingToPlan, setAddingToPlan] = useState({});
+    const [settingReminder, setSettingReminder] = useState({});
+    const [addedToPlan, setAddedToPlan] = useState({});
+
+    const handleAddToPlan = async (rec, idx) => {
+        setAddingToPlan(prev => ({ ...prev, [idx]: true }));
+        try {
+            // Save as an Insight entity for tracking
+            await base44.entities.Insight.create({
+                title: rec.title,
+                message: rec.description,
+                type: 'savings_plan',
+                status: 'active',
+                potential_savings: rec.potentialSavings || 0,
+            });
+            setAddedToPlan(prev => ({ ...prev, [idx]: true }));
+            toast.success("Added to your savings plan!");
+        } catch (error) {
+            console.error("Failed to add to plan:", error);
+            toast.error("Failed to add to plan");
+        } finally {
+            setAddingToPlan(prev => ({ ...prev, [idx]: false }));
+        }
+    };
+
+    const handleRemindMe = async (rec, idx) => {
+        setSettingReminder(prev => ({ ...prev, [idx]: true }));
+        try {
+            // Save as an Insight with reminder flag
+            await base44.entities.Insight.create({
+                title: `Reminder: ${rec.title}`,
+                message: rec.description,
+                type: 'reminder',
+                status: 'pending',
+                potential_savings: rec.potentialSavings || 0,
+            });
+            toast.success("Reminder set! We'll notify you about this tip.");
+        } catch (error) {
+            console.error("Failed to set reminder:", error);
+            toast.error("Failed to set reminder");
+        } finally {
+            setSettingReminder(prev => ({ ...prev, [idx]: false }));
+        }
+    };
     
     if (!insights) {
         return null;
