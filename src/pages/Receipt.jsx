@@ -9,6 +9,7 @@ import PriceComparisonReview from '../components/PriceComparisonReview';
 import AddProductDialog from '../components/AddProductDialog';
 import ReceiptReview from '../components/ReceiptReview';
 import ReceiptProcessingLoader from '../components/ReceiptProcessingLoader';
+import ReceiptDetailsSkeleton from '../components/ReceiptDetailsSkeleton';
 
 export default function Receipt() {
   const [receipt, setReceipt] = useState(null);
