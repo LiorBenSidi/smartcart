@@ -109,6 +109,7 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
                             <Card key={idx} className="border-gray-700/50 bg-gray-800/30 hover:bg-gray-800/50 transition-colors overflow-hidden">
                                 <CardContent className="p-4">
                                     <div className="flex items-start justify-between gap-3">
+                                        <span className="text-xl shrink-0 mt-0.5">{getCategoryEmoji(rec.title, rec.description)}</span>
                                         <div className="flex-1 min-w-0">
                                             <h5 className="font-semibold text-gray-100 text-sm mb-1">
                                                 {rec.title}
