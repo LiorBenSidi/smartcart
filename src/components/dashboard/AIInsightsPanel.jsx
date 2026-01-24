@@ -77,10 +77,17 @@ export default function AIInsightsPanel({ insights, focusMode = false }) {
             {/* Optimization Opportunities - Now First */}
             {insights.topRecommendations && insights.topRecommendations.length > 0 && (
                 <div className="space-y-3">
-                    <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-300 uppercase tracking-wider">
-                        <TrendingUp className="w-4 h-4 text-green-400" />
-                        Optimization Opportunities
-                    </h3>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-300 uppercase tracking-wider">
+                            <TrendingUp className="w-4 h-4 text-green-400" />
+                            Optimization Opportunities
+                        </h3>
+                        {totalSavings > 0 && (
+                            <span className="text-green-400 font-bold text-sm">
+                                Save ₪{totalSavings.toFixed(0)}
+                            </span>
+                        )}
+                    </div>
                     <div className="space-y-2">
                         {displayedRecs.map((rec, idx) => (
                             <Card key={idx} className="border-gray-700/50 bg-gray-800/30 hover:bg-gray-800/50 transition-colors overflow-hidden">
