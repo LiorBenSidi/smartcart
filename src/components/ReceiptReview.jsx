@@ -397,7 +397,7 @@ export default function ReceiptReview({ receipt, onConfirm }) {
                                         >
                                             <div></div>
                                             <div className="text-left">Item</div>
-                                            <div className="text-right">Qty</div>
+                                            <div className="text-right pr-2">Qty</div>
                                             <div className="text-right">Price</div>
                                             <div></div>
                                         </div>
