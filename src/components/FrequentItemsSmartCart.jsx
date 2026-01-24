@@ -29,13 +29,29 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
     }, []);
 
     const handleAddToCart = async (item) => {
-        if (!item.gtin) return;
+        const itemKey = item.gtin || item.name;
+        if (!itemKey) return;
         
-        setLoadingPrices(prev => new Set([...prev, item.gtin]));
+        setLoadingPrices(prev => new Set([...prev, itemKey]));
         
         try {
-            // Fetch all products with this GTIN to get prices from all chains
-            const allVariants = await base44.entities.Product.filter({ gtin: item.gtin }, '-updated_date', 100);
+            let allVariants = [];
+            
+            // Try GTIN first, fallback to name search
+            if (item.gtin) {
+                allVariants = await base44.entities.Product.filter({ gtin: item.gtin }, '-updated_date', 100);
+            }
+            
+            // If no GTIN or no results, search by name
+            if (allVariants.length === 0 && item.name) {
+                const allProducts = await base44.entities.Product.filter({}, '-updated_date', 500);
+                const searchName = item.name.toLowerCase();
+                allVariants = allProducts.filter(p => 
+                    p.canonical_name?.toLowerCase().includes(searchName) ||
+                    p.display_name?.toLowerCase().includes(searchName)
+                );
+            }
+            
             const pricesByChain = {};
             
             allVariants.forEach(variant => {
@@ -51,15 +67,18 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                 }
             });
             
+            // Use found GTIN if available, otherwise use name as identifier
+            const productGtin = item.gtin || allVariants[0]?.gtin || `name:${item.name}`;
+            
             // Add to cart with prices
-            onAddToCartWithPrices({ gtin: item.gtin, canonical_name: item.name }, pricesByChain, false);
+            onAddToCartWithPrices({ gtin: productGtin, canonical_name: item.name }, pricesByChain, false);
             
             // Visual feedback
-            setAddedItems(prev => new Set([...prev, item.gtin]));
+            setAddedItems(prev => new Set([...prev, itemKey]));
             setTimeout(() => {
                 setAddedItems(prev => {
                     const next = new Set(prev);
-                    next.delete(item.gtin);
+                    next.delete(itemKey);
                     return next;
                 });
             }, 1500);
@@ -68,7 +87,7 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
         } finally {
             setLoadingPrices(prev => {
                 const next = new Set(prev);
-                next.delete(item.gtin);
+                next.delete(itemKey);
                 return next;
             });
         }
@@ -111,8 +130,9 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                 <CardContent className="pt-2 pb-4">
                     <div className="space-y-2">
                         {items.slice(0, 10).map((item, idx) => {
-                            const isAdded = addedItems.has(item.gtin);
-                            const isLoadingPrice = loadingPrices.has(item.gtin);
+                            const itemKey = item.gtin || item.name;
+                            const isAdded = addedItems.has(itemKey);
+                            const isLoadingPrice = loadingPrices.has(itemKey);
                             
                             return (
                                 <div 
@@ -145,7 +165,7 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                                         
                                         <button
                                             type="button"
-                                            disabled={!item.gtin || isLoadingPrice}
+                                            disabled={isLoadingPrice}
                                             className={`h-8 w-8 p-0 rounded-md flex items-center justify-center transition-all duration-300 flex-shrink-0 relative z-10 disabled:opacity-50 disabled:cursor-not-allowed ${
                                                 isAdded 
                                                     ? 'bg-green-500 hover:bg-green-600 scale-110' 
@@ -155,7 +175,7 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                                                 e.stopPropagation();
                                                 handleAddToCart(item);
                                             }}
-                                            title={item.gtin ? "Add to cart" : "No barcode available"}
+                                            title="Add to cart"
                                         >
                                             {isLoadingPrice ? (
                                                 <Loader2 className="w-4 h-4 animate-spin text-white" />
