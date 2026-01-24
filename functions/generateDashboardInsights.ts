@@ -14,10 +14,115 @@ Deno.serve(async (req) => {
         const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
         const userProfile = profiles.length > 0 ? profiles[0] : null;
 
+        // If no receipts, use collaborative filtering based on onboarding profile
         if (receipts.length === 0) {
-            return Response.json({ 
-                insights: [],
-                message: "No purchase data available yet. Upload some receipts to get started!"
+            if (!userProfile) {
+                return Response.json({ 
+                    insights: [],
+                    message: "Complete onboarding to get personalized insights!"
+                });
+            }
+
+            // Fetch similar users based on profile
+            const similarUsers = await base44.entities.SimilarUserEdge.filter({ user_id: user.email }, '-similarity', 10).catch(() => []);
+            
+            // Get insights from similar users' habits
+            let collaborativeInsights = [];
+            if (similarUsers.length > 0) {
+                const neighborIds = similarUsers.map(s => s.neighbor_user_id);
+                // Fetch habits from similar users
+                const neighborHabits = await base44.entities.UserProductHabit.filter({}, '-purchase_count', 100).catch(() => []);
+                const relevantHabits = neighborHabits.filter(h => neighborIds.includes(h.user_id));
+                
+                // Aggregate popular products among similar users
+                const productPopularity = {};
+                relevantHabits.forEach(h => {
+                    if (!productPopularity[h.product_name]) {
+                        productPopularity[h.product_name] = { count: 0, avgCadence: 0, users: 0 };
+                    }
+                    productPopularity[h.product_name].count += h.purchase_count || 1;
+                    productPopularity[h.product_name].avgCadence += h.avg_cadence_days || 7;
+                    productPopularity[h.product_name].users += 1;
+                });
+
+                collaborativeInsights = Object.entries(productPopularity)
+                    .map(([name, data]) => ({ name, ...data, avgCadence: data.avgCadence / data.users }))
+                    .sort((a, b) => b.users - a.users)
+                    .slice(0, 10);
+            }
+
+            // Generate profile-based recommendations using LLM
+            const profilePrompt = `You are an expert shopping advisor. Generate personalized recommendations for a NEW user who just completed onboarding.
+
+USER PROFILE (from onboarding):
+- Budget Focus: ${userProfile.budget_focus || 'balanced'}
+- Monthly Budget Target: ${userProfile.monthly_budget ? '₪' + userProfile.monthly_budget : 'Not set'}
+- Household Size: ${userProfile.household_size || 1}
+- Dietary Restrictions: ${JSON.stringify(userProfile.dietary_restrictions || [])}
+- Allergies: ${JSON.stringify(userProfile.allergen_avoid_list || [])}
+- Kosher Level: ${userProfile.kosher_level || userProfile.kashrut_level || 'none'}
+- Age Range: ${userProfile.age_range || 'Unknown'}
+- User Role: ${userProfile.user_role || 'Unknown'}
+
+${collaborativeInsights.length > 0 ? `
+COLLABORATIVE FILTERING DATA (from ${similarUsers.length} similar users):
+Popular products among users with similar profiles:
+${collaborativeInsights.map(p => `- ${p.name}: bought by ${p.users} similar users, avg purchase every ${p.avgCadence.toFixed(0)} days`).join('\n')}
+` : ''}
+
+TASK: Generate 3-4 actionable shopping recommendations based on:
+1. The user's stated preferences and constraints
+2. Patterns from similar users (collaborative filtering)
+3. General best practices for their household type
+
+Each recommendation should:
+- Be specific and actionable
+- Include an estimated monthly savings (realistic, between ₪20-₪150 per tip)
+- Respect dietary restrictions and allergies
+- Feel personalized, not generic`;
+
+            const aiResponse = await base44.integrations.Core.InvokeLLM({
+                prompt: profilePrompt,
+                response_json_schema: {
+                    type: "object",
+                    properties: {
+                        spendingInsight: {
+                            type: "object",
+                            properties: {
+                                title: { type: "string" },
+                                message: { type: "string" },
+                                severity: { type: "string", enum: ["positive", "neutral", "warning"] }
+                            }
+                        },
+                        topRecommendations: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    title: { type: "string" },
+                                    description: { type: "string" },
+                                    potentialSavings: { type: "number" },
+                                    rationale: { type: "string" }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            return Response.json({
+                rawData: {
+                    topCategories: [],
+                    frequentItems: [],
+                    spendingTrend: "0",
+                    last30DaysTotal: "0",
+                    avgReceiptValue: "0",
+                    totalReceipts: 0,
+                    isNewUser: true,
+                    similarUsersCount: similarUsers.length
+                },
+                aiInsights: aiResponse,
+                success: true
             });
         }
 
