@@ -335,18 +335,6 @@ export default function Onboarding({ onComplete }) {
     );
   }
 
-  // Motivational sentences for loading screen
-  const MOTIVATIONAL_SENTENCES = [
-    "Even your first receipts help us start finding smart savings for you.",
-    "Just a few receipts are enough to start saving smarter.",
-    "Receipts lead to smarter insights."
-  ];
-
-  // Select random sentence once per session (using useState to keep it stable)
-  const [motivationalSentence] = useState(() => 
-    MOTIVATIONAL_SENTENCES[Math.floor(Math.random() * MOTIVATIONAL_SENTENCES.length)]
-  );
-
   // Generating recommendations
   if (isGenerating) {
     return (
