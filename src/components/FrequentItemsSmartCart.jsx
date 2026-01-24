@@ -143,10 +143,10 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                                             <div className="text-[10px] text-gray-500">avg price</div>
                                         </div>
                                         
-                                        <Button
-                                            size="sm"
+                                        <button
+                                            type="button"
                                             disabled={!item.gtin || isLoadingPrice}
-                                            className={`h-8 w-8 p-0 transition-all duration-300 flex-shrink-0 relative z-10 ${
+                                            className={`h-8 w-8 p-0 rounded-md flex items-center justify-center transition-all duration-300 flex-shrink-0 relative z-10 disabled:opacity-50 disabled:cursor-not-allowed ${
                                                 isAdded 
                                                     ? 'bg-green-500 hover:bg-green-600 scale-110' 
                                                     : 'bg-amber-600 hover:bg-amber-700'
@@ -158,13 +158,13 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                                             title={item.gtin ? "Add to cart" : "No barcode available"}
                                         >
                                             {isLoadingPrice ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                <Loader2 className="w-4 h-4 animate-spin text-white" />
                                             ) : isAdded ? (
-                                                <CheckCircle className="w-4 h-4" />
+                                                <CheckCircle className="w-4 h-4 text-white" />
                                             ) : (
-                                                <Plus className="w-4 h-4" />
+                                                <Plus className="w-4 h-4 text-white" />
                                             )}
-                                        </Button>
+                                        </button>
                                     </div>
                                 </div>
                             );
