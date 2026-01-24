@@ -4,11 +4,14 @@ import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ScanLine, LogIn, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
+import Onboarding from '@/components/Onboarding';
 
 export default function Landing() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasProfile, setHasProfile] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -18,6 +21,15 @@ export default function Landing() {
         if (auth) {
             const userData = await base44.auth.me();
             setUser(userData);
+            
+            // Check if user has a profile (new user check)
+            const profiles = await base44.entities.UserProfile.filter({ created_by: userData.email });
+            setHasProfile(profiles.length > 0);
+            
+            // If no profile, show onboarding
+            if (profiles.length === 0) {
+              setShowOnboarding(true);
+            }
         }
       } catch (e) {
         console.error(e);
@@ -28,6 +40,12 @@ export default function Landing() {
     checkAuth();
   }, []);
 
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    setHasProfile(true);
+    window.location.href = createPageUrl('Main');
+  };
+
   const handleAuth = () => {
     base44.auth.redirectToLogin(createPageUrl('Main'));
   };
@@ -35,6 +53,11 @@ export default function Landing() {
   const handleNavigation = () => {
     window.location.href = createPageUrl('Main');
   };
+
+  // Show onboarding for new users
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 flex flex-col">
