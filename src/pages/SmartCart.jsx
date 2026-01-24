@@ -909,6 +909,31 @@ export default function SmartCart() {
                             <>
                               <p className="mb-2">No AI suggestions available yet</p>
                               <p className="text-xs text-gray-400">Click refresh to generate personalized suggestions</p>
+                              
+                              {/* New user explanation */}
+                              <div className="mt-6 text-left bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800 max-w-md mx-auto">
+                                <h4 className="font-semibold text-sm text-indigo-900 dark:text-indigo-200 flex items-center gap-2 mb-2">
+                                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                  How We Generate Suggestions
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                  Since you're new, we find users with similar profiles (budget, household size, dietary preferences) and suggest products they frequently buy.
+                                </p>
+                                <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1.5">
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-indigo-500 mt-0.5">•</span>
+                                    <span>We match you with shoppers who have similar preferences from onboarding</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-indigo-500 mt-0.5">•</span>
+                                    <span>Their most purchased items become your initial suggestions</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-indigo-500 mt-0.5">•</span>
+                                    <span>As you upload receipts, suggestions become personalized to your own habits</span>
+                                  </li>
+                                </ul>
+                              </div>
                             </>
                           )}
                       </div> :
