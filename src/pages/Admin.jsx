@@ -730,49 +730,7 @@ export default function Admin() {
                 </Dialog>
             </div>
 
-            <div className="relative">
-                <Button 
-                    onClick={handleGenerateBenchmarks}
-                    disabled={processState.loading}
-                    className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50"
-                >
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    {processState.loading && processState.activeProcess === 'generateBenchmarksFromProducts' ? 'Generating...' : 'Generate Benchmarks'}
-                </Button>
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
-                        >
-                            <HelpCircle className="h-3 w-3 text-gray-600 dark:text-gray-300" />
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-lg">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-cyan-600" />
-                                Generate Benchmark Prices
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-3 text-sm">
-                            <p className="text-gray-700 dark:text-gray-300">
-                                Creates benchmark prices from existing product catalog data.
-                            </p>
-                            <div className="bg-cyan-50 dark:bg-cyan-900/20 p-3 rounded">
-                                <h4 className="font-semibold mb-2 text-cyan-900 dark:text-cyan-200">Process:</h4>
-                                <ol className="list-decimal list-inside text-xs text-gray-700 dark:text-gray-300 space-y-1">
-                                    <li>Fetches all products with prices</li>
-                                    <li>Groups by GTIN to find min/avg prices</li>
-                                    <li>Creates BenchmarkPrice records for today</li>
-                                    <li>Used by receipt analysis for overpay detection</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </div>
+
 
             <div className="relative">
                 <div className="flex gap-1">
