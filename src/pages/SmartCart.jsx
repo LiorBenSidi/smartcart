@@ -799,18 +799,60 @@ export default function SmartCart() {
                                               <Settings className="w-4 h-4 text-slate-600" />
                                               Smart Prioritization
                                           </h4>
-                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                                              We combine all signals and show you the most relevant items first.
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                              We combine all signals and show you the most relevant items first. Here's what each badge means:
                                           </p>
-                                          <div className="flex flex-wrap gap-2 text-xs">
-                                              <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Weekly+Restock</Badge>
-                                              <Badge className="bg-teal-100 text-teal-700 border-teal-200">Hybrid</Badge>
-                                              <Badge className="bg-amber-100 text-amber-700 border-amber-200">Restock</Badge>
-                                              <Badge className="bg-blue-100 text-blue-700 border-blue-200">Weekly</Badge>
-                                              <Badge className="bg-purple-100 text-purple-700 border-purple-200">Community</Badge>
+                                          <div className="space-y-2 text-xs">
+                                              <div className="flex items-center gap-2">
+                                                  <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 shrink-0">Weekly+Restock</Badge>
+                                                  <span className="text-gray-600 dark:text-gray-400">Highest priority — matches both your weekly day pattern AND you're due for restock</span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                  <Badge className="bg-teal-100 text-teal-700 border-teal-200 shrink-0">Hybrid</Badge>
+                                                  <span className="text-gray-600 dark:text-gray-400">Combines your personal patterns with community recommendations</span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                  <Badge className="bg-amber-100 text-amber-700 border-amber-200 shrink-0">Restock</Badge>
+                                                  <span className="text-gray-600 dark:text-gray-400">Based on your buying cycle — you're running low on this item</span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                  <Badge className="bg-blue-100 text-blue-700 border-blue-200 shrink-0">Weekly</Badge>
+                                                  <span className="text-gray-600 dark:text-gray-400">You typically buy this on this day of the week</span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                  <Badge className="bg-purple-100 text-purple-700 border-purple-200 shrink-0">Collaborative</Badge>
+                                                  <span className="text-gray-600 dark:text-gray-400">Popular among shoppers with similar profiles to you</span>
+                                              </div>
                                           </div>
                                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                                               Items appearing in multiple categories get priority. Use 👍👎 to personalize further!
+                                          </p>
+                                      </div>
+
+                                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
+                                          <h4 className="font-semibold mb-2 text-green-900 dark:text-green-200 flex items-center gap-2">
+                                              <Sparkles className="w-4 h-4 text-green-600" />
+                                              New Users
+                                          </h4>
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                              Don't have receipts yet? No problem! Here's how we help you get started:
+                                          </p>
+                                          <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                                              <li className="flex items-start gap-2">
+                                                  <span className="text-green-500 mt-0.5">✓</span>
+                                                  <span><strong>Profile matching</strong> — We find shoppers with similar budget, household size, and dietary preferences</span>
+                                              </li>
+                                              <li className="flex items-start gap-2">
+                                                  <span className="text-green-500 mt-0.5">✓</span>
+                                                  <span><strong>Community-powered</strong> — Their frequently purchased items become your initial suggestions</span>
+                                              </li>
+                                              <li className="flex items-start gap-2">
+                                                  <span className="text-green-500 mt-0.5">✓</span>
+                                                  <span><strong>Gets smarter over time</strong> — As you upload receipts, suggestions become personalized to your habits</span>
+                                              </li>
+                                          </ul>
+                                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                                              💡 Upload just a few receipts to unlock Weekly and Restock suggestions!
                                           </p>
                                       </div>
                                   </div>
