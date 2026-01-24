@@ -74,6 +74,13 @@ export default function Profile() {
     try {
         await base44.entities.UserProductPreference.delete(id);
         setPreferences(preferences.filter(p => p.id !== id));
+        
+        // Update user vectors incrementally
+        if (user?.email) {
+            base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' })
+                .then(() => console.log("User vectors updated"))
+                .catch(e => console.error("Failed to update user vectors", e));
+        }
     } catch (error) {
         console.error("Failed to remove preference", error);
     }
@@ -86,6 +93,13 @@ export default function Profile() {
             setTipFeedback(prev => ({ ...prev, liked: prev.liked.filter(t => t.id !== id) }));
         } else {
             setTipFeedback(prev => ({ ...prev, disliked: prev.disliked.filter(t => t.id !== id) }));
+        }
+        
+        // Update user vectors incrementally
+        if (user?.email) {
+            base44.functions.invoke('buildUserVectors', { userId: user.email, mode: 'incremental' })
+                .then(() => console.log("User vectors updated"))
+                .catch(e => console.error("Failed to update user vectors", e));
         }
     } catch (error) {
         console.error("Failed to remove tip feedback", error);
