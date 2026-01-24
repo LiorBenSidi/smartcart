@@ -17,11 +17,20 @@ export default Deno.serve(async (req) => {
         const skip = batch * limit;
         const maxHabitsPerBatch = payload.maxHabitsPerBatch || 50; // Max habits to create per frontend call
         const mode = payload.mode || 'full'; // 'full' = delete all & rebuild, 'incremental' = update only new receipts
+        const specificUserId = payload.userId; // Optional: process only this specific user (email)
 
         // 1. Fetch Users
-        const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
-        // Manual pagination since list params might vary
-        const batchUsers = users.slice(skip, skip + limit);
+        let batchUsers;
+        if (specificUserId) {
+            // If a specific userId (email) is provided, only process that user
+            const allUsers = await svc.entities.User.filter({ email: specificUserId });
+            batchUsers = allUsers.length > 0 ? [allUsers[0]] : [];
+            console.log(`[rebuildUserHabits] Processing specific user: ${specificUserId}`);
+        } else {
+            const users = await svc.entities.User.list('created_date', 1000); // Assuming < 1000 users for now
+            // Manual pagination since list params might vary
+            batchUsers = users.slice(skip, skip + limit);
+        }
         
         const results = [];
 
