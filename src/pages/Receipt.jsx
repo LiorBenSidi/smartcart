@@ -337,35 +337,7 @@ export default function Receipt() {
 
   // Show pending state
   if (receipt.processing_status === 'pending') {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Link to={createPageUrl('Upload')}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </Button>
-          </Link>
-          <h2 className="font-bold text-lg text-gray-900">Processing Receipt</h2>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-indigo-100 p-10 text-center">
-          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-          </div>
-          <h3 className="font-bold text-xl text-gray-900 mb-2">Analyzing Your Receipt</h3>
-          <p className="text-gray-500 text-sm mb-6">
-            Our AI is extracting items and calculating totals. This usually takes 10-30 seconds.
-          </p>
-          {receipt.raw_receipt_image_url && (
-          receipt.raw_receipt_image_url.toLowerCase().includes('.pdf') ?
-          <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(receipt.raw_receipt_image_url)}&embedded=true`} className="w-full max-h-64 h-64 mx-auto rounded-lg opacity-50 border-0" title="Receipt PDF" /> :
-
-          <img src={receipt.raw_receipt_image_url} alt="Receipt" className="max-h-64 mx-auto rounded-lg opacity-50" />)
-
-          }
-        </div>
-      </div>);
-
+    return <ReceiptProcessingLoader imageUrl={receipt.raw_receipt_image_url} />;
   }
 
   // Show failed state
