@@ -283,6 +283,7 @@ export default function Main() {
         data = await base44.entities.Receipt.filter({ created_by: userEmail }, '-date', 100);
       }
       setReceipts(data);
+      localStorage.setItem('cached_receipts', JSON.stringify(data));
     } catch (error) {
       console.error("Error fetching receipts", error);
     }
@@ -307,9 +308,12 @@ export default function Main() {
 
   const refreshAll = async () => {
       toast.info("Refreshing insights...");
+      const currentUser = await base44.auth.me();
+      const isAdmin = currentUser?.role === 'admin';
       await Promise.all([
           fetchAIInsights(),
-          refreshTips()
+          refreshTips(),
+          fetchReceipts(currentUser?.email, isAdmin)
       ]);
       toast.success("Insights refreshed!");
   };
@@ -388,9 +392,11 @@ export default function Main() {
             setCandidates(newCandidates);
         }
 
-        // Fetch receipts for analytics
-        const isAdmin = currentUser.role === 'admin';
-        fetchReceipts(currentUser.email, isAdmin);
+        // Load cached receipts first, then fetch fresh data only on refresh
+        const cachedReceipts = localStorage.getItem('cached_receipts');
+        if (cachedReceipts) {
+            setReceipts(JSON.parse(cachedReceipts));
+        }
 
         // 2. Fetch Insights
         const insightsRes = await base44.entities.Insight.filter({ 
