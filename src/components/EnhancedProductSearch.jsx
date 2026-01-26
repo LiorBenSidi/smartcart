@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  * ⚠️ WARNING: Setting batchSize too high or batchDelay too low increases the risk 
  * of "Rate Limit Error" from Base44. Recommended: batchSize ≤ 1000, batchDelay ≥ 100ms
  */
-export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '', cachedResults = null, onCacheResults = null, batchSize = 1000, batchDelay = 100 }) {
+export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '', cachedResults = null, onCacheResults = null, batchSize: initialBatchSize = 1000, batchDelay: initialBatchDelay = 100 }) {
     const [searchTerm, setSearchTerm] = useState(defaultSearchTerm);
     const [searchResults, setSearchResults] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
@@ -23,6 +23,10 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     const [showFilters, setShowFilters] = useState(false);
     const [addedItems, setAddedItems] = useState(new Set());
     const [loadingDots, setLoadingDots] = useState('...');
+    
+    // Batch settings (user-configurable)
+    const [batchSize, setBatchSize] = useState(initialBatchSize);
+    const [batchDelay, setBatchDelay] = useState(initialBatchDelay);
     
     // Filter states
     const [filters, setFilters] = useState({
