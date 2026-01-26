@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle, Sparkles } from 'lucide-react';
+import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle, Sparkles, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
