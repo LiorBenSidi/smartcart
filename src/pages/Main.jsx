@@ -670,6 +670,29 @@ export default function Main() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Generating personalized tips based on your budget and diet...
                   </div>
+              ) : tipsRateLimited ? (
+                  <Card className="border-amber-700/50 bg-amber-900/20">
+                      <CardContent className="p-4 flex items-start gap-3">
+                          <div className="p-2 bg-amber-900/30 rounded-lg shrink-0">
+                              <RefreshCw className="w-5 h-5 text-amber-400" />
+                          </div>
+                          <div className="flex-1">
+                              <h4 className="font-medium text-amber-200 mb-1">Rate Limit Reached</h4>
+                              <p className="text-sm text-gray-400 mb-3">
+                                  The Base44 platform has a rate limit on API requests. Please wait about a minute before trying again.
+                              </p>
+                              <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => refreshTips(user?.email)}
+                                  className="border-amber-700 bg-amber-900/30 hover:bg-amber-900/50 text-amber-200"
+                              >
+                                  <RefreshCw className="w-3 h-3 mr-2" />
+                                  Try Again
+                              </Button>
+                          </div>
+                      </CardContent>
+                  </Card>
               ) : smartTips.length > 0 ? (
                   <div className="space-y-3">
                       {/* Show first 2 tips always, rest conditionally */}
