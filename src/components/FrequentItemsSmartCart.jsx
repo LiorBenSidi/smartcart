@@ -5,19 +5,38 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, ChevronDown, ChevronUp, Plus, CheckCircle, Loader2 } from 'lucide-react';
 
-export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains = [] }) {
+export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains = [], userEmail = null }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
     const [addedItems, setAddedItems] = useState(new Set());
     const [loadingPrices, setLoadingPrices] = useState(new Set());
 
+    const getCacheKey = () => `frequent_items_${userEmail || 'anonymous'}`;
+
     useEffect(() => {
         const fetchFrequentItems = async () => {
+            // Try loading from cache first
+            const cacheKey = getCacheKey();
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    setItems(parsed);
+                    setLoading(false);
+                    return;
+                } catch (e) {
+                    console.error("Failed to parse cached frequent items", e);
+                }
+            }
+
             try {
                 const response = await base44.functions.invoke('generateDashboardInsights', {});
                 if (response.data.success && response.data.rawData?.frequentItems) {
-                    setItems(response.data.rawData.frequentItems);
+                    const frequentItems = response.data.rawData.frequentItems;
+                    setItems(frequentItems);
+                    // Save to cache per user
+                    localStorage.setItem(cacheKey, JSON.stringify(frequentItems));
                 }
             } catch (error) {
                 console.error("Failed to fetch frequent items", error);
@@ -26,7 +45,7 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
             }
         };
         fetchFrequentItems();
-    }, []);
+    }, [userEmail]);
 
     const handleAddToCart = async (item) => {
         const itemKey = item.gtin || item.name;
