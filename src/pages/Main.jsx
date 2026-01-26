@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, ThumbsUp, ThumbsDown, X, ShoppingCart, Store, Tag, Package, MapPin, Lightbulb, HelpCircle, Sparkles, Leaf, Search, RotateCcw, RefreshCw, BarChart3, ChevronDown, ChevronUp, ArrowUpRight, Plus, Calendar, ShoppingBag, Target, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from "sonner";
 import DataCorrectionDialog from '@/components/DataCorrectionDialog';
+import EnhancedProductSearch from '@/components/EnhancedProductSearch';
 import {
   Dialog,
   DialogContent,
@@ -230,6 +231,7 @@ export default function Main() {
   const [focusMode, setFocusMode] = useState(true);
   const [showMoreTips, setShowMoreTips] = useState(false);
   const [addedToCart, setAddedToCart] = useState({});
+  const [searchDialogTip, setSearchDialogTip] = useState(null);
 
   const getCacheKey = (type, userEmail) => `cached_${type}_${userEmail || 'anonymous'}`;
 
@@ -721,118 +723,11 @@ export default function Main() {
                                                 {tip.related_entity_name}
                                             </span>
                                             {tip.related_entity_type === 'product' && <button 
-                                                onClick={async () => {
-                                                    const tipKey = `tip-${i}`;
-                                                    setAddedToCart(prev => ({ ...prev, [tipKey]: 'loading' }));
-
-                                                    try {
-                                                        // Use same search method as EnhancedProductSearch - fetch all products and use Fuse.js style matching
-                                                        const allProducts = await base44.entities.Product.list('-updated_date', 1000);
-                                                        
-                                                        // Use original Hebrew name for search (if available), fallback to display name
-                                                        const originalName = tip.related_entity_name_original || tip.related_entity_name;
-                                                        const searchTerm = originalName.toLowerCase().trim();
-                                                        let matchedProduct = null;
-                                                        
-                                                        // First try exact match
-                                                        matchedProduct = allProducts.find(p => 
-                                                            p.canonical_name && p.canonical_name.toLowerCase() === searchTerm
-                                                        );
-                                                        
-                                                        // If no exact match, try includes
-                                                        if (!matchedProduct) {
-                                                            matchedProduct = allProducts.find(p => 
-                                                                p.canonical_name && p.canonical_name.toLowerCase().includes(searchTerm)
-                                                            );
-                                                        }
-                                                        
-                                                        // If still no match, try if search term includes product name
-                                                        if (!matchedProduct) {
-                                                            matchedProduct = allProducts.find(p => 
-                                                                p.canonical_name && searchTerm.includes(p.canonical_name.toLowerCase())
-                                                            );
-                                                        }
-
-                                                        if (matchedProduct) {
-                                                            // Get current cart from localStorage
-                                                            const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
-                                                            const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
-
-                                                            // Check if already in cart
-                                                            const existingItem = existingCart.find(item => item.gtin === matchedProduct.gtin);
-
-                                                            if (existingItem) {
-                                                                // Increase quantity
-                                                                const updatedCart = existingCart.map(item => 
-                                                                    item.gtin === matchedProduct.gtin 
-                                                                        ? { ...item, quantity: item.quantity + 1 }
-                                                                        : item
-                                                                );
-                                                                localStorage.setItem('smartCartItems', JSON.stringify(updatedCart));
-                                                                toast.success(`Increased quantity of "${matchedProduct.canonical_name}"`);
-                                                            } else {
-                                                                // Add new item
-                                                                const newItem = {
-                                                                    gtin: matchedProduct.gtin,
-                                                                    name: matchedProduct.canonical_name,
-                                                                    quantity: 1,
-                                                                    fromSuggestion: true
-                                                                };
-                                                                localStorage.setItem('smartCartItems', JSON.stringify([...existingCart, newItem]));
-
-                                                                // Fetch prices for all chains (same GTIN from different chains)
-                                                                const allVariants = allProducts.filter(p => p.gtin === matchedProduct.gtin);
-                                                                const pricesByChain = {};
-                                                                allVariants.forEach(variant => {
-                                                                    if (variant.chain_id && variant.current_price != null) {
-                                                                        if (!pricesByChain[variant.chain_id] || variant.current_price < pricesByChain[variant.chain_id].price) {
-                                                                            pricesByChain[variant.chain_id] = {
-                                                                                price: variant.current_price,
-                                                                                chain_id: variant.chain_id,
-                                                                                store_id: variant.store_id
-                                                                            };
-                                                                        }
-                                                                    }
-                                                                });
-
-                                                                existingPrices[matchedProduct.gtin] = pricesByChain;
-                                                                localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
-                                                                toast.success(`Added "${matchedProduct.canonical_name}" to Smart Cart`);
-                                                            }
-
-                                                            setAddedToCart(prev => ({ ...prev, [tipKey]: 'success' }));
-                                                        } else {
-                                                            toast.error(`Product "${tip.related_entity_name}" not found in catalog`);
-                                                            setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
-                                                        }
-                                                    } catch (error) {
-                                                        console.error("Failed to add to cart", error);
-                                                        toast.error("Failed to add to cart");
-                                                        setAddedToCart(prev => ({ ...prev, [tipKey]: null }));
-                                                    }
-                                                }}
-                                                disabled={addedToCart[`tip-${i}`] === 'loading' || addedToCart[`tip-${i}`] === 'success'}
-                                                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all duration-300 ${
-                                                    addedToCart[`tip-${i}`] === 'success' 
-                                                        ? 'bg-green-600 text-white' 
-                                                        : addedToCart[`tip-${i}`] === 'loading'
-                                                            ? 'bg-indigo-500 text-white cursor-wait'
-                                                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                                }`}
+                                                onClick={() => setSearchDialogTip({ tip, index: i })}
+                                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
                                             >
-                                                {addedToCart[`tip-${i}`] === 'loading' ? (
-                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                ) : addedToCart[`tip-${i}`] === 'success' ? (
-                                                    <>
-                                                        <CheckCircle className="w-3 h-3" />
-                                                        Added!
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Plus className="w-3 h-3" />
-                                                        Add to Cart
-                                                    </>
-                                                )}
+                                                <Plus className="w-3 h-3" />
+                                                Add to Cart
                                             </button>}
                                         </div>
                                         )}
@@ -915,6 +810,52 @@ export default function Main() {
 
 
 
+
+      {/* Product Search Dialog for Tips */}
+      <Dialog open={!!searchDialogTip} onOpenChange={(open) => !open && setSearchDialogTip(null)}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                      <Search className="w-5 h-5 text-indigo-500" />
+                      Find & Add Product
+                  </DialogTitle>
+                  <DialogDescription>
+                      Search for "{searchDialogTip?.tip?.related_entity_name_original || searchDialogTip?.tip?.related_entity_name}" and add it to your cart.
+                  </DialogDescription>
+              </DialogHeader>
+              <EnhancedProductSearch 
+                  onAddToCartWithPrices={(product, pricesByChain) => {
+                      const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
+                      const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
+                      
+                      const existingItem = existingCart.find(item => item.gtin === product.gtin);
+                      
+                      if (existingItem) {
+                          const updatedCart = existingCart.map(item => 
+                              item.gtin === product.gtin 
+                                  ? { ...item, quantity: item.quantity + 1 }
+                                  : item
+                          );
+                          localStorage.setItem('smartCartItems', JSON.stringify(updatedCart));
+                          toast.success(`Increased quantity of "${product.canonical_name}"`);
+                      } else {
+                          const newItem = {
+                              gtin: product.gtin,
+                              name: product.canonical_name,
+                              quantity: 1,
+                              fromSuggestion: true
+                          };
+                          localStorage.setItem('smartCartItems', JSON.stringify([...existingCart, newItem]));
+                          existingPrices[product.gtin] = pricesByChain;
+                          localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
+                          toast.success(`Added "${product.canonical_name}" to Smart Cart`);
+                      }
+                      
+                      setSearchDialogTip(null);
+                  }}
+              />
+          </DialogContent>
+      </Dialog>
 
       {/* Empty State */}
       {!loading && smartTips.length === 0 && !tipsLoading && (
