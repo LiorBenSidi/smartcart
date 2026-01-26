@@ -39,6 +39,8 @@ export default Deno.serve(async (req) => {
             skip += batchSize;
         }
         const validProductNames = [...new Set(allCatalogProducts.map(p => p.canonical_name).filter(Boolean))];
+        const validDisplayNames = [...new Set(allCatalogProducts.map(p => p.display_name).filter(Boolean))];
+        const allValidNames = [...new Set([...validProductNames, ...validDisplayNames])];
 
         // 3. Prepare Prompt Context
         const profileContext = {
@@ -153,11 +155,13 @@ export default Deno.serve(async (req) => {
             const productName = tip.related_entity_name_original || tip.related_entity_name;
             
             if (tip.related_entity_type === 'product' && productName) {
-                // Check if product exists in catalog (exact match only for reliability)
-                const productExists = validProductNames.some(name => 
-                    name.toLowerCase() === productName.toLowerCase() ||
-                    name.toLowerCase().includes(productName.toLowerCase()) ||
-                    productName.toLowerCase().includes(name.toLowerCase())
+                // Check if product exists in catalog using same logic as EnhancedProductSearch
+                const searchLower = productName.toLowerCase();
+                const productExists = allCatalogProducts.some(p => 
+                    (p.canonical_name && p.canonical_name.toLowerCase().includes(searchLower)) ||
+                    (p.display_name && p.display_name.toLowerCase().includes(searchLower)) ||
+                    (searchLower.includes(p.canonical_name?.toLowerCase())) ||
+                    (searchLower.includes(p.display_name?.toLowerCase()))
                 );
                 
                 if (!productExists) {
