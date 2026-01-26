@@ -138,7 +138,29 @@ export default Deno.serve(async (req) => {
             }
         });
 
-        return Response.json({ tips: completion.tips || [] });
+        // 5. Validate tips - remove any with product names that don't exist in catalog
+        const validatedTips = (completion.tips || []).map(tip => {
+            if (tip.related_entity_type === 'product' && tip.related_entity_name_original) {
+                // Check if product exists in catalog (exact or partial match)
+                const productExists = validProductNames.some(name => 
+                    name === tip.related_entity_name_original ||
+                    name.includes(tip.related_entity_name_original) ||
+                    tip.related_entity_name_original.includes(name)
+                );
+                
+                if (!productExists) {
+                    // Remove the related product fields if product doesn't exist
+                    return {
+                        type: tip.type,
+                        message: tip.message,
+                        inspired_by_liked_tips: tip.inspired_by_liked_tips
+                    };
+                }
+            }
+            return tip;
+        });
+
+        return Response.json({ tips: validatedTips });
 
     } catch (error) {
         return Response.json({ error: error.message }, { status: 500 });
