@@ -91,37 +91,31 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
         return sorted;
     };
 
-    // Batch fetch helper
+    // Fetch all products and filter client-side for better results
     const fetchAllMatchingProducts = async (term) => {
         const batchSize = 500;
-        let allResults = [];
+        let allProducts = [];
         let skip = 0;
         let hasMore = true;
 
+        // Fetch ALL products in batches
         while (hasMore) {
-            const batch = await base44.entities.Product.filter({
-                $or: [
-                    { canonical_name: { $regex: term, $options: 'i' } },
-                    { gtin: { $regex: term, $options: 'i' } },
-                    { brand_name: { $regex: term, $options: 'i' } }
-                ]
-            }, undefined, batchSize, skip);
-
-            allResults = [...allResults, ...batch];
-
-            if (batch.length < batchSize) {
-                hasMore = false;
-            } else {
-                skip += batchSize;
-            }
-
-            // Safety limit to prevent infinite loops
-            if (allResults.length > 5000) {
-                hasMore = false;
-            }
+            const batch = await base44.entities.Product.list('-updated_date', batchSize, skip);
+            allProducts = [...allProducts, ...batch];
+            hasMore = batch.length === batchSize;
+            skip += batchSize;
         }
 
-        return allResults;
+        // Filter client-side for better matching
+        const searchLower = term.toLowerCase();
+        const filtered = allProducts.filter(p => 
+            (p.canonical_name && p.canonical_name.toLowerCase().includes(searchLower)) ||
+            (p.gtin && p.gtin.toLowerCase().includes(searchLower)) ||
+            (p.brand_name && p.brand_name.toLowerCase().includes(searchLower)) ||
+            (p.display_name && p.display_name.toLowerCase().includes(searchLower))
+        );
+
+        return filtered;
     };
 
     // Process results helper
