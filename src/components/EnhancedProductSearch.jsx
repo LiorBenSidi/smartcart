@@ -3,7 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle } from 'lucide-react';
+import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle, Sparkles } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '', cachedResults = null, onCacheResults = null }) {
     const [searchTerm, setSearchTerm] = useState(defaultSearchTerm);
@@ -457,6 +458,29 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                             />
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Loading State */}
+            {isSearching && (
+                <div className="space-y-3 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2 text-sm text-indigo-400 mb-4">
+                        <Sparkles className="w-4 h-4 animate-pulse" />
+                        <span>Searching products...</span>
+                    </div>
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 border border-gray-700/50">
+                            <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-3/4 bg-gray-700/50" />
+                                <Skeleton className="h-3 w-1/2 bg-gray-700/30" />
+                                <div className="flex gap-2 mt-2">
+                                    <Skeleton className="h-5 w-16 rounded-full bg-gray-700/30" />
+                                    <Skeleton className="h-5 w-12 rounded-full bg-gray-700/30" />
+                                </div>
+                            </div>
+                            <Skeleton className="h-8 w-8 rounded-md bg-gray-700/50" />
+                        </div>
+                    ))}
                 </div>
             )}
 
