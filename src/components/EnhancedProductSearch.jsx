@@ -91,7 +91,85 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
         return sorted;
     };
 
-    // Search with regex matching
+    // Batch fetch helper
+    const fetchAllMatchingProducts = async (term) => {
+        const batchSize = 500;
+        let allResults = [];
+        let skip = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+            const batch = await base44.entities.Product.filter({
+                $or: [
+                    { canonical_name: { $regex: term, $options: 'i' } },
+                    { gtin: { $regex: term, $options: 'i' } },
+                    { brand_name: { $regex: term, $options: 'i' } }
+                ]
+            }, undefined, batchSize, skip);
+
+            allResults = [...allResults, ...batch];
+
+            if (batch.length < batchSize) {
+                hasMore = false;
+            } else {
+                skip += batchSize;
+            }
+
+            // Safety limit to prevent infinite loops
+            if (allResults.length > 5000) {
+                hasMore = false;
+            }
+        }
+
+        return allResults;
+    };
+
+    // Process results helper
+    const processResults = (results, minChainCount = 1) => {
+        const chainCountByGtin = {};
+        const bestProductByGtin = {};
+
+        results.forEach(product => {
+            if (!product.gtin) return;
+            if (!chainCountByGtin[product.gtin]) {
+                chainCountByGtin[product.gtin] = new Set();
+                bestProductByGtin[product.gtin] = product;
+            }
+            if (product.chain_id) {
+                chainCountByGtin[product.gtin].add(product.chain_id);
+            }
+            if (product.current_price && (!bestProductByGtin[product.gtin].current_price || 
+                product.current_price < bestProductByGtin[product.gtin].current_price)) {
+                bestProductByGtin[product.gtin] = product;
+            }
+        });
+
+        const uniqueProducts = Object.entries(bestProductByGtin).map(([gtin, product]) => ({
+            ...product,
+            chainCount: chainCountByGtin[gtin]?.size || 0
+        }));
+
+        return uniqueProducts.filter(p => p.chainCount >= minChainCount);
+    };
+
+    // Sort results helper
+    const sortResults = (results, sortMethod) => {
+        const sorted = [...results];
+        if (sortMethod === 'price_asc') {
+            sorted.sort((a, b) => (a.current_price || 999999) - (b.current_price || 999999));
+        } else if (sortMethod === 'price_desc') {
+            sorted.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+        } else if (sortMethod === 'name_asc') {
+            sorted.sort((a, b) => (a.canonical_name || '').localeCompare(b.canonical_name || ''));
+        } else if (sortMethod === 'name_desc') {
+            sorted.sort((a, b) => (b.canonical_name || '').localeCompare(a.canonical_name || ''));
+        } else {
+            sorted.sort((a, b) => b.chainCount - a.chainCount);
+        }
+        return sorted;
+    };
+
+    // Search with regex matching and batch fetching
     useEffect(() => {
         const searchProducts = async () => {
             if (!searchTerm || searchTerm.length < 2) {
@@ -102,69 +180,32 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
 
             setIsSearching(true);
             try {
-                const results = await base44.entities.Product.filter({
-                    $or: [
-                        { canonical_name: { $regex: searchTerm, $options: 'i' } },
-                        { gtin: { $regex: searchTerm, $options: 'i' } },
-                        { brand_name: { $regex: searchTerm, $options: 'i' } }
-                    ]
-                }, undefined, 200);
-                
-                // Count unique chains per GTIN
-                const chainCountByGtin = {};
-                const bestProductByGtin = {};
-                results.forEach(product => {
-                    if (!product.gtin) return;
-                    if (!chainCountByGtin[product.gtin]) {
-                        chainCountByGtin[product.gtin] = new Set();
-                        bestProductByGtin[product.gtin] = product;
-                    }
-                    if (product.chain_id) {
-                        chainCountByGtin[product.gtin].add(product.chain_id);
-                    }
-                    // Keep the product with lowest price as representative
-                    if (product.current_price && (!bestProductByGtin[product.gtin].current_price || 
-                        product.current_price < bestProductByGtin[product.gtin].current_price)) {
-                        bestProductByGtin[product.gtin] = product;
-                    }
-                });
-                
-                // Get unique products (one per GTIN) with chain count
-                const uniqueProducts = Object.entries(bestProductByGtin).map(([gtin, product]) => ({
-                    ...product,
-                    chainCount: chainCountByGtin[gtin]?.size || 0
-                }));
-                
-                // Filter to only products available in at least 3 chains
-                let finalResults = uniqueProducts.filter(p => p.chainCount >= 3);
-                
-                // Apply sorting based on sortBy state
-                if (sortBy === 'price_asc') {
-                    finalResults.sort((a, b) => (a.current_price || 999999) - (b.current_price || 999999));
-                } else if (sortBy === 'price_desc') {
-                    finalResults.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
-                } else if (sortBy === 'name_asc') {
-                    finalResults.sort((a, b) => (a.canonical_name || '').localeCompare(b.canonical_name || ''));
-                } else if (sortBy === 'name_desc') {
-                    finalResults.sort((a, b) => (b.canonical_name || '').localeCompare(a.canonical_name || ''));
-                } else {
-                    // Default: relevance = sort by chain count descending
-                    finalResults.sort((a, b) => b.chainCount - a.chainCount);
+                const results = await fetchAllMatchingProducts(searchTerm);
+
+                // First try with 3+ chains filter
+                let finalResults = processResults(results, 3);
+
+                // If no results with 3+ chains, fallback to all results (1+ chain)
+                if (finalResults.length === 0) {
+                    finalResults = processResults(results, 1);
                 }
-                
+
+                // Apply sorting
+                finalResults = sortResults(finalResults, sortBy);
+
                 // Apply additional filters if any are active
                 if (hasActiveFilters) {
                     finalResults = applyFiltersAndSort(finalResults);
                 }
-                
-                // Limit to 10 results max
-                finalResults = finalResults.slice(0, 10);
-                
+
+                // Limit to 50 results max
+                finalResults = finalResults.slice(0, 50);
+
                 // Show top 5 as suggestions
                 setSuggestions(finalResults.slice(0, 5));
-                
-                // Show all results (limited to 50)
-                setSearchResults(finalResults.slice(0, 50));
+
+                // Show all results
+                setSearchResults(finalResults);
             } catch (error) {
                 console.error("Failed to search products", error);
             } finally {
