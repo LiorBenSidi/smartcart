@@ -27,6 +27,10 @@ export default Deno.serve(async (req) => {
         const likedTips = feedback.filter(f => f.action === 'like').map(f => f.full_message);
         const dislikedTips = feedback.filter(f => f.action === 'dislike').map(f => f.full_message);
 
+        // 2.6 Fetch actual product names from catalog (for validation)
+        const catalogProducts = await base44.entities.Product.list('-updated_date', 500);
+        const validProductNames = [...new Set(catalogProducts.map(p => p.canonical_name).filter(Boolean))];
+
         // 3. Prepare Prompt Context
         const profileContext = {
             budget_focus: userProfile.budget_focus,
@@ -84,7 +88,9 @@ export default Deno.serve(async (req) => {
         - **Store Preferences:** If the user prefers specific chains (${JSON.stringify(userProfile.preferred_store_chains || [])}), reference these stores in your tips when relevant.
 
         **SPECIFICITY REQUIREMENTS:**
-        - Use actual product names from recommendations, not generic categories
+        - CRITICAL: You MUST ONLY use product names from this EXACT list of valid products in our catalog. Do NOT invent or guess product names:
+        ${JSON.stringify(validProductNames.slice(0, 100))}
+        - The "related_entity_name_original" field MUST be an EXACT match from the list above (copy-paste exactly)
         - Include specific price comparisons as PERCENTAGES when suggesting alternatives (e.g., "20% cheaper" instead of "₪2 less")
         - Reference real stores from the user's area when applicable
         - Base discovery tips on the user's actual purchase history and habits
