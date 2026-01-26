@@ -27,9 +27,18 @@ export default Deno.serve(async (req) => {
         const likedTips = feedback.filter(f => f.action === 'like').map(f => f.full_message);
         const dislikedTips = feedback.filter(f => f.action === 'dislike').map(f => f.full_message);
 
-        // 2.6 Fetch actual product names from catalog (for validation)
-        const catalogProducts = await base44.entities.Product.list('-updated_date', 500);
-        const validProductNames = [...new Set(catalogProducts.map(p => p.canonical_name).filter(Boolean))];
+        // 2.6 Fetch actual product names from catalog (for validation) - fetch more products
+        let allCatalogProducts = [];
+        let skip = 0;
+        const batchSize = 500;
+        let hasMore = true;
+        while (hasMore && allCatalogProducts.length < 3000) {
+            const batch = await base44.entities.Product.list('-updated_date', batchSize, skip);
+            allCatalogProducts = [...allCatalogProducts, ...batch];
+            hasMore = batch.length === batchSize;
+            skip += batchSize;
+        }
+        const validProductNames = [...new Set(allCatalogProducts.map(p => p.canonical_name).filter(Boolean))];
 
         // 3. Prepare Prompt Context
         const profileContext = {
@@ -140,12 +149,15 @@ export default Deno.serve(async (req) => {
 
         // 5. Validate tips - remove any with product names that don't exist in catalog
         const validatedTips = (completion.tips || []).map(tip => {
-            if (tip.related_entity_type === 'product' && tip.related_entity_name_original) {
-                // Check if product exists in catalog (exact or partial match)
+            // Check both related_entity_name and related_entity_name_original
+            const productName = tip.related_entity_name_original || tip.related_entity_name;
+            
+            if (tip.related_entity_type === 'product' && productName) {
+                // Check if product exists in catalog (exact match only for reliability)
                 const productExists = validProductNames.some(name => 
-                    name === tip.related_entity_name_original ||
-                    name.includes(tip.related_entity_name_original) ||
-                    tip.related_entity_name_original.includes(name)
+                    name.toLowerCase() === productName.toLowerCase() ||
+                    name.toLowerCase().includes(productName.toLowerCase()) ||
+                    productName.toLowerCase().includes(name.toLowerCase())
                 );
                 
                 if (!productExists) {
@@ -154,6 +166,7 @@ export default Deno.serve(async (req) => {
                         type: tip.type,
                         message: tip.message,
                         inspired_by_liked_tips: tip.inspired_by_liked_tips
+                        // Removed: related_entity_name, related_entity_name_original, related_entity_type
                     };
                 }
             }
