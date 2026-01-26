@@ -113,12 +113,15 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
         let skip = 0;
         let hasMore = true;
 
-        // Fetch ALL products in batches
+        // Fetch ALL products in batches with small delay between batches
         while (hasMore) {
             const batch = await base44.entities.Product.list('-updated_date', batchSize, skip);
             allProducts = [...allProducts, ...batch];
             hasMore = batch.length === batchSize;
             skip += batchSize;
+            if (hasMore) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
         }
 
         // Filter client-side for better matching
