@@ -23,6 +23,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     const [showFilters, setShowFilters] = useState(false);
     const [addedItems, setAddedItems] = useState(new Set());
     const [loadingDots, setLoadingDots] = useState('...');
+    const [rateLimitError, setRateLimitError] = useState(false);
     
     // Batch settings (user-configurable)
     const [batchSize, setBatchSize] = useState(initialBatchSize);
