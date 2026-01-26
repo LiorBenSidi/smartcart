@@ -232,6 +232,7 @@ export default function Main() {
   const [showMoreTips, setShowMoreTips] = useState(false);
   const [addedToCart, setAddedToCart] = useState({});
   const [searchDialogTip, setSearchDialogTip] = useState(null);
+  const [tipSearchCache, setTipSearchCache] = useState({});
 
   const getCacheKey = (type, userEmail) => `cached_${type}_${userEmail || 'anonymous'}`;
 
@@ -247,6 +248,12 @@ export default function Main() {
       }
       if (cachedTips) {
         setSmartTips(JSON.parse(cachedTips));
+      }
+      
+      // Load tip search cache
+      const cachedTipSearch = localStorage.getItem(getCacheKey('tip_search_cache', userEmail));
+      if (cachedTipSearch) {
+        setTipSearchCache(JSON.parse(cachedTipSearch));
       }
     } catch (e) {
       console.error("Failed to load cached data", e);
@@ -312,6 +319,11 @@ export default function Main() {
       const currentUser = await base44.auth.me();
       const isAdmin = currentUser?.role === 'admin';
       const userEmail = currentUser?.email;
+      
+      // Clear tip search cache on refresh
+      setTipSearchCache({});
+      localStorage.removeItem(getCacheKey('tip_search_cache', userEmail));
+      
       await Promise.all([
           fetchAIInsights(userEmail),
           refreshTips(userEmail),
@@ -826,34 +838,44 @@ export default function Main() {
               <EnhancedProductSearch 
                   defaultSearchTerm={searchDialogTip?.tip?.related_entity_name_original || searchDialogTip?.tip?.related_entity_name || ''}
                   onAddToCartWithPrices={(product, pricesByChain) => {
-                      const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
-                      const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
-                      
-                      const existingItem = existingCart.find(item => item.gtin === product.gtin);
-                      
-                      if (existingItem) {
-                          const updatedCart = existingCart.map(item => 
-                              item.gtin === product.gtin 
-                                  ? { ...item, quantity: item.quantity + 1 }
-                                  : item
-                          );
-                          localStorage.setItem('smartCartItems', JSON.stringify(updatedCart));
-                          toast.success(`Increased quantity of "${product.canonical_name}"`);
-                      } else {
-                          const newItem = {
-                              gtin: product.gtin,
-                              name: product.canonical_name,
-                              quantity: 1,
-                              fromSuggestion: true
-                          };
-                          localStorage.setItem('smartCartItems', JSON.stringify([...existingCart, newItem]));
-                          existingPrices[product.gtin] = pricesByChain;
-                          localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
-                          toast.success(`Added "${product.canonical_name}" to Smart Cart`);
-                      }
-                      
-                      setSearchDialogTip(null);
-                  }}
+                          const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
+                          const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
+
+                          const existingItem = existingCart.find(item => item.gtin === product.gtin);
+
+                          if (existingItem) {
+                              const updatedCart = existingCart.map(item => 
+                                  item.gtin === product.gtin 
+                                      ? { ...item, quantity: item.quantity + 1 }
+                                      : item
+                              );
+                              localStorage.setItem('smartCartItems', JSON.stringify(updatedCart));
+                              toast.success(`Increased quantity of "${product.canonical_name}"`);
+                          } else {
+                              const newItem = {
+                                  gtin: product.gtin,
+                                  name: product.canonical_name,
+                                  quantity: 1,
+                                  fromSuggestion: true
+                              };
+                              localStorage.setItem('smartCartItems', JSON.stringify([...existingCart, newItem]));
+                              existingPrices[product.gtin] = pricesByChain;
+                              localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
+                              toast.success(`Added "${product.canonical_name}" to Smart Cart`);
+                          }
+
+                          // Cache the search result for this tip
+                          if (searchDialogTip?.tip) {
+                              const tipKey = searchDialogTip.tip.related_entity_name_original || searchDialogTip.tip.related_entity_name;
+                              const newCache = { ...tipSearchCache, [tipKey]: product };
+                              setTipSearchCache(newCache);
+                              if (user?.email) {
+                                  localStorage.setItem(getCacheKey('tip_search_cache', user.email), JSON.stringify(newCache));
+                              }
+                          }
+
+                          setSearchDialogTip(null);
+                      }}
               />
           </DialogContent>
       </Dialog>
