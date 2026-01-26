@@ -37,6 +37,9 @@ export default Deno.serve(async (req) => {
             allCatalogProducts = [...allCatalogProducts, ...batch];
             hasMore = batch.length === batchSize;
             skip += batchSize;
+            if (hasMore) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
         }
         const validProductNames = [...new Set(allCatalogProducts.map(p => p.canonical_name).filter(Boolean))];
         const validDisplayNames = [...new Set(allCatalogProducts.map(p => p.display_name).filter(Boolean))];
