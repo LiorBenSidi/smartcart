@@ -295,8 +295,11 @@ export default function Main() {
     }
   };
 
+  const [tipsRateLimited, setTipsRateLimited] = useState(false);
+
   const refreshTips = async (userEmail = null) => {
       setTipsLoading(true);
+      setTipsRateLimited(false);
       try {
           const tipRes = await base44.functions.invoke('generateSmartTips', { recommendations: {} });
           if (tipRes.data && tipRes.data.tips) {
@@ -308,7 +311,14 @@ export default function Main() {
           }
       } catch (e) {
           console.error("Smart tips failed", e);
-          toast.error("Failed to refresh tips");
+          // Check for rate limit error
+          const errorMsg = e?.message?.toLowerCase() || e?.response?.data?.error?.toLowerCase() || '';
+          if (errorMsg.includes('rate') || errorMsg.includes('limit') || errorMsg.includes('429') || errorMsg.includes('too many')) {
+              setTipsRateLimited(true);
+              toast.error("Rate limit reached. Please wait a minute and try again.");
+          } else {
+              toast.error("Failed to refresh tips");
+          }
       } finally {
           setTipsLoading(false);
       }
