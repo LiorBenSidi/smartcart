@@ -486,9 +486,41 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                                 className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md text-sm dark:bg-gray-900 dark:text-gray-100"
                             />
                         </div>
-                    </div>
-                </div>
-            )}
+                        </div>
+
+                        {/* Advanced: Batch Settings */}
+                        <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
+                            ⚙️ Advanced Settings
+                            <span className="text-[10px] text-amber-500">(affects search performance)</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Batch Size</label>
+                                <input
+                                    type="number"
+                                    placeholder="1000"
+                                    value={batchSize}
+                                    onChange={(e) => setBatchSize(Math.max(100, Math.min(5000, parseInt(e.target.value) || 1000)))}
+                                    className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md text-sm dark:bg-gray-900 dark:text-gray-100"
+                                />
+                                <span className="text-[10px] text-gray-400">100-5000</span>
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Batch Delay (ms)</label>
+                                <input
+                                    type="number"
+                                    placeholder="100"
+                                    value={batchDelay}
+                                    onChange={(e) => setBatchDelay(Math.max(0, Math.min(1000, parseInt(e.target.value) || 100)))}
+                                    className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md text-sm dark:bg-gray-900 dark:text-gray-100"
+                                />
+                                <span className="text-[10px] text-gray-400">0-1000ms</span>
+                            </div>
+                        </div>
+                        </div>
+                        </div>
+                        )}
 
             {/* Loading State */}
             {isSearching && (
