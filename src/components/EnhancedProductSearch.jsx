@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle } from 'lucide-react';
 
-export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '' }) {
+export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '', cachedResults = null, onCacheResults = null }) {
     const [searchTerm, setSearchTerm] = useState(defaultSearchTerm);
     const [searchResults, setSearchResults] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
@@ -172,6 +172,17 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                 return;
             }
 
+            // Use cached results if available and search term matches
+            if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
+                let finalResults = sortResults(cachedResults, sortBy);
+                if (hasActiveFilters) {
+                    finalResults = applyFiltersAndSort(finalResults);
+                }
+                setSuggestions(finalResults.slice(0, 5));
+                setSearchResults(finalResults.slice(0, 50));
+                return;
+            }
+
             setIsSearching(true);
             try {
                 const results = await fetchAllMatchingProducts(searchTerm);
@@ -200,6 +211,11 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
 
                 // Show all results
                 setSearchResults(finalResults);
+
+                // Cache the results
+                if (onCacheResults && finalResults.length > 0) {
+                    onCacheResults(finalResults);
+                }
             } catch (error) {
                 console.error("Failed to search products", error);
             } finally {
@@ -209,7 +225,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
 
         const debounce = setTimeout(searchProducts, 300);
         return () => clearTimeout(debounce);
-    }, [searchTerm, filters, sortBy]);
+    }, [searchTerm, filters, sortBy, cachedResults]);
 
     // Get unique categories for filter (async load when needed)
     const [categories, setCategories] = useState([]);

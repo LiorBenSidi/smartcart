@@ -837,6 +837,17 @@ export default function Main() {
               </DialogHeader>
               <EnhancedProductSearch 
                   defaultSearchTerm={searchDialogTip?.tip?.related_entity_name_original || searchDialogTip?.tip?.related_entity_name || ''}
+                  cachedResults={tipSearchCache[searchDialogTip?.tip?.related_entity_name_original || searchDialogTip?.tip?.related_entity_name]}
+                  onCacheResults={(results) => {
+                      const tipKey = searchDialogTip?.tip?.related_entity_name_original || searchDialogTip?.tip?.related_entity_name;
+                      if (tipKey && results?.length > 0) {
+                          const newCache = { ...tipSearchCache, [tipKey]: results };
+                          setTipSearchCache(newCache);
+                          if (user?.email) {
+                              localStorage.setItem(getCacheKey('tip_search_cache', user.email), JSON.stringify(newCache));
+                          }
+                      }
+                  }}
                   onAddToCartWithPrices={(product, pricesByChain) => {
                           const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
                           const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
@@ -862,16 +873,6 @@ export default function Main() {
                               existingPrices[product.gtin] = pricesByChain;
                               localStorage.setItem('smartCartPrices', JSON.stringify(existingPrices));
                               toast.success(`Added "${product.canonical_name}" to Smart Cart`);
-                          }
-
-                          // Cache the search result for this tip
-                          if (searchDialogTip?.tip) {
-                              const tipKey = searchDialogTip.tip.related_entity_name_original || searchDialogTip.tip.related_entity_name;
-                              const newCache = { ...tipSearchCache, [tipKey]: product };
-                              setTipSearchCache(newCache);
-                              if (user?.email) {
-                                  localStorage.setItem(getCacheKey('tip_search_cache', user.email), JSON.stringify(newCache));
-                              }
                           }
 
                           setSearchDialogTip(null);
