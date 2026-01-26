@@ -1173,7 +1173,8 @@ export default function SmartCart() {
               {/* Most Purchased Items */}
               <FrequentItemsSmartCart 
                 onAddToCartWithPrices={addToCartWithPrices} 
-                chains={chains} 
+                chains={chains}
+                userEmail={suggestions?.created_by}
               />
 
               {/* Enhanced Product Search */}
