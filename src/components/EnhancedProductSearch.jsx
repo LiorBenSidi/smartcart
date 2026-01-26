@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle } from 'lucide-react';
 
-export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices }) {
-    const [searchTerm, setSearchTerm] = useState('');
+export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '' }) {
+    const [searchTerm, setSearchTerm] = useState(defaultSearchTerm);
     const [searchResults, setSearchResults] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [isSearching, setIsSearching] = useState(false);

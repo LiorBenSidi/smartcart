@@ -824,6 +824,7 @@ export default function Main() {
                   </DialogDescription>
               </DialogHeader>
               <EnhancedProductSearch 
+                  defaultSearchTerm={searchDialogTip?.tip?.related_entity_name_original || searchDialogTip?.tip?.related_entity_name || ''}
                   onAddToCartWithPrices={(product, pricesByChain) => {
                       const existingCart = JSON.parse(localStorage.getItem('smartCartItems') || '[]');
                       const existingPrices = JSON.parse(localStorage.getItem('smartCartPrices') || '{}');
