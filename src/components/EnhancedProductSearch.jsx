@@ -553,8 +553,38 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                 </div>
             )}
 
+            {/* Rate Limit Error */}
+            {rateLimitError && (
+                <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-4 flex items-start gap-3">
+                    <div className="p-2 bg-amber-900/30 rounded-lg shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-medium text-amber-200 mb-1">Rate Limit Reached</h4>
+                        <p className="text-sm text-gray-400 mb-3">
+                            The Base44 platform has a rate limit on API requests. Please wait about a minute before trying again.
+                        </p>
+                        <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => {
+                                setRateLimitError(false);
+                                // Trigger a re-search by updating searchTerm
+                                const currentTerm = searchTerm;
+                                setSearchTerm('');
+                                setTimeout(() => setSearchTerm(currentTerm), 100);
+                            }}
+                            className="border-amber-700 bg-amber-900/30 hover:bg-amber-900/50 text-amber-200"
+                        >
+                            <RefreshCw className="w-3 h-3 mr-2" />
+                            Try Again
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Search Results */}
-            {!isSearching && searchTerm && searchResults.length === 0 && (
+            {!isSearching && !rateLimitError && searchTerm && searchResults.length === 0 && (
                 <div className="text-center text-gray-500 text-sm py-4">
                     No products found matching your criteria.
                 </div>
