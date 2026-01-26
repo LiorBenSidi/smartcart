@@ -6,6 +6,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle, Sparkles } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * EnhancedProductSearch - Search and add products to cart
+ * 
+ * @param {number} batchSize - Number of products to fetch per batch (default: 1000)
+ * @param {number} batchDelay - Delay in ms between batches (default: 100)
+ * 
+ * ⚠️ WARNING: Setting batchSize too high or batchDelay too low increases the risk 
+ * of "Rate Limit Error" from Base44. Recommended: batchSize ≤ 1000, batchDelay ≥ 100ms
+ */
 export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '', cachedResults = null, onCacheResults = null, batchSize = 1000, batchDelay = 100 }) {
     const [searchTerm, setSearchTerm] = useState(defaultSearchTerm);
     const [searchResults, setSearchResults] = useState([]);
