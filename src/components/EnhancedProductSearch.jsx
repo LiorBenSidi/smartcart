@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Loader2, Plus, SlidersHorizontal, X, CheckCircle, Sparkles } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '', cachedResults = null, onCacheResults = null }) {
+export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPrices, defaultSearchTerm = '', cachedResults = null, onCacheResults = null, batchSize = 1000, batchDelay = 100 }) {
     const [searchTerm, setSearchTerm] = useState(defaultSearchTerm);
     const [searchResults, setSearchResults] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
@@ -108,7 +108,6 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
 
     // Fetch all products and filter client-side for better results
     const fetchAllMatchingProducts = async (term) => {
-        const batchSize = 1000;
         let allProducts = [];
         let skip = 0;
         let hasMore = true;
@@ -119,8 +118,8 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
             allProducts = [...allProducts, ...batch];
             hasMore = batch.length === batchSize;
             skip += batchSize;
-            if (hasMore) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+            if (hasMore && batchDelay > 0) {
+                await new Promise(resolve => setTimeout(resolve, batchDelay));
             }
         }
 
