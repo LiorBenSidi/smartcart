@@ -108,7 +108,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
 
     // Fetch all products and filter client-side for better results
     const fetchAllMatchingProducts = async (term) => {
-        const batchSize = 500;
+        const batchSize = 1000;
         let allProducts = [];
         let skip = 0;
         let hasMore = true;
