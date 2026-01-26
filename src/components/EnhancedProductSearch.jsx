@@ -120,7 +120,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
             hasMore = batch.length === batchSize;
             skip += batchSize;
             if (hasMore) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, 200));
             }
         }
 
