@@ -13,6 +13,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     const [isSearching, setIsSearching] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [addedItems, setAddedItems] = useState(new Set());
+    const [loadingDots, setLoadingDots] = useState('...');
     
     // Filter states
     const [filters, setFilters] = useState({
@@ -30,6 +31,19 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     // Stores and chains for display
     const [stores, setStores] = useState([]);
     const [chains, setChains] = useState([]);
+
+    // Animate loading dots
+    useEffect(() => {
+        if (!isSearching) return;
+        const interval = setInterval(() => {
+            setLoadingDots(prev => {
+                if (prev === '...') return '.';
+                if (prev === '.') return '..';
+                return '...';
+            });
+        }, 400);
+        return () => clearInterval(interval);
+    }, [isSearching]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -466,7 +480,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                 <div className="space-y-3 animate-in fade-in duration-300">
                     <div className="flex items-center gap-2 text-sm text-indigo-400 mb-4">
                         <Sparkles className="w-4 h-4 animate-pulse" />
-                        <span>Searching products...</span>
+                        <span>Searching products<span className="inline-block w-6 text-left">{loadingDots}</span></span>
                     </div>
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 border border-gray-700/50">
