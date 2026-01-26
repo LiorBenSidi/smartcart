@@ -27,12 +27,12 @@ export default Deno.serve(async (req) => {
         const likedTips = feedback.filter(f => f.action === 'like').map(f => f.full_message);
         const dislikedTips = feedback.filter(f => f.action === 'dislike').map(f => f.full_message);
 
-        // 2.6 Fetch actual product names from catalog (for validation) - fetch more products
+        // 2.6 Fetch ALL product names from catalog (batch fetch with no limit)
         let allCatalogProducts = [];
         let skip = 0;
         const batchSize = 500;
         let hasMore = true;
-        while (hasMore && allCatalogProducts.length < 3000) {
+        while (hasMore) {
             const batch = await base44.entities.Product.list('-updated_date', batchSize, skip);
             allCatalogProducts = [...allCatalogProducts, ...batch];
             hasMore = batch.length === batchSize;
