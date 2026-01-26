@@ -200,6 +200,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
             if (!searchTerm || searchTerm.length < 2) {
                 setSearchResults([]);
                 setSuggestions([]);
+                setRateLimitError(false);
                 return;
             }
 
@@ -215,6 +216,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
             }
 
             setIsSearching(true);
+            setRateLimitError(false);
             try {
                 const results = await fetchAllMatchingProducts(searchTerm);
 
@@ -249,6 +251,11 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                 }
             } catch (error) {
                 console.error("Failed to search products", error);
+                // Check for rate limit error
+                const errorMsg = error?.message?.toLowerCase() || '';
+                if (errorMsg.includes('rate') || errorMsg.includes('limit') || errorMsg.includes('429') || errorMsg.includes('too many')) {
+                    setRateLimitError(true);
+                }
             } finally {
                 setIsSearching(false);
             }
