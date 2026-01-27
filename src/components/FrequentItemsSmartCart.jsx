@@ -12,23 +12,25 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
     const [addedItems, setAddedItems] = useState(new Set());
     const [loadingPrices, setLoadingPrices] = useState(new Set());
 
-    const getCacheKey = (email) => `frequent_items_${email || 'anonymous'}`;
-
     useEffect(() => {
         const fetchFrequentItems = async () => {
-            // Get current user email for caching
-            let currentUserEmail = userEmail;
-            if (!currentUserEmail) {
-                try {
-                    const user = await base44.auth.me();
-                    currentUserEmail = user?.email;
-                } catch (e) {
-                    console.error("Failed to get user", e);
-                }
+            // Always get current user email for caching (don't rely on prop)
+            let currentUserEmail = null;
+            try {
+                const user = await base44.auth.me();
+                currentUserEmail = user?.email;
+            } catch (e) {
+                console.error("Failed to get user", e);
             }
 
+            if (!currentUserEmail) {
+                setLoading(false);
+                return; // Don't fetch/cache if no user
+            }
+
+            const cacheKey = `frequent_items_${currentUserEmail}`;
+            
             // Try loading from cache first
-            const cacheKey = getCacheKey(currentUserEmail);
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
                 try {
@@ -61,7 +63,7 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
             }
         };
         fetchFrequentItems();
-    }, [userEmail]);
+    }, []);
 
     const handleAddToCart = async (item) => {
         const itemKey = item.gtin || item.name;
