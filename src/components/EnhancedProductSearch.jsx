@@ -194,76 +194,78 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
         return sorted;
     };
 
-    // Search with regex matching and batch fetching
-    useEffect(() => {
-        const searchProducts = async () => {
-            if (!searchTerm || searchTerm.length < 2) {
-                setSearchResults([]);
-                setSuggestions([]);
-                setRateLimitError(false);
-                return;
-            }
-
-            // Use cached results if available and search term matches
-            if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
-                let finalResults = sortResults(cachedResults, sortBy);
-                if (hasActiveFilters) {
-                    finalResults = applyFiltersAndSort(finalResults);
-                }
-                setSuggestions(finalResults.slice(0, 5));
-                setSearchResults(finalResults.slice(0, 50));
-                return;
-            }
-
-            setIsSearching(true);
+    // Manual search function
+    const executeSearch = async () => {
+        if (!searchTerm || searchTerm.length < 2) {
+            setSearchResults([]);
+            setSuggestions([]);
             setRateLimitError(false);
-            try {
-                const results = await fetchAllMatchingProducts(searchTerm);
+            return;
+        }
 
-                // First try with 3+ chains filter
-                let finalResults = processResults(results, 3);
-
-                // If no results with 3+ chains, fallback to all results (1+ chain)
-                if (finalResults.length === 0) {
-                    finalResults = processResults(results, 1);
-                }
-
-                // Apply sorting
-                finalResults = sortResults(finalResults, sortBy);
-
-                // Apply additional filters if any are active
-                if (hasActiveFilters) {
-                    finalResults = applyFiltersAndSort(finalResults);
-                }
-
-                // Limit to 50 results max
-                finalResults = finalResults.slice(0, 50);
-
-                // Show top 5 as suggestions
-                setSuggestions(finalResults.slice(0, 5));
-
-                // Show all results
-                setSearchResults(finalResults);
-
-                // Cache the results
-                if (onCacheResults && finalResults.length > 0) {
-                    onCacheResults(finalResults);
-                }
-            } catch (error) {
-                console.error("Failed to search products", error);
-                // Check for rate limit error
-                const errorMsg = error?.message?.toLowerCase() || '';
-                if (errorMsg.includes('rate') || errorMsg.includes('limit') || errorMsg.includes('429') || errorMsg.includes('too many')) {
-                    setRateLimitError(true);
-                }
-            } finally {
-                setIsSearching(false);
+        // Use cached results if available and search term matches
+        if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
+            let finalResults = sortResults(cachedResults, sortBy);
+            if (hasActiveFilters) {
+                finalResults = applyFiltersAndSort(finalResults);
             }
-        };
+            setSuggestions(finalResults.slice(0, 5));
+            setSearchResults(finalResults.slice(0, 50));
+            return;
+        }
 
-        const debounce = setTimeout(searchProducts, 300);
-        return () => clearTimeout(debounce);
-    }, [searchTerm, filters, sortBy, cachedResults]);
+        setIsSearching(true);
+        setRateLimitError(false);
+        try {
+            const results = await fetchAllMatchingProducts(searchTerm);
+
+            // First try with 3+ chains filter
+            let finalResults = processResults(results, 3);
+
+            // If no results with 3+ chains, fallback to all results (1+ chain)
+            if (finalResults.length === 0) {
+                finalResults = processResults(results, 1);
+            }
+
+            // Apply sorting
+            finalResults = sortResults(finalResults, sortBy);
+
+            // Apply additional filters if any are active
+            if (hasActiveFilters) {
+                finalResults = applyFiltersAndSort(finalResults);
+            }
+
+            // Limit to 50 results max
+            finalResults = finalResults.slice(0, 50);
+
+            // Show top 5 as suggestions
+            setSuggestions(finalResults.slice(0, 5));
+
+            // Show all results
+            setSearchResults(finalResults);
+
+            // Cache the results
+            if (onCacheResults && finalResults.length > 0) {
+                onCacheResults(finalResults);
+            }
+        } catch (error) {
+            console.error("Failed to search products", error);
+            // Check for rate limit error
+            const errorMsg = error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('rate') || errorMsg.includes('limit') || errorMsg.includes('429') || errorMsg.includes('too many')) {
+                setRateLimitError(true);
+            }
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Auto-search on mount if defaultSearchTerm is provided
+    useEffect(() => {
+        if (defaultSearchTerm && defaultSearchTerm.length >= 2) {
+            executeSearch();
+        }
+    }, []);
 
     // Get unique categories for filter (async load when needed)
     const [categories, setCategories] = useState([]);
@@ -333,18 +335,36 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     return (
         <div className="space-y-4">
             {/* Search Input */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                    type="text"
-                    placeholder="Search products by name, barcode, brand, or category..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-                {isSearching && (
-                    <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
-                )}
+            <div className="flex gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search products by name, barcode, brand, or category..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                executeSearch();
+                            }
+                        }}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+                    />
+                </div>
+                <Button
+                    onClick={executeSearch}
+                    disabled={isSearching || !searchTerm || searchTerm.length < 2}
+                    className="px-6 bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                    {isSearching ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <>
+                            <Search className="w-4 h-4 mr-2" />
+                            Search
+                        </>
+                    )}
+                </Button>
             </div>
 
             {/* Auto-suggestions dropdown */}
@@ -569,10 +589,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                             variant="outline" 
                             onClick={() => {
                                 setRateLimitError(false);
-                                // Trigger a re-search by updating searchTerm
-                                const currentTerm = searchTerm;
-                                setSearchTerm('');
-                                setTimeout(() => setSearchTerm(currentTerm), 100);
+                                executeSearch();
                             }}
                             className="border-amber-700 bg-amber-900/30 hover:bg-amber-900/50 text-amber-200"
                         >
