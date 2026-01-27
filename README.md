@@ -60,8 +60,19 @@ To explore the system from a cold-start perspective:
 ## Notes
 
 - Users with **more uploaded receipts** receive richer and more personalized recommendations.
+  
 - New users initially rely more on community-based insights (collaborative filtering).
+  
+- **Transparency & System Explainability:**
+     - To promote transparency and user trust, each page in the system includes a `(?)` information icon. Clicking this icon opens a dedicated explanatory screen designed to clarify how the content on the current page is generated and why it is presented to the user.
+     - This transparency layer provides a high-level explanation of the system’s logic and decision-making processes without exposing implementation details or source code. The goal is to make the system’s behavior understandable to curious users while avoiding unnecessary technical complexity for everyday use.
+     - For users who seek deeper insight, the explanation screen also includes optional technical descriptions of the underlying mechanisms (e.g., data sources, aggregation logic, and recommendation signals), presented in an accessible and non-code-centric manner. This allows technically inclined users to understand how the system works conceptually, without requiring familiarity with the internal codebase.
+     - By separating operational use from explanatory depth, the `(?)` mechanism supports different levels of user engagement and aligns with Human–Computer Interaction principles of explainability, user control, and trust-building in intelligent systems.
+
 - The app is built and hosted using the **Base44 platform**.
+  
 - The system is deployed on a remote Deno server with inherent memory and execution-time constraints. As a result, intensive usage may occasionally trigger a "Rate Limit" error. To proactively address this, we implemented batching mechanisms and controlled delays for computationally heavy operations. While these measures significantly reduce the likelihood of such errors, they may still occur under extensive use. In these cases, the UI displays a dedicated error message explaining the situation and recommending waiting approximately one minute before clicking “Try Again.”
+  
 - In addition, the application relies in several places on local cache storage to improve performance and reduce unnecessary server calls. So if, for example, a user with existing receipts does not immediately see Smart Tips on the Main page, clicking the Refresh button on the right will re-fetch and update the cached data to the correct data.
+  
 - Certain operations, such as manual product search or entering and refreshing the Nearby Stores page, are intentionally executed using batched requests and enforced delays to prevent runtime errors from the Base44 platform. As a result, these operations may take up to approximately 30-90 seconds to complete. To avoid repeating these costly operations, the results are cached locally whenever possible, minimizing repeated processing and improving subsequent response times.
