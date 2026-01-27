@@ -423,6 +423,18 @@ export default function Main() {
     );
   }
 
+  if (showOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={() => {
+          setShowOnboarding(false);
+          // Reload the page to fetch fresh data after onboarding
+          window.location.reload();
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 animate-in fade-in duration-500">
       {/* Page Header */}
