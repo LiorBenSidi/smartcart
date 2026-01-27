@@ -335,7 +335,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     return (
         <div className="space-y-4">
             {/* Search Input */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-stretch">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
@@ -348,13 +348,13 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
                                 executeSearch();
                             }
                         }}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+                        className="w-full h-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
                     />
                 </div>
                 <Button
                     onClick={executeSearch}
                     disabled={isSearching || !searchTerm || searchTerm.length < 2}
-                    className="px-6 bg-purple-600 hover:bg-purple-700 text-white"
+                    className="px-6 h-auto bg-purple-600 hover:bg-purple-700 text-white"
                 >
                     {isSearching ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
