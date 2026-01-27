@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format } from 'date-fns';
-import Onboarding from '@/components/Onboarding';
 
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
@@ -221,7 +220,6 @@ export default function Main() {
   const [smartTips, setSmartTips] = useState([]); // New Smart Tips
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const [aiInsights, setAiInsights] = useState(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
@@ -377,15 +375,6 @@ export default function Main() {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
 
-        // Check if user has completed onboarding (has a UserProfile)
-        const profiles = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
-        if (profiles.length === 0) {
-          // New user - show onboarding
-          setShowOnboarding(true);
-          setLoading(false);
-          return;
-        }
-
         // Load cached data immediately for instant display (user-specific)
         loadCachedData(currentUser?.email);
 
@@ -420,18 +409,6 @@ export default function Main() {
         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
         <p className="text-gray-500 font-medium">Analyzing your taste profile...</p>
       </div>
-    );
-  }
-
-  if (showOnboarding) {
-    return (
-      <Onboarding 
-        onComplete={() => {
-          setShowOnboarding(false);
-          // Reload the page to fetch fresh data after onboarding
-          window.location.reload();
-        }} 
-      />
     );
   }
 

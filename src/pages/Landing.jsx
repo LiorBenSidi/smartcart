@@ -47,8 +47,7 @@ export default function Landing() {
   };
 
   const handleAuth = () => {
-    // Redirect to Landing after login so we can check for onboarding
-    base44.auth.redirectToLogin(createPageUrl('Landing'));
+    base44.auth.redirectToLogin(createPageUrl('Main'));
   };
 
   const handleNavigation = () => {
@@ -113,14 +112,7 @@ export default function Landing() {
                     </div>
                   )}
                   <Button
-                    onClick={() => {
-                      // If user has no profile, show onboarding first
-                      if (hasProfile === false) {
-                        setShowOnboarding(true);
-                      } else {
-                        handleNavigation();
-                      }
-                    }}
+                    onClick={handleNavigation}
                     className="w-full h-14 text-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 font-medium">
                     Get Started
                     <ArrowRight className="ml-2 w-5 h-5" />
