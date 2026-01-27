@@ -148,8 +148,8 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
     }
 
     return (
-        <Card className="border-amber-500/30 bg-amber-900/10 dark:bg-amber-900/10">
-            <CardHeader className="pb-2 pt-4 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+        <Card className="border-amber-500/30 bg-amber-900/10">
+            <CardHeader className="pb-2 pt-4 cursor-pointer select-none" onClick={() => setIsOpen(!isOpen)}>
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2 text-amber-100">
                         <ShoppingBag className="w-5 h-5 text-amber-500" />
