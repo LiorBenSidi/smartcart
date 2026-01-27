@@ -20,6 +20,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
     const [searchResults, setSearchResults] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [hasSearched, setHasSearched] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [addedItems, setAddedItems] = useState(new Set());
     const [loadingDots, setLoadingDots] = useState('...');
@@ -216,6 +217,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
 
         setIsSearching(true);
         setRateLimitError(false);
+        setHasSearched(true);
         try {
             const results = await fetchAllMatchingProducts(searchTerm);
 
@@ -601,7 +603,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
             )}
 
             {/* Search Results */}
-            {!isSearching && !rateLimitError && searchResults.length === 0 && searchResults !== null && suggestions.length === 0 && searchTerm.length >= 2 && (
+            {!isSearching && !rateLimitError && hasSearched && searchResults.length === 0 && (
                 <div className="text-center text-gray-500 text-sm py-4">
                     No products found matching your criteria.
                 </div>
