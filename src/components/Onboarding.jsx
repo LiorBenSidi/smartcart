@@ -203,8 +203,14 @@ export default function Onboarding({ onComplete }) {
         await base44.auth.updateMe({ display_name: finalAnswers.display_name });
       }
 
-      // Create user profile
-      await base44.entities.UserProfile.create(profile);
+      // Get current user email
+      const currentUser = await base44.auth.me();
+
+      // Create user profile with user_email
+      await base44.entities.UserProfile.create({
+        ...profile,
+        user_email: currentUser?.email
+      });
 
       // Build user vectors after profile creation
       const currentUser = await base44.auth.me();
