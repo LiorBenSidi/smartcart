@@ -221,6 +221,7 @@ export default function Main() {
   const [smartTips, setSmartTips] = useState([]); // New Smart Tips
   const [tipsLoading, setTipsLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const [aiInsights, setAiInsights] = useState(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
