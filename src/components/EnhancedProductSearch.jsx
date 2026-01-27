@@ -601,7 +601,7 @@ export default function EnhancedProductSearch({ onAddToCart, onAddToCartWithPric
             )}
 
             {/* Search Results */}
-            {!isSearching && !rateLimitError && searchTerm && searchResults.length === 0 && (
+            {!isSearching && !rateLimitError && searchResults.length === 0 && searchResults !== null && suggestions.length === 0 && searchTerm.length >= 2 && (
                 <div className="text-center text-gray-500 text-sm py-4">
                     No products found matching your criteria.
                 </div>
