@@ -484,6 +484,52 @@ export default function Main() {
                                         <span><strong>Optimization Tips</strong> — Specific savings recommendations with ₪ estimates</span>
                                     </li>
                                 </ul>
+                                <details className="mt-3">
+                                    <summary className="cursor-pointer text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:text-indigo-900 dark:hover:text-indigo-100">
+                                        ▼ Show actual LLM prompt & schema
+                                    </summary>
+                                    <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono mt-2 space-y-3 max-h-64 overflow-y-auto">
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400 mb-1 font-sans font-medium">Prompt (excerpt):</p>
+                                            <pre className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-[10px]">{`You are an expert financial advisor specializing in grocery spending optimization...
+
+USER CONTEXT:
+- User Profile (budget focus, household size, dietary restrictions, allergies, kosher level, monthly budget)
+- Recent Spending Habits (total spent, avg receipt, last 30 days, spending trend)
+- Top Categories by Spend
+- Frequently Purchased Items
+- Items Often Bought at High Prices
+
+TASK: Generate 3–5 DISTINCT, concrete optimization opportunities.
+
+SAVINGS ESTIMATION RULES:
+- Estimate potential monthly savings in ₪ and %
+- Total combined savings MUST NOT exceed 35% of monthly spending
+- Avoid exaggerated estimates
+
+CLASSIFICATION:
+- At least 2 "Quick Wins" (easy, immediate value)
+- Remaining may be "Strategic Changes" (higher impact)`}</pre>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400 mb-1 font-sans font-medium">Response JSON Schema:</p>
+                                            <pre className="text-gray-700 dark:text-gray-300 overflow-x-auto text-[10px]">{`{
+  "spendingInsight": { title, message, severity },
+  "budgetInsight": { title, message, severity },
+  "categoryInsight": { title, message, category },
+  "behaviorInsight": { title, message, actionable },
+  "topRecommendations": [{
+    title, description,
+    potentialSavings (number),
+    potentialSavingsPercentage,
+    rationale
+  }],
+  "total_potential_monthly_savings_nis",
+  "total_potential_monthly_savings_percentage"
+}`}</pre>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
 
                             <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
@@ -511,6 +557,54 @@ export default function Main() {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                                     Tips respect your kosher level, allergies, diet, and budget preferences.
                                 </p>
+                                <details className="mt-3">
+                                    <summary className="cursor-pointer text-xs font-medium text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-100">
+                                        ▼ Show actual LLM prompt & schema
+                                    </summary>
+                                    <div className="bg-white dark:bg-gray-800 p-3 rounded text-xs font-mono mt-2 space-y-3 max-h-64 overflow-y-auto">
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400 mb-1 font-sans font-medium">Prompt (excerpt):</p>
+                                            <pre className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-[10px]">{`You are SmartShopper, an intelligent shopping assistant.
+Generate 3-5 unique, concise, personalized shopping tips.
+
+INPUTS:
+- User Profile (budget_focus, monthly_budget, diet, kosher_level, household_size, allergies, dietary_restrictions)
+- Top Habits (frequently purchased products)
+- Current Recommendations (products, stores)
+- User Feedback History (liked tips, disliked tips)
+
+CRITICAL GUIDELINES:
+- Allergy Avoidance: All products MUST be free of allergen_avoid_list
+- Kosher Compliance: Respect user's kosher_level
+- Dietary Restrictions: Align with diet and dietary_restrictions
+- Budget Focus: Tailor savings to budget_focus, express as PERCENTAGES
+- Health Preferences: Prioritize health_preferences if specified
+
+SPECIFICITY:
+- ONLY use product names from the EXACT catalog list provided
+- Include specific price comparisons as PERCENTAGES
+- Reference real stores from user's area
+
+TIP CATEGORIES:
+1. Money-saving: Cheaper alternatives with % savings
+2. Health/Dietary: Items fitting exact dietary profile
+3. Discovery: Products similar users buy`}</pre>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400 mb-1 font-sans font-medium">Response JSON Schema:</p>
+                                            <pre className="text-gray-700 dark:text-gray-300 overflow-x-auto text-[10px]">{`{
+  "tips": [{
+    "type": "money_saving" | "health_dietary" | "discovery" | "general",
+    "message": "string (max 2 sentences)",
+    "related_entity_name": "product/store name (display)",
+    "related_entity_name_original": "EXACT Hebrew name from catalog",
+    "related_entity_type": "product" | "chain",
+    "inspired_by_liked_tips": ["exact text of liked tips"]
+  }]
+}`}</pre>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
                             
                             <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
