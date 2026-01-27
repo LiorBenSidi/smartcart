@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format } from 'date-fns';
+import Onboarding from '@/components/Onboarding';
 
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
