@@ -11,7 +11,7 @@ https://smart-cart-technion.base44.app
 
 ## Demo Access (Preloaded User)
 
-For demonstration purposes, we provide access to an **experienced user account** that includes **20 uploaded receipts**, allowing you to explore the full capabilities of the system (personalized tips, habit analysis, and recommendations).
+For demonstration purposes, we provide access to an **experienced user account** that includes **20 uploaded receipts**, allowing you to explore the full capabilities of the system (personalized tips, habit analysis, recommendations and more).
 
 ### Login Instructions
 
