@@ -213,7 +213,6 @@ export default function Onboarding({ onComplete }) {
       });
 
       // Build user vectors after profile creation
-      const currentUser = await base44.auth.me();
       if (currentUser?.email) {
           try {
               await base44.functions.invoke('buildUserVectors', { userId: currentUser.email, mode: 'incremental' });
