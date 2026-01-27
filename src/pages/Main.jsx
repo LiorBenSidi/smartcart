@@ -377,6 +377,15 @@ export default function Main() {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
 
+        // Check if user has completed onboarding (has a UserProfile)
+        const profiles = await base44.entities.UserProfile.filter({ created_by: currentUser.email });
+        if (profiles.length === 0) {
+          // New user - show onboarding
+          setShowOnboarding(true);
+          setLoading(false);
+          return;
+        }
+
         // Load cached data immediately for instant display (user-specific)
         loadCachedData(currentUser?.email);
 
