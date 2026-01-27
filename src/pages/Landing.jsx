@@ -47,7 +47,8 @@ export default function Landing() {
   };
 
   const handleAuth = () => {
-    base44.auth.redirectToLogin(createPageUrl('Main'));
+    // Redirect to Landing after login so we can check for onboarding
+    base44.auth.redirectToLogin(createPageUrl('Landing'));
   };
 
   const handleNavigation = () => {
