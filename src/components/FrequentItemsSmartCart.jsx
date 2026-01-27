@@ -143,8 +143,24 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
         );
     }
 
+    // Always show the component even if no items (collapsed state shows count)
     if (!items || items.length === 0) {
-        return null;
+        return (
+            <Card className="border-amber-500/30 bg-amber-900/10">
+                <CardHeader className="pb-2 pt-4">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2 text-amber-100">
+                            <ShoppingBag className="w-5 h-5 text-amber-500" />
+                            Most Purchased Items
+                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs ml-1">
+                                0
+                            </Badge>
+                        </CardTitle>
+                    </div>
+                    <p className="text-xs text-amber-300/70 mt-1">Upload receipts to see your frequently purchased items here</p>
+                </CardHeader>
+            </Card>
+        );
     }
 
     return (
