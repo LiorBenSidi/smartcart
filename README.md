@@ -25,7 +25,7 @@ For demonstration purposes, we provide access to an **experienced user account**
 4. In the Base44 login modal, use the following credentials:
    - **Email:** `yarinkatan69@gmail.com`
    - **Password:** `12345678`
-   And after that click on **Sign in**.
+   - And after that click on **Sign in**.
    <img width="703" height="1059" alt="image" src="https://github.com/user-attachments/assets/92a928d6-6dc5-4ffa-8712-b36e893659fc" />
 
 
