@@ -16,15 +16,18 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
 
     useEffect(() => {
         const fetchFrequentItems = async () => {
-            // Get current user email for caching
-            let currentUserEmail = userEmail;
+            // Always get current user email directly for proper caching
+            let currentUserEmail = null;
+            try {
+                const user = await base44.auth.me();
+                currentUserEmail = user?.email;
+            } catch (e) {
+                console.error("Failed to get user", e);
+            }
+
             if (!currentUserEmail) {
-                try {
-                    const user = await base44.auth.me();
-                    currentUserEmail = user?.email;
-                } catch (e) {
-                    console.error("Failed to get user", e);
-                }
+                setLoading(false);
+                return;
             }
 
             // Try loading from cache first
@@ -61,7 +64,7 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
             }
         };
         fetchFrequentItems();
-    }, [userEmail]);
+    }, []);
 
     const handleAddToCart = async (item) => {
         const itemKey = item.gtin || item.name;
