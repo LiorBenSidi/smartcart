@@ -12,19 +12,33 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
     const [addedItems, setAddedItems] = useState(new Set());
     const [loadingPrices, setLoadingPrices] = useState(new Set());
 
-    const getCacheKey = () => `frequent_items_${userEmail || 'anonymous'}`;
+    const getCacheKey = (email) => `frequent_items_${email || 'anonymous'}`;
 
     useEffect(() => {
         const fetchFrequentItems = async () => {
+            // Get current user email for caching
+            let currentUserEmail = userEmail;
+            if (!currentUserEmail) {
+                try {
+                    const user = await base44.auth.me();
+                    currentUserEmail = user?.email;
+                } catch (e) {
+                    console.error("Failed to get user", e);
+                }
+            }
+
             // Try loading from cache first
-            const cacheKey = getCacheKey();
+            const cacheKey = getCacheKey(currentUserEmail);
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
                 try {
                     const parsed = JSON.parse(cached);
-                    setItems(parsed);
-                    setLoading(false);
-                    return;
+                    // Only use cache if it has items
+                    if (parsed && parsed.length > 0) {
+                        setItems(parsed);
+                        setLoading(false);
+                        return;
+                    }
                 } catch (e) {
                     console.error("Failed to parse cached frequent items", e);
                 }
@@ -35,8 +49,10 @@ export default function FrequentItemsSmartCart({ onAddToCartWithPrices, chains =
                 if (response.data.success && response.data.rawData?.frequentItems) {
                     const frequentItems = response.data.rawData.frequentItems;
                     setItems(frequentItems);
-                    // Save to cache per user
-                    localStorage.setItem(cacheKey, JSON.stringify(frequentItems));
+                    // Save to cache per user only if we have items
+                    if (frequentItems && frequentItems.length > 0) {
+                        localStorage.setItem(cacheKey, JSON.stringify(frequentItems));
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch frequent items", error);
